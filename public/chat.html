@@ -201,6 +201,10 @@
     </div>
 
     <div class="menu-dropdown" id="menuDropdown">
+        <div class="menu-item" id="signInMenuItem" onclick="window.location.href='/login.html'" style="display:none;">
+            <span class="menu-item-icon">🔑</span>
+            <span>Sign in</span>
+        </div>
         <div class="menu-item" onclick="manageSubscription()">
             <span class="menu-item-icon">💳</span>
             <span>Manage Subscription</span>
@@ -228,8 +232,10 @@
     </div>
 
     <script>
-        let userEmail = null;
+    let userEmail = null;
         let userName = 'friend';
+    let freeMessageLimit = 5; // allow 5 free user messages
+    let freeMessageCount = 0; // counts messages in this session when unauthenticated
         const messageInput = document.getElementById('messageInput');
         const chatContainer = document.getElementById('chatContainer');
         const sendBtn = document.getElementById('sendBtn');
@@ -246,6 +252,8 @@
                     userEmail = authData.email;
                     userName = authData.email.split('@')[0];
                     console.log('✅ Authenticated as:', userEmail);
+                    const signInItem = document.getElementById('signInMenuItem');
+                    if (signInItem) signInItem.style.display = 'none';
                 } else {
                     // Fallback to URL param (for backward compatibility)
                     const urlParams = new URLSearchParams(window.location.search);
@@ -254,6 +262,8 @@
                         userEmail = emailParam;
                         userName = emailParam.split('@')[0];
                     }
+                    const signInItem = document.getElementById('signInMenuItem');
+                    if (signInItem) signInItem.style.display = 'flex';
                 }
             } catch (error) {
                 console.error('Auth check failed:', error);
@@ -274,6 +284,20 @@
         async function sendMessage() {
             const message = messageInput.value.trim();
             if (!message) return;
+
+            // Paywall: if unauthenticated and exceeded free limit, prompt to subscribe
+            if (!userEmail) {
+                if (freeMessageCount >= freeMessageLimit) {
+                    const proceed = confirm("You've reached the free messages limit. Subscribe to keep going?");
+                    if (proceed) {
+                        return startSubscriptionFlow();
+                    } else {
+                        return; // do not send further messages
+                    }
+                } else {
+                    freeMessageCount += 1;
+                }
+            }
 
             // Disable input
             sendBtn.disabled = true;
@@ -313,6 +337,35 @@
                 sendBtn.disabled = false;
                 messageInput.disabled = false;
                 messageInput.focus();
+            }
+        }
+
+        async function startSubscriptionFlow() {
+            try {
+                let emailForCheckout = userEmail;
+                if (!emailForCheckout) {
+                    const entered = window.prompt('Enter your email for checkout (you can leave blank and enter it on Stripe):');
+                    if (entered && entered.includes('@')) {
+                        emailForCheckout = entered.trim();
+                    }
+                }
+
+                const response = await fetch('/api/create-checkout-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: emailForCheckout || undefined })
+                });
+                const data = await response.json();
+                if (response.ok && data.url) {
+                    window.location.href = data.url;
+                } else if (data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    alert(data.error || 'Unable to start checkout. Please try again.');
+                }
+            } catch (err) {
+                console.error('Checkout error:', err);
+                alert('There was a problem starting checkout. Please try again.');
             }
         }
 
@@ -367,9 +420,14 @@
                         userEmail = authData.email;
                         userName = authData.email.split('@')[0];
                     } else {
-                        alert('Please sign in to manage your subscription.');
-                        window.location.href = '/';
-                        return;
+                        // No active session – ask for email to proceed (MVP-friendly)
+                        const entered = window.prompt('Enter your email to manage your subscription:');
+                        if (!entered || !entered.includes('@')) {
+                            alert('Valid email required to open the billing portal.');
+                            return;
+                        }
+                        userEmail = entered.trim();
+                        userName = userEmail.split('@')[0];
                     }
                 } catch (error) {
                     console.error('Auth check failed:', error);
@@ -392,7 +450,7 @@
                 console.log('📊 Subscription status:', statusData);
 
                 if (!statusData.found || statusData.status === 'none') {
-                    alert('No active subscription found. Please subscribe from the home page first, then you can manage your subscription here.');
+                    alert('No active subscription found for ' + userEmail + '. If this is unexpected, double-check the email used at checkout.');
                     return;
                 }
             } catch (error) {
