@@ -565,7 +565,7 @@ app.get('/create-account', async (req, res) => {
                   <li>🎯 Somatic tracking and awareness</li>
                 </ul>
                 <p>After your trial, you'll be charged $19/month. Cancel anytime.</p>
-                <a href="https://app.veraneural.com/chat.html" class="button">Start Chatting with VERA</a>
+                <a href="${process.env.APP_URL || 'http://localhost:8080'}/chat.html" class="button">Start Chatting with VERA</a>
                 <p style="margin-top: 30px; color: #666; font-size: 14px;">
                   Questions? Reply to this email - we're here to help.<br>
                   - The VERA Team
@@ -961,8 +961,9 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
       [token, expires, email]
     );
 
-    // Create magic link
-    const magicLink = `https://app.veraneural.com/verify-magic-link?token=${token}`;
+  // Create magic link (respect APP_URL)
+  const baseUrl = process.env.APP_URL || 'http://localhost:8080';
+  const magicLink = `${baseUrl}/verify-magic-link?token=${token}`;
 
     // Send email
     await transporter.sendMail({
@@ -1288,7 +1289,7 @@ if (require.main === module) {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log(`✨ Server listening on port ${PORT}`);
   console.log(`🔗 Local: http://localhost:${PORT}`);
-  console.log(`🌐 Railway: https://app.veraneural.com`);
+  console.log(`🌐 Public URL: ${process.env.APP_URL || '(set APP_URL to your domain or Railway URL)'}`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('');
   console.log('"Not an AI pretending to be human,');
