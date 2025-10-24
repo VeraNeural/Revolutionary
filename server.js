@@ -715,11 +715,13 @@ app.post('/api/create-checkout-session', async (req, res) => {
         if (user.stripe_customer_id) {
           console.log('♻️ Reusing existing Stripe customer:', user.stripe_customer_id);
           
+          const priceId = process.env.STRIPE_PRICE_ID || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD';
+          
           const session = await stripe.checkout.sessions.create({
             customer: user.stripe_customer_id, // REUSE existing customer
             line_items: [
               {
-                price: 'price_1SIgAtF8aJ0BDqA3WXVJsuVD',
+                price: priceId,
                 quantity: 1,
               },
             ],
@@ -769,11 +771,13 @@ app.post('/api/create-checkout-session', async (req, res) => {
         // Reuse existing customer for new subscription
         console.log('♻️ Reusing existing Stripe customer for new subscription');
         
+        const priceId = process.env.STRIPE_PRICE_ID || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD';
+        
         const session = await stripe.checkout.sessions.create({
           customer: existingCustomer.id, // REUSE existing customer
           line_items: [
             {
-              price: 'price_1SIgAtF8aJ0BDqA3WXVJsuVD',
+              price: priceId,
               quantity: 1,
             },
           ],
@@ -794,10 +798,15 @@ app.post('/api/create-checkout-session', async (req, res) => {
     
     // Create new checkout session for new customer
     console.log('🆕 Creating new customer checkout session');
+    
+    // Use STRIPE_PRICE_ID from env, fallback to hardcoded for backwards compatibility
+    const priceId = process.env.STRIPE_PRICE_ID || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD';
+    console.log('💰 Using price ID:', priceId);
+    
     const sessionConfig = {
       line_items: [
         {
-          price: 'price_1SIgAtF8aJ0BDqA3WXVJsuVD', // VERA $19/month price
+          price: priceId,
           quantity: 1,
         },
       ],
@@ -822,6 +831,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
     res.json({ url: session.url });
   } catch (error) {
     console.error('❌ Error creating checkout session:', error);
+    console.error('❌ Error details:', error.message);
+    console.error('❌ Error stack:', error.stack);
     res.status(500).json({ error: 'Failed to create checkout session', details: error.message });
   }
 });
