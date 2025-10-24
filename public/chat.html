@@ -156,12 +156,59 @@
         .welcome h2 {
             margin-bottom: 1rem;
         }
+
+        /* Menu dropdown */
+        .menu-dropdown {
+            position: fixed;
+            top: 60px;
+            right: 1rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: 0.5rem;
+            display: none;
+            z-index: 1000;
+            min-width: 200px;
+        }
+
+        .menu-dropdown.active {
+            display: block;
+        }
+
+        .menu-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .menu-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .menu-item-icon {
+            font-size: 1.2rem;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>VERA</h1>
         <button class="menu-btn" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <div class="menu-dropdown" id="menuDropdown">
+        <div class="menu-item" onclick="manageSubscription()">
+            <span class="menu-item-icon">💳</span>
+            <span>Manage Subscription</span>
+        </div>
+        <div class="menu-item" onclick="logout()">
+            <span class="menu-item-icon">🚪</span>
+            <span>Logout</span>
+        </div>
     </div>
 
     <div class="container">
@@ -288,8 +335,56 @@
         }
 
         function toggleMenu() {
-            alert('Menu coming soon! For now, you can manage your subscription at Stripe Customer Portal.');
+            const menu = document.getElementById('menuDropdown');
+            menu.classList.toggle('active');
         }
+
+        async function manageSubscription() {
+            if (!userEmail) {
+                alert('Please log in to manage your subscription.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/portal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: userEmail })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.url) {
+                    // Open Stripe Billing Portal
+                    window.location.href = data.url;
+                } else {
+                    alert('Unable to open subscription portal. Please try again or contact support.');
+                }
+            } catch (error) {
+                console.error('Portal error:', error);
+                alert('Error opening subscription portal. Please try again.');
+            }
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to log out?')) {
+                fetch('/api/auth/logout', { method: 'POST' })
+                    .then(() => window.location.href = '/')
+                    .catch(err => {
+                        console.error('Logout error:', err);
+                        window.location.href = '/';
+                    });
+            }
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('menuDropdown');
+            const menuBtn = document.querySelector('.menu-btn');
+            if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
+                menu.classList.remove('active');
+            }
+        });
     </script>
 </body>
 </html>
