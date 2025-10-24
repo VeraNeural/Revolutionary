@@ -1,0 +1,48 @@
+# VERA Neural - Git Ignore File
+# DON'T commit these files to version control!
+
+# ==================== SECRETS ====================
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# ==================== NODE ====================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# ==================== LOGS ====================
+*.log
+logs/
+
+# ==================== DATABASE ====================
+*.db
+*.sqlite
+*.sqlite3
+
+# ==================== OS FILES ====================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ==================== TEMP FILES ====================
+*.tmp
+*.temp
+.cache/
+dist/
+build/
+
+# ==================== TESTING ====================
+coverage/
+.nyc_output/
+
+# ==================== CERTIFICATES ====================
+*.pem
+*.key
+*.cert

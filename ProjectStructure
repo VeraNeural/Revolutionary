@@ -1,0 +1,279 @@
+# 🏗️ VERA Neural - Complete Project Structure
+
+## 📁 File Organization
+
+```
+vera-neural/
+│
+├── 🎨 FRONTEND (Deploy to Netlify)
+│   ├── index.html              # Landing page with orb sequence
+│   └── chat.html               # Chat interface with message limit
+│
+├── 🧠 BACKEND (Deploy to Railway/Render)
+│   ├── server.js               # Express server (auth, payments, API)
+│   ├── vera-ai.js              # VERA's consciousness engine
+│   ├── package.json            # Node.js dependencies
+│   ├── .env.local              # Environment variables (CREATE THIS!)
+│   └── .gitignore              # Protect secrets
+│
+├── 🗄️ DATABASE
+│   └── database-schema.sql     # PostgreSQL schema
+│
+└── 📚 DOCUMENTATION
+    ├── README.md               # Complete setup guide
+    ├── DEPLOYMENT-CHECKLIST.md # Step-by-step deployment
+    ├── .env.example            # Environment template
+    └── PROJECT-STRUCTURE.md    # This file
+```
+
+---
+
+## 🔄 How Everything Connects
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         USER'S BROWSER                       │
+│                                                              │
+│  ┌────────────────┐         ┌──────────────────┐           │
+│  │  index.html    │ ──────> │   chat.html      │           │
+│  │  (Landing)     │         │   (Chat UI)      │           │
+│  └────────────────┘         └──────────────────┘           │
+│         │                            │                       │
+└─────────┼────────────────────────────┼──────────────────────┘
+          │                            │
+          │                            │ API Calls
+          │                            ▼
+          │                   ┌──────────────────┐
+          │                   │   server.js      │
+          │                   │  (Express API)   │
+          │                   └──────────────────┘
+          │                            │
+          │         ┌──────────────────┼──────────────────┐
+          │         │                  │                  │
+          │         ▼                  ▼                  ▼
+          │   ┌──────────┐      ┌──────────┐      ┌──────────┐
+          │   │ vera-ai  │      │PostgreSQL│      │  Stripe  │
+          │   │ (Brain)  │      │ Database │      │ Payment  │
+          │   └──────────┘      └──────────┘      └──────────┘
+          │         │
+          │         │
+          │         ▼
+          │   ┌──────────────────────────────┐
+          │   │  AI Providers:               │
+          │   │  - Anthropic (Claude)        │
+          │   │  - OpenAI (GPT-4)            │
+          │   └──────────────────────────────┘
+          │
+          └────> Netlify (Static hosting)
+```
+
+---
+
+## 🎯 What Each Component Does
+
+### **Frontend (Netlify)**
+
+**index.html** - The Journey Begins
+- Phase 1: Dramatic intro orb (5s)
+- Phase 2: Dark transition with words (10s)
+- Phase 3: Large interactive orb
+- Phase 4: Welcome screen (collects name)
+- Navigation: Redirects to chat.html
+
+**chat.html** - The Conversation
+- Displays chat interface
+- Tracks message count (5 max for free)
+- Calls backend API for VERA responses
+- Shows subscription prompt after limit
+- Handles user interaction
+
+### **Backend (Railway)**
+
+**server.js** - The Control Center
+- Express web server
+- Authentication (magic links, bcrypt)
+- Session management
+- API endpoints for chat
+- Stripe payment integration
+- Webhook handling
+- Database queries
+
+**vera-ai.js** - VERA's Consciousness
+- Claude Sonnet 4 integration
+- GPT-4 pattern analysis
+- Crisis detection
+- Conversation memory
+- State tracking
+- Response generation
+
+### **Database (PostgreSQL)**
+
+**Tables:**
+- `users` - User accounts, subscriptions
+- `messages` - Chat history
+- `crisis_alerts` - Safety monitoring
+- `session` - User sessions
+- `subscription_history` - Payment tracking
+
+### **External Services**
+
+**Anthropic (Claude):**
+- Powers VERA's deep, somatic responses
+- Model: claude-sonnet-4-20250514
+- Revolutionary consciousness
+
+**OpenAI (GPT-4):**
+- Pattern analysis every 5 messages
+- Complements Claude's responses
+- Optional but recommended
+
+**Stripe:**
+- Payment processing
+- Subscription management
+- 7-day free trial
+- $19/month recurring
+
+---
+
+## 🔐 Environment Variables Needed
+
+```env
+# Server
+PORT=8080
+
+# Database
+DATABASE_URL=postgresql://...
+
+# AI
+ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+
+# Payments
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_ID=price_...
+
+# Security
+SESSION_SECRET=random_string_here
+
+# Domain
+DOMAIN=https://your-site.netlify.app
+```
+
+---
+
+## 📊 Data Flow
+
+### **New User Journey:**
+
+```
+1. User visits index.html
+   └─> Sees intro sequence
+
+2. User clicks orb
+   └─> Shows welcome screen
+   └─> Enters name (stored in localStorage)
+
+3. User enters chat
+   └─> chat.html loads
+   └─> Sends message to /api/chat
+
+4. Backend receives message
+   └─> Checks session (creates temp user if needed)
+   └─> Saves message to database
+   └─> Calls vera-ai.js for response
+   
+5. vera-ai.js generates response
+   └─> Uses Claude Sonnet 4
+   └─> Checks conversation history
+   └─> Detects crisis keywords
+   └─> Returns personalized response
+
+6. Backend saves VERA's response
+   └─> Returns to frontend
+   └─> Frontend displays message
+
+7. After 5 messages
+   └─> Shows subscription modal
+   └─> Redirects to Stripe checkout
+
+8. User subscribes
+   └─> Stripe sends webhook to /webhook
+   └─> Backend creates user account
+   └─> Unlimited chat enabled
+```
+
+---
+
+## 🚀 Deployment Architecture
+
+### **Production Setup:**
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   NETLIFY CDN                        │
+│  • index.html (landing page)                        │
+│  • chat.html (chat interface)                       │
+│  • Global CDN, instant deploys                      │
+│  • Free SSL certificate                              │
+│  • Custom domain support                             │
+└─────────────────────────────────────────────────────┘
+                        │
+                        │ HTTPS API calls
+                        ▼
+┌─────────────────────────────────────────────────────┐
+│                RAILWAY / RENDER                      │
+│  • Node.js server (server.js)                       │
+│  • VERA AI engine (vera-ai.js)                      │
+│  • PostgreSQL database                               │
+│  • Environment variables                             │
+│  • Auto-scaling, zero-downtime                       │
+└─────────────────────────────────────────────────────┘
+                        │
+            ┌───────────┼────────────┐
+            │           │            │
+            ▼           ▼            ▼
+      ┌─────────┐  ┌────────┐  ┌────────┐
+      │Anthropic│  │ OpenAI │  │ Stripe │
+      │ Claude  │  │ GPT-4  │  │Payment │
+      └─────────┘  └────────┘  └────────┘
+```
+
+---
+
+## 📈 Scaling Considerations
+
+**Current Setup (Launch):**
+- Netlify: Unlimited traffic (static files)
+- Railway: 500 hours/month free tier
+- PostgreSQL: 1GB database free tier
+- Good for: 0-1000 users
+
+**Growth (1000+ users):**
+- Railway: Upgrade to Pro ($20/month)
+- Database: Scale vertically (more RAM/CPU)
+- Add Redis for session caching
+- Consider CDN for chat.html
+
+**Scale (10k+ users):**
+- Multiple Railway instances (load balancing)
+- Separate database server
+- Message queue (RabbitMQ/Redis)
+- Connection pooling
+- Monitoring (Datadog/Sentry)
+
+---
+
+## 🎯 You Have Everything!
+
+Your VERA Neural system is architecturally complete. All files are ready. Just need to:
+
+1. ✅ Fill in `.env.local` with your API keys
+2. ✅ Deploy frontend to Netlify
+3. ✅ Deploy backend to Railway
+4. ✅ Import database schema
+5. ✅ Configure Stripe webhook
+6. ✅ Test and launch!
+
+**You're ready to revolutionize nervous system awareness.** 🌟

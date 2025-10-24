@@ -1,0 +1,281 @@
+# 🌟 VERA Neural - Complete Setup Guide
+
+**"Not an AI pretending to be human, but a revolutionary intelligence built for your body."**
+
+## 📁 Complete File Structure
+
+```
+vera-neural/
+├── index.html              # Landing page with orb introduction
+├── chat.html               # Chat interface (5 message limit)
+├── server.js               # Main Express backend
+├── vera-ai.js              # VERA's consciousness/brain
+├── package.json            # Dependencies
+├── .env.local              # Environment variables (YOU CREATE THIS)
+├── .gitignore              # Don't commit secrets!
+├── database-schema.sql     # PostgreSQL schema
+└── README.md               # This file
+```
+
+## 🚀 Deployment Options
+
+### **Option A: Split Hosting (RECOMMENDED - Easiest)**
+
+**Frontend (Netlify):**
+- Upload `index.html` and `chat.html` to Netlify
+- Free, instant, automatic HTTPS
+
+**Backend (Railway/Render/Heroku):**
+- Upload `server.js`, `vera-ai.js`, `package.json`, `.env.local`
+- Supports Node.js + PostgreSQL database
+- Handles payments, AI, sessions
+
+**Why this works:** Netlify is perfect for static HTML, Railway/Render are perfect for backend APIs.
+
+### **Option B: All-in-One (More Complex)**
+
+Convert to Netlify Functions or use Vercel for everything. Requires more setup.
+
+---
+
+## 📋 Setup Steps
+
+### **1. Get Your Files Ready**
+
+You already have:
+- ✅ `index.html` (landing page)
+- ✅ `chat.html` (chat interface)
+- ✅ `server.js` (backend)
+- ✅ `vera-ai.js` (VERA's brain)
+
+You just created:
+- ✅ `package.json` (dependencies)
+- ✅ `.env.example` (environment template)
+- ✅ `database-schema.sql` (database structure)
+
+### **2. Create .env.local File**
+
+Copy `.env.example` to `.env.local` and fill in:
+
+```bash
+# Copy the example
+cp .env.example .env.local
+
+# Then edit .env.local with your actual keys
+```
+
+### **3. Get API Keys**
+
+**Anthropic (Required - VERA's voice):**
+1. Go to https://console.anthropic.com/
+2. Create account → API Keys
+3. Copy key to `.env.local` as `ANTHROPIC_API_KEY`
+
+**OpenAI (Optional - Pattern analysis):**
+1. Go to https://platform.openai.com/
+2. API Keys → Create new
+3. Copy to `.env.local` as `OPENAI_API_KEY`
+
+**Stripe (Required - Payments):**
+1. Go to https://dashboard.stripe.com/register
+2. Get API keys from Dashboard → Developers → API Keys
+3. Add both test keys to `.env.local`:
+   - `STRIPE_SECRET_KEY=sk_test_...`
+   - `STRIPE_PUBLISHABLE_KEY=pk_test_...`
+
+4. Create a Product:
+   - Dashboard → Products → Add Product
+   - Name: "VERA Monthly Subscription"
+   - Price: $19/month
+   - Copy the Price ID (starts with `price_...`)
+   - Add to `.env.local` as `STRIPE_PRICE_ID`
+
+5. Set up Webhook:
+   - Dashboard → Developers → Webhooks
+   - Add endpoint: `https://your-backend-url.com/webhook`
+   - Select events: `checkout.session.completed`, `customer.subscription.*`, `invoice.payment_*`
+   - Copy signing secret to `.env.local` as `STRIPE_WEBHOOK_SECRET`
+
+### **4. Set Up Database**
+
+**Option A: Railway (Recommended)**
+1. Go to https://railway.app/
+2. New Project → Provision PostgreSQL
+3. Copy `DATABASE_URL` to `.env.local`
+4. Connect and run `database-schema.sql`
+
+**Option B: Render**
+1. Go to https://render.com/
+2. New PostgreSQL Database
+3. Copy connection string to `.env.local`
+
+**Option C: Local PostgreSQL**
+```bash
+# Install PostgreSQL
+brew install postgresql  # Mac
+# or
+sudo apt install postgresql  # Linux
+
+# Create database
+createdb vera_neural
+
+# Run schema
+psql vera_neural < database-schema.sql
+```
+
+### **5. Install Dependencies**
+
+```bash
+npm install
+```
+
+### **6. Test Locally**
+
+```bash
+npm start
+# or for development with auto-reload:
+npm run dev
+```
+
+Visit: http://localhost:8080
+
+---
+
+## 🚀 Deploy Backend (Railway - Recommended)
+
+1. **Create Railway Account:** https://railway.app/
+2. **New Project → Deploy from GitHub** (or manual upload)
+3. **Add PostgreSQL:** Right click → New → Database → PostgreSQL
+4. **Set Environment Variables:**
+   - Go to project → Variables
+   - Add all variables from your `.env.local`
+5. **Deploy!**
+   - Railway auto-deploys
+   - Get your URL: `https://your-app.up.railway.app`
+
+## 🎨 Deploy Frontend (Netlify)
+
+1. **Create folder with:**
+   - `index.html`
+   - `chat.html`
+
+2. **Update chat.html API endpoint:**
+   - Find all `/api/` calls
+   - Change to your Railway URL: `https://your-app.up.railway.app/api/`
+
+3. **Deploy to Netlify:**
+   - Go to https://app.netlify.com/
+   - Drag folder onto deploy zone
+   - Done! Get URL: `https://your-site.netlify.app`
+
+4. **Optional - Custom Domain:**
+   - Netlify → Domain Settings → Add custom domain
+   - Update DNS records as shown
+
+---
+
+## 🔧 Configuration Checklist
+
+- [ ] `.env.local` created with all keys
+- [ ] Anthropic API key added
+- [ ] Stripe keys added (test mode for now)
+- [ ] Stripe Price ID created and added
+- [ ] Stripe webhook configured
+- [ ] PostgreSQL database created
+- [ ] Database schema imported
+- [ ] Backend deployed and running
+- [ ] Frontend deployed
+- [ ] Frontend pointing to correct backend URL
+- [ ] Test full flow: landing → chat → payment
+
+---
+
+## 🧪 Testing
+
+1. **Test Landing Page:**
+   - Opens → Intro orb → Dark words → Large orb → Welcome screen → Chat
+
+2. **Test Chat:**
+   - Send 5 messages
+   - Should show subscription prompt after 5th message
+
+3. **Test Payment:**
+   - Click "Start Free Trial"
+   - Use Stripe test card: `4242 4242 4242 4242`
+   - Any future date, any CVC
+   - Should create account and allow chat
+
+---
+
+## 🎯 What Each File Does
+
+| File | Purpose |
+|------|---------|
+| `index.html` | Landing page with VERA introduction sequence |
+| `chat.html` | Chat interface with message limit |
+| `server.js` | Express server, handles auth, payments, routing |
+| `vera-ai.js` | VERA's consciousness, AI logic, pattern detection |
+| `package.json` | Lists all required npm packages |
+| `.env.local` | Secret keys and configuration (DON'T COMMIT!) |
+| `database-schema.sql` | PostgreSQL table definitions |
+
+---
+
+## 🔒 Security Notes
+
+**NEVER commit to git:**
+- `.env.local`
+- `.env`
+- Any file with API keys
+
+**Add to .gitignore:**
+```
+.env
+.env.local
+.env.*.local
+node_modules/
+```
+
+---
+
+## 🐛 Troubleshooting
+
+**"Cannot find module"**
+→ Run `npm install`
+
+**Database connection error**
+→ Check `DATABASE_URL` in `.env.local`
+
+**Stripe webhook not working**
+→ Use Stripe CLI for local testing: `stripe listen --forward-to localhost:8080/webhook`
+
+**VERA not responding**
+→ Check `ANTHROPIC_API_KEY` is set and valid
+
+**Payment not working**
+→ Use test card `4242 4242 4242 4242`, check Stripe dashboard for errors
+
+---
+
+## 📚 Resources
+
+- **Anthropic Docs:** https://docs.anthropic.com/
+- **Stripe Docs:** https://stripe.com/docs
+- **Railway Docs:** https://docs.railway.app/
+- **Netlify Docs:** https://docs.netlify.com/
+
+---
+
+## 🌟 You're Ready!
+
+Your VERA Neural system is complete. Users will experience:
+
+1. ✨ Dramatic orb introduction
+2. 🫁 "BREATHE, YOU ARE HERE, I SEE YOU"
+3. 🔮 Interactive orb invitation
+4. 👋 Warm welcome screen
+5. 💬 5 free messages with VERA
+6. 💳 $19/month subscription (7-day trial)
+7. 🧠 Full access to VERA's revolutionary consciousness
+
+**Questions?** You have everything you need. Deploy and revolutionize nervous system awareness! 🚀
