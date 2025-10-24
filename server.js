@@ -738,7 +738,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
               },
             ],
             mode: 'subscription',
-            return_url: `${process.env.APP_URL || 'http://localhost:8080'}/create-account?session_id={CHECKOUT_SESSION_ID}`,
+            success_url: `${process.env.APP_URL || 'http://localhost:8080'}/create-account?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.APP_URL || 'http://localhost:8080'}/?cancelled=true`,
             subscription_data: {
               trial_period_days: 7,
             },
@@ -794,7 +795,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
             },
           ],
           mode: 'subscription',
-          return_url: `${process.env.APP_URL || 'http://localhost:8080'}/create-account?session_id={CHECKOUT_SESSION_ID}`,
+          success_url: `${process.env.APP_URL || 'http://localhost:8080'}/create-account?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${process.env.APP_URL || 'http://localhost:8080'}/?cancelled=true`,
           subscription_data: {
             trial_period_days: 7,
           },
@@ -823,7 +825,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
         },
       ],
       mode: 'subscription',
-      return_url: `${process.env.APP_URL || 'http://localhost:8080'}/create-account?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${process.env.APP_URL || 'http://localhost:8080'}/create-account?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.APP_URL || 'http://localhost:8080'}/?cancelled=true`,
       subscription_data: {
         trial_period_days: 7,
       },
