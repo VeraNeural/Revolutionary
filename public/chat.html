@@ -1177,6 +1177,7 @@
                 }
                 if (!biometricPanel.contains(e.target)) {
                     // Keep panel open if clicking inside
+                }
             });
             // Initialize revolutionary features
             initializeVoiceRecognition();
@@ -1188,6 +1189,7 @@
             const success = urlParams.get('success');
             if (success === 'true') {
                 showWelcome("You're all set. Welcome back to VERA 💜");
+            }
             // Check subscription state for returning users
             if (userEmail) {
                 try {
@@ -1209,7 +1211,8 @@
                         console.log('❌ No active subscription on page load. Status:', data.status);
                     }
                 } catch (e) { console.warn('⚠️ Subscription check failed:', e); }
-                checkAndGreetUser();
+            }
+            checkAndGreetUser();
         });
         // BIOMETRIC MONITORING SYSTEM
         function initializeBiometricSimulation() {
@@ -1217,6 +1220,7 @@
             setInterval(() => {
                 if (biometricData.isMonitoring) {
                     updateBiometricData();
+                }
             }, 2000);
         function updateBiometricData() {
             // Simulate heart rate (60-100 normal, stress can increase)
