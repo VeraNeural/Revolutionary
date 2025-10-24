@@ -430,6 +430,18 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ==================== STRIPE CONFIG TEST ====================
+app.get('/api/stripe-config', (req, res) => {
+  res.json({
+    hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
+    stripeKeyPrefix: process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.substring(0, 7) : 'missing',
+    hasPriceId: !!process.env.STRIPE_PRICE_ID,
+    priceId: process.env.STRIPE_PRICE_ID || 'using fallback: price_1SIgAtF8aJ0BDqA3WXVJsuVD',
+    hasWebhookSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
+    appUrl: process.env.APP_URL || 'not set',
+  });
+});
+
 // ==================== STRIPE ACCOUNT CREATION ====================
 app.get('/create-account', async (req, res) => {
   const sessionId = req.query.session_id;
