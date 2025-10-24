@@ -234,6 +234,8 @@
     <script>
     let userEmail = null;
         let userName = 'friend';
+    // Stable anonymous id for guests to preserve conversation continuity
+    let anonId = null;
     const freeMessageLimit = 5; // allow 5 free user messages
     let freeMessageCount = Number(sessionStorage.getItem('vera_free_count') || '0'); // persist within tab
         const messageInput = document.getElementById('messageInput');
@@ -243,6 +245,19 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize anonId in localStorage (for guests)
+            try {
+                const stored = localStorage.getItem('vera_anon_id');
+                if (stored) {
+                    anonId = stored;
+                } else {
+                    anonId = 'anon_' + Math.random().toString(36).slice(2, 10);
+                    localStorage.setItem('vera_anon_id', anonId);
+                }
+            } catch (e) {
+                // Fallback if storage blocked
+                anonId = 'anon_' + Math.random().toString(36).slice(2, 10);
+            }
             // Check authentication first
             try {
                 const authResponse = await fetch('/api/auth/check');
@@ -317,7 +332,8 @@
                     body: JSON.stringify({
                         message,
                         email: userEmail,
-                        userName
+                        userName,
+                        anonId
                     })
                 });
 

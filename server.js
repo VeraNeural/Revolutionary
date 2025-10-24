@@ -305,8 +305,10 @@ pool.query('SELECT NOW(), version()', (err, res) => {
 });
 
 // ==================== MIDDLEWARE ====================
+// Restrict CORS in production to APP_URL; allow all during local dev for convenience
+const allowedOrigin = process.env.NODE_ENV === 'production' ? (process.env.APP_URL || true) : true;
 app.use(cors({
-  origin: true,
+  origin: allowedOrigin,
   credentials: true
 }));
 
@@ -1057,10 +1059,11 @@ app.post('/api/chat', async (req, res) => {
     message, 
     email, 
     userName,
+    anonId,
     attachments = []
   } = req.body;
   
-  const userId = req.session.userEmail || email || `temp_${Math.random().toString(36).substr(2, 9)}`;
+  const userId = req.session.userEmail || email || anonId || `temp_${Math.random().toString(36).substr(2, 9)}`;
 
   console.log('💬 VERA receiving:', { 
     userId, 
