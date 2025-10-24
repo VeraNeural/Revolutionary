@@ -1016,16 +1016,48 @@
         window.location.href = 'vera-ai.html';
     }
 
-    // Enter chat function - saves name and navigates
-    function enterChat() {
+    // Enter chat function - saves name and triggers Stripe checkout
+    async function enterChat() {
         const userName = document.getElementById('userName').value.trim();
+        const continueBtn = document.getElementById('continueBtn');
         
         // Save the user's name to localStorage for the chat
         if (userName) {
             localStorage.setItem('veraUserName', userName);
         }
         
-        navigateToChat();
+        // Disable button and show loading state
+        continueBtn.disabled = true;
+        continueBtn.textContent = 'Preparing your space...';
+        
+        try {
+            // Call your server to create Stripe checkout session
+            const response = await fetch('/api/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: userName || 'Guest',
+                    email: '' // Optional: you could ask for email too
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to create checkout session');
+            }
+            
+            const { url } = await response.json();
+            
+            // Redirect to Stripe checkout
+            window.location.href = url;
+            
+        } catch (error) {
+            console.error('Checkout error:', error);
+            continueBtn.disabled = false;
+            continueBtn.textContent = 'Enter';
+            alert('Something went wrong. Please try again.');
+        }
     }
 
     // Add hover sound effect hint
