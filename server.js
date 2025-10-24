@@ -12,7 +12,7 @@ const pgSession = require('connect-pg-simple')(session);
 const { Pool } = require('pg');
 const path = require('path');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { getVERAResponse } = require('./netlify/functions/lib/vera-ai');
+const { getVERAResponse } = require('./lib/vera-ai');
 
 // ==================== EMAIL SETUP - TEMPORARILY DISABLED ====================
 // Nodemailer has import issues - disabling for now so Stripe works
