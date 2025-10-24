@@ -1,0 +1,2022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <title>VERA - Your Nervous System Companion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        /* Theme Variables */
+        :root {
+            /* Light Theme (Default) */
+            --bg-gradient: linear-gradient(180deg, #E8D5F2 0%, #D4C5F9 100%);
+            --header-bg: rgba(255, 255, 255, 0.7);
+            --container-bg: rgba(255, 255, 255, 0.95);
+            --message-bg: #FFFFFF;
+            --user-message-bg: linear-gradient(135deg, rgba(155, 137, 212, 0.15) 0%, rgba(123, 158, 240, 0.1) 100%);
+            --text-primary: #2D2D3F;
+            --text-secondary: #6B6B7B;
+            --text-soft: #9B9BA5;
+            --border-color: rgba(155, 137, 212, 0.2);
+            --input-bg: #FFFFFF;
+            --orb-1: #B19CD9;
+            --orb-2: #9B8FD4;
+            --orb-3: #7B9EF0;
+            --sidebar-bg: rgba(255, 255, 255, 0.95);
+            --quick-button-bg: rgba(255, 255, 255, 0.8);
+            --quick-button-hover: rgba(155, 137, 212, 0.2);
+            --breath-circle: rgba(155, 137, 212, 0.1);
+            --dropdown-bg: rgba(255, 255, 255, 0.98);
+        /* Dark Theme */
+        [data-theme="dark"] {
+            --bg-gradient: radial-gradient(ellipse at top, #151832 0%, #0A0E27 40%, #000 100%);
+            --header-bg: rgba(10, 14, 39, 0.95);
+            --container-bg: rgba(21, 24, 50, 0.95);
+            --message-bg: rgba(255, 255, 255, 0.05);
+            --user-message-bg: linear-gradient(135deg, rgba(100, 181, 246, 0.2) 0%, rgba(155, 89, 182, 0.15) 100%);
+            --text-primary: rgba(255, 255, 255, 0.95);
+            --text-secondary: rgba(255, 255, 255, 0.75);
+            --text-soft: rgba(255, 255, 255, 0.5);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --input-bg: rgba(255, 255, 255, 0.05);
+            --orb-1: #9B59B6;
+            --orb-2: #B19CD9;
+            --orb-3: #64B5F6;
+            --sidebar-bg: rgba(21, 24, 50, 0.95);
+            --quick-button-bg: rgba(255, 255, 255, 0.05);
+            --quick-button-hover: rgba(155, 89, 182, 0.3);
+            --breath-circle: rgba(100, 181, 246, 0.05);
+            --dropdown-bg: rgba(21, 24, 50, 0.98);
+        /* Dark theme message bubbles */
+        [data-theme="dark"] .message-vera .message-bubble {
+            background: linear-gradient(135deg, 
+                rgba(155, 89, 182, 0.25) 0%, 
+                rgba(177, 156, 217, 0.2) 50%,
+                rgba(100, 181, 246, 0.15) 100%);
+            border: 1px solid rgba(155, 89, 182, 0.4);
+            box-shadow: 
+                0 4px 20px rgba(155, 89, 182, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        [data-theme="dark"] .message-user .message-bubble {
+                rgba(100, 181, 246, 0.25) 0%, 
+                rgba(123, 158, 240, 0.2) 100%);
+            border: 1px solid rgba(100, 181, 246, 0.4);
+                0 4px 20px rgba(100, 181, 246, 0.25),
+        /* Deep Dark Theme */
+        [data-theme="deep"] {
+            --bg-gradient: linear-gradient(180deg, #0A0A0A 0%, #000000 100%);
+            --header-bg: rgba(0, 0, 0, 0.9);
+            --container-bg: rgba(10, 10, 10, 0.95);
+            --message-bg: rgba(255, 255, 255, 0.02);
+            --user-message-bg: rgba(155, 137, 212, 0.05);
+            --text-primary: rgba(255, 255, 255, 0.9);
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --text-soft: rgba(255, 255, 255, 0.4);
+            --border-color: rgba(255, 255, 255, 0.05);
+            --input-bg: rgba(255, 255, 255, 0.02);
+            --orb-1: #6B5B8C;
+            --orb-2: #7B6B9C;
+            --orb-3: #5B7BA6;
+            --sidebar-bg: rgba(10, 10, 10, 0.95);
+            --quick-button-bg: rgba(255, 255, 255, 0.02);
+            --quick-button-hover: rgba(255, 255, 255, 0.05);
+            --breath-circle: rgba(255, 255, 255, 0.02);
+            --dropdown-bg: rgba(10, 10, 10, 0.98);
+        /* Deep dark theme message bubbles */
+        [data-theme="deep"] .message-vera .message-bubble {
+                rgba(107, 91, 140, 0.3) 0%, 
+                rgba(123, 107, 156, 0.25) 50%,
+                rgba(91, 123, 166, 0.2) 100%);
+            border: 1px solid rgba(107, 91, 140, 0.5);
+                0 4px 20px rgba(107, 91, 140, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        [data-theme="deep"] .message-user .message-bubble {
+                rgba(91, 123, 166, 0.3) 0%, 
+                rgba(100, 140, 180, 0.25) 100%);
+            border: 1px solid rgba(91, 123, 166, 0.5);
+                0 4px 20px rgba(91, 123, 166, 0.3),
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: all 0.3s ease;
+        /* Living Background */
+        .living-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        .breath-circle {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--breath-circle) 0%, transparent 70%);
+            animation: breathe 8s ease-in-out infinite;
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.3); opacity: 0.6; }
+        /* Header */
+        .chat-header {
+            padding: 1rem 1.5rem;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--header-bg);
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            border-bottom: 1px solid var(--border-color);
+        .vera-identity {
+            gap: 1rem;
+        .menu-toggle {
+            width: 40px;
+            height: 40px;
+            justify-content: center;
+            gap: 4px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        .menu-toggle::before {
+            content: '';
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: var(--quick-button-hover);
+            transform: translate(-50%, -50%);
+            transition: width 0.4s, height 0.4s;
+        .menu-toggle:hover::before {
+        .menu-toggle:hover {
+            transform: scale(1.1);
+        .menu-toggle:active {
+            transform: scale(0.95);
+        .menu-line {
+            width: 24px;
+            height: 2px;
+            background: var(--text-primary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1;
+        .menu-toggle:hover .menu-line {
+            width: 20px;
+        .menu-toggle:hover .menu-line:nth-child(2) {
+        /* Hamburger Dropdown Menu */
+        .hamburger-dropdown {
+            top: 70px;
+            left: 1rem;
+            background: var(--dropdown-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            min-width: 280px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            z-index: 1000;
+        .hamburger-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        .dropdown-item {
+            padding: 1rem 1.25rem;
+            transition: background 0.2s;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+        .dropdown-item:last-child {
+            border-bottom: none;
+        .dropdown-item:hover {
+        .dropdown-item.danger {
+            color: #ef4444;
+        .dropdown-item.danger:hover {
+            background: rgba(239, 68, 68, 0.1);
+        .dropdown-section {
+        .dropdown-section-title {
+            font-size: 0.85rem;
+            color: var(--text-soft);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        .theme-options-dropdown {
+            justify-content: flex-start;
+        .vera-presence-indicator {
+            width: 45px;
+            height: 45px;
+            background: radial-gradient(circle at 30% 30%, var(--orb-3) 0%, var(--orb-2) 50%, var(--orb-1) 100%);
+            animation: presencePulse 4s ease-in-out infinite;
+            box-shadow: 0 0 30px rgba(155, 137, 212, 0.5);
+        /* Shimmer on presence indicator */
+        .vera-presence-indicator::before {
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            animation: presenceShimmer 4s linear infinite;
+        @keyframes presenceShimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        @keyframes presencePulse {
+            0%, 100% { 
+                transform: scale(1); 
+                box-shadow: 0 0 20px rgba(155, 137, 212, 0.4);
+            }
+            50% { 
+                transform: scale(1.1); 
+                box-shadow: 0 0 40px rgba(155, 137, 212, 0.7);
+        .vera-title {
+        .vera-title h1 {
+            font-size: 1.3rem;
+            font-weight: 400;
+            letter-spacing: 0.15em;
+        .status-text {
+            color: var(--text-secondary);
+            font-style: italic;
+        .header-controls {
+            gap: 0.5rem;
+        .theme-toggle {
+            padding: 0.5rem;
+            background: var(--quick-button-bg);
+            border-radius: 20px;
+        .theme-option {
+            width: 30px;
+            height: 30px;
+            border: 2px solid transparent;
+        .theme-option::after {
+            background: radial-gradient(circle, rgba(155, 137, 212, 0.2) 0%, transparent 70%);
+            transition: width 0.5s, height 0.5s;
+        .theme-option:hover::after {
+            width: 60px;
+            height: 60px;
+        .theme-option:hover {
+            transform: scale(1.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        .theme-option.active {
+            border-color: var(--orb-1);
+            box-shadow: 0 0 15px rgba(155, 137, 212, 0.4);
+        .theme-option.active::after {
+        .theme-light {
+            background: linear-gradient(135deg, #E8D5F2, #D4C5F9);
+        .theme-dark {
+            background: linear-gradient(135deg, #151832, #0A0E27);
+        .theme-deep {
+            background: linear-gradient(135deg, #0A0A0A, #000000);
+        /* Main Content */
+        .main-content {
+            flex: 1;
+        /* Welcome Container */
+        .welcome-container {
+            padding: 2rem;
+            z-index: 10;
+            animation: welcomeFadeIn 1.2s ease-out;
+        @keyframes welcomeFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            to {
+                opacity: 1;
+                transform: translateY(0);
+        .vera-orb-large {
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle at 40% 40%, var(--orb-3) 0%, var(--orb-2) 35%, var(--orb-1) 70%);
+            margin-bottom: 2rem;
+            animation: gentlePulse 4s infinite, float 6s ease-in-out infinite;
+        /* Shimmer effect on orb */
+        .vera-orb-large::before {
+                rgba(255, 255, 255, 0.15),
+            animation: orbShimmer 3s linear infinite;
+        @keyframes orbShimmer {
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        @keyframes gentlePulse {
+                box-shadow: 0 20px 60px rgba(155, 137, 212, 0.3);
+                transform: scale(1.05); 
+                box-shadow: 0 30px 80px rgba(155, 137, 212, 0.5);
+        .welcome-text {
+            text-align: center;
+            max-width: 600px;
+        .welcome-text h2 {
+            font-size: 1.8rem;
+            font-weight: 300;
+            margin-bottom: 1rem;
+            animation: titleReveal 1s ease-out 0.3s backwards;
+        @keyframes titleReveal {
+                transform: translateY(20px);
+        .welcome-text p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            animation: subtitleReveal 1s ease-out 0.6s backwards;
+        @keyframes subtitleReveal {
+        /* Quick Start Buttons */
+        .quick-starts {
+            flex-wrap: wrap;
+            margin-top: 2rem;
+            max-width: 500px;
+            animation: buttonsReveal 1s ease-out 0.9s backwards;
+        @keyframes buttonsReveal {
+        .quick-start-label {
+            font-size: 0.9rem;
+        .quick-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+        /* Living glow effect */
+        .quick-button::before {
+            background: radial-gradient(circle, rgba(155, 137, 212, 0.3) 0%, transparent 70%);
+            transition: width 0.6s, height 0.6s;
+        .quick-button:hover::before {
+            width: 300px;
+            height: 300px;
+        .quick-button:hover {
+            transform: translateY(-3px) scale(1.02);
+                0 8px 25px rgba(155, 137, 212, 0.3),
+                0 0 40px rgba(155, 137, 212, 0.2);
+            border-color: var(--orb-2);
+        .quick-button:active {
+            transform: translateY(-1px) scale(0.98);
+        /* Chat Container */
+        .chat-container {
+            display: none;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        .chat-container.active {
+            display: block;
+        /* Messages */
+        .message {
+            margin-bottom: 1.5rem;
+            animation: messageAppear 0.5s ease-out;
+        @keyframes messageAppear {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+        .message-vera {
+            align-items: flex-start;
+        .vera-avatar {
+            width: 42px;
+            height: 42px;
+            background: radial-gradient(circle at 40% 40%, var(--orb-3) 0%, var(--orb-2) 50%, var(--orb-1) 100%);
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(155, 137, 212, 0.3);
+            animation: avatarPulse 3s ease-in-out infinite;
+        @keyframes avatarPulse {
+                transform: scale(1);
+                box-shadow: 0 4px 15px rgba(155, 137, 212, 0.3);
+                transform: scale(1.05);
+                box-shadow: 0 4px 20px rgba(155, 137, 212, 0.5);
+        .message-bubble {
+            background: var(--message-bg);
+            border-radius: 18px;
+            padding: 1.2rem 1.5rem;
+            max-width: 70%;
+            line-height: 1.7;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            backdrop-filter: blur(10px);
+        /* Beautiful warm gradient for VERA's messages */
+        .message-vera .message-bubble {
+                rgba(177, 156, 217, 0.15) 0%, 
+                rgba(155, 143, 212, 0.12) 50%,
+                rgba(123, 158, 240, 0.1) 100%);
+            border: 1px solid rgba(155, 137, 212, 0.3);
+                0 4px 20px rgba(155, 137, 212, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        /* Shimmer on VERA's messages */
+        .message-vera .message-bubble::before {
+            left: -100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s;
+        .message-vera .message-bubble:hover::before {
+            left: 100%;
+        .message-user {
+            justify-content: flex-end;
+        .message-user .message-bubble {
+                rgba(123, 158, 240, 0.2) 0%, 
+            border: 1px solid rgba(123, 158, 240, 0.3);
+                0 4px 20px rgba(123, 158, 240, 0.15),
+        /* Typing Indicator */
+        .typing-indicator {
+        .typing-indicator.active {
+        .typing-dots {
+            gap: 0.4rem;
+        /* Dark theme typing dots */
+        [data-theme="dark"] .typing-dots {
+        /* Deep dark theme typing dots */
+        [data-theme="deep"] .typing-dots {
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--orb-1);
+            animation: typingBounce 1.4s infinite ease-in-out;
+            box-shadow: 0 0 8px rgba(155, 137, 212, 0.3);
+        .typing-dot:nth-child(1) {
+            animation-delay: 0s;
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        @keyframes typingBounce {
+            0%, 60%, 100% {
+                box-shadow: 0 0 8px rgba(155, 137, 212, 0.3);
+            30% {
+                transform: translateY(-12px);
+                box-shadow: 0 4px 12px rgba(155, 137, 212, 0.5);
+        /* Input Container */
+        .input-container {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            transition: all 0.3s;
+        /* Subtle glow when input is focused */
+        .input-container.focused {
+            background: var(--container-bg);
+            box-shadow: 0 -5px 30px rgba(155, 137, 212, 0.1);
+        .input-wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+        .message-input {
+            background: var(--input-bg);
+            outline: none;
+            font-size: 1rem;
+            font-family: inherit;
+        .message-input::placeholder {
+        .message-input:focus {
+                0 0 0 3px rgba(155, 137, 212, 0.15),
+                0 8px 24px rgba(155, 137, 212, 0.2);
+            transform: translateY(-1px);
+        .message-input:focus::placeholder {
+            transform: translateX(5px);
+            opacity: 0.7;
+        .send-button {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--orb-1), var(--orb-3));
+            color: white;
+        /* Shimmer effect on send button */
+        .send-button::before {
+            animation: buttonShimmer 3s linear infinite;
+        @keyframes buttonShimmer {
+        /* Ripple effect on hover */
+        .send-button::after {
+            background: rgba(255, 255, 255, 0.3);
+        .send-button:hover::after {
+        .send-button:hover:not(:disabled) {
+            transform: scale(1.1) rotate(10deg);
+                0 8px 30px rgba(155, 137, 212, 0.5),
+                0 0 40px rgba(155, 137, 212, 0.3);
+        .send-button:active:not(:disabled) {
+            transform: scale(0.95) rotate(5deg);
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            animation: none;
+        .send-button:disabled::before,
+        .send-button:disabled::after {
+        /* Breathing pulse when ready */
+        .send-button:not(:disabled) {
+            animation: sendButtonPulse 3s ease-in-out infinite;
+        @keyframes sendButtonPulse {
+            0%, 100% {
+            50% {
+        .send-button svg {
+        /* Input Mic Button */
+        .input-mic {
+            margin-right: 0.75rem;
+        .input-mic:hover {
+        .input-mic.active {
+            animation: voicePulse 1.5s infinite;
+        /* Attachment Button */
+        .attachment-button {
+        .attachment-button:hover {
+        .attachment-button.has-file {
+        .file-preview {
+            padding: 0.75rem;
+            margin-left: auto;
+            margin-right: auto;
+        .file-preview-image {
+            object-fit: cover;
+        .file-preview-info {
+            min-width: 0;
+        .file-preview-name {
+            font-weight: 500;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        .file-preview-size {
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        .file-preview-remove {
+            width: 32px;
+            height: 32px;
+        .file-preview-remove:hover {
+            background: #ef4444;
+            border-color: #ef4444;
+        .message-attachment {
+            margin-top: 0.75rem;
+        .message-attachment img {
+            max-width: 100%;
+            height: auto;
+        /* Modal */
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+        .modal-overlay.active {
+        .modal {
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        .modal-header {
+            font-size: 1.5rem;
+            font-weight: 600;
+        .modal-content {
+        .modal-actions {
+        .modal-btn {
+        .modal-btn-cancel {
+        .modal-btn-cancel:hover {
+        .modal-btn-danger {
+        .modal-btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        /* History Modal */
+        .history-list {
+            max-height: 400px;
+        .history-item {
+            padding: 1rem;
+        .history-item:hover {
+        .history-date {
+            font-size: 0.75rem;
+            margin-bottom: 0.25rem;
+        .history-preview {
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+        ::-webkit-scrollbar-track {
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        ::-webkit-scrollbar-thumb:hover {
+        /* Biometric Dashboard */
+        .biometric-panel {
+            top: 90px;
+            right: 1rem;
+            width: 280px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            transform: translateX(calc(100% + 1rem));
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        .biometric-panel.active {
+            transform: translateX(0);
+        /* Backdrop for mobile biometric panel */
+        .biometric-backdrop {
+            backdrop-filter: blur(2px);
+            z-index: 999;
+            transition: opacity 0.3s, visibility 0.3s;
+            display: none; /* Hidden on desktop */
+        .biometric-backdrop.active {
+        .biometric-header {
+        .biometric-title {
+        .biometric-close {
+            background: none;
+            font-size: 1.2rem;
+            padding: 0.25rem;
+        .biometric-metric {
+            padding: 0.75rem 0;
+        .biometric-metric:last-child {
+        .metric-label {
+        .metric-value {
+        .metric-status {
+            background: var(--orb-2);
+        .metric-status.elevated {
+            background: #f59e0b;
+            animation: pulse 2s infinite;
+        .metric-status.high {
+            animation: pulse 1s infinite;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+        /* Voice Controls */
+        .voice-controls {
+        .voice-toggle {
+        /* Glow effect for voice toggles */
+        .voice-toggle::before {
+        .voice-toggle:hover::before {
+            width: 100px;
+            height: 100px;
+        .voice-toggle:hover {
+        .voice-toggle svg {
+        .voice-toggle:hover svg {
+        .voice-toggle.active {
+        @keyframes voicePulse {
+                box-shadow: 0 0 15px rgba(155, 137, 212, 0.5);
+                box-shadow: 0 0 25px rgba(155, 137, 212, 0.7);
+        /* Breathing Exercise */
+        
+        .breathing-overlay.active {
+        /* Crisis Alert */
+        .crisis-alert {
+            background: rgba(239, 68, 68, 0.95);
+            z-index: 4000;
+        .crisis-alert.active {
+        .crisis-content {
+            background: white;
+            padding: 3rem;
+        .crisis-title {
+            color: #dc2626;
+        .crisis-message {
+            color: #374151;
+        .crisis-actions {
+        .crisis-btn {
+            padding: 1rem 2rem;
+        .crisis-btn-primary {
+        .crisis-btn-secondary {
+            background: #f3f4f6;
+        /* Enhanced Message Bubbles */
+        .message-bubble::before {
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        .message-bubble.shimmer::before {
+        /* Breathing Guidance Orb */
+        .breathing-guidance {
+        .breathing-orb-container {
+            gap: 2rem;
+            margin: 2rem 0;
+        .breathing-orb {
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle at 30% 30%, 
+                var(--orb-3) 0%, 
+                var(--orb-2) 50%, 
+                var(--orb-1) 100%);
+                0 0 60px rgba(155, 137, 212, 0.4),
+                0 0 120px rgba(100, 181, 246, 0.3);
+        .breathing-orb.breathing {
+            animation: breathingCycle 8s infinite ease-in-out;
+        @keyframes breathingCycle {
+                box-shadow: 
+                    0 0 60px rgba(155, 137, 212, 0.4),
+                    0 0 120px rgba(100, 181, 246, 0.3);
+            25% { 
+                transform: scale(1.2);
+                    0 0 80px rgba(155, 137, 212, 0.6),
+                    0 0 160px rgba(100, 181, 246, 0.5);
+                transform: scale(1.3);
+                    0 0 100px rgba(155, 137, 212, 0.8),
+                    0 0 200px rgba(100, 181, 246, 0.7);
+            75% { 
+        .orb-inner {
+            width: 80%;
+            height: 80%;
+            background: rgba(255, 255, 255, 0.1);
+        .breath-text {
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        .breathing-instructions {
+            max-width: 300px;
+        .breathing-instructions p {
+        .breathing-control-btn {
+            padding: 0.75rem 2rem;
+        .breathing-control-btn:hover {
+            box-shadow: 0 6px 20px rgba(155, 137, 212, 0.5);
+        /* Mobile */
+        @media (max-width: 768px) {
+            .chat-header {
+                flex-direction: column;
+                padding: 0.75rem 1rem;
+                padding-top: max(0.75rem, env(safe-area-inset-top));
+                gap: 0.75rem;
+            .vera-identity {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            .header-controls {
+                gap: 1rem;
+            .voice-controls {
+                flex-shrink: 0;
+            .theme-toggle {
+                gap: 0.5rem;
+                justify-content: center;
+                flex: 1;
+                padding: 0.5rem;
+                background: var(--quick-button-bg);
+                border-radius: 25px;
+                border: 1px solid var(--border-color);
+            .theme-option {
+                width: 32px;
+                height: 32px;
+            .voice-toggle {
+                width: 48px;
+                height: 48px;
+                min-width: 48px;
+            .menu-toggle {
+            .vera-presence-indicator {
+                width: 40px;
+                height: 40px;
+            .vera-title h1 {
+                font-size: 1.2rem;
+                letter-spacing: 0.1em;
+            .status-text {
+                font-size: 0.75rem;
+            .hamburger-dropdown {
+                width: calc(100% - 2rem);
+                left: 1rem;
+                right: 1rem;
+            /* Welcome screen mobile */
+            .vera-orb-large {
+                width: 80px;
+                height: 80px;
+                margin-bottom: 1rem;
+            .welcome-text h2 {
+                font-size: 1.3rem;
+                margin-bottom: 0.5rem;
+            .welcome-text p {
+                font-size: 0.9rem;
+                padding: 0 0.5rem;
+                line-height: 1.5;
+            .quick-starts {
+                margin-top: 1rem;
+            .quick-button {
+            .message-bubble {
+                max-width: 85%;
+            /* Chat container mobile */
+            .chat-container {
+                padding: 0.75rem;
+            .welcome-container {
+                padding: 1rem 0.75rem;
+                justify-content: flex-start;
+                padding-top: 2rem;
+            .biometric-backdrop {
+                display: block; /* Show on mobile */
+            .biometric-panel {
+                top: auto;
+                bottom: 0;
+                border-radius: 16px 16px 0 0;
+                transform: translateY(calc(100% + 1rem));
+                visibility: hidden;
+                max-height: 70vh;
+                overflow-y: auto;
+            .biometric-panel.active {
+                visibility: visible;
+            /* Input area mobile */
+            .input-container {
+                padding: 1rem;
+                padding-bottom: max(1rem, env(safe-area-inset-bottom));
+            .input-wrapper {
+            .message-input {
+                font-size: 16px; /* Prevents zoom on iOS */
+                padding: 0.875rem 1rem;
+            .send-button {
+                width: 52px;
+                height: 52px;
+                min-width: 52px;
+            /* Subscription modal mobile */
+            .subscription-content {
+                padding: 2rem 1.5rem;
+                width: 95%;
+            .subscription-title {
+                font-size: 1.6rem;
+            .subscription-vera-message {
+                font-size: 1rem;
+            .subscription-price {
+                font-size: 2rem;
+        /* Subscription Modal - DRAMATIC & BEAUTIFUL */
+        .subscription-modal {
+            background: rgba(0, 0, 0, 0.85);
+            animation: modalFadeIn 0.6s ease-out;
+        @keyframes modalFadeIn {
+        .subscription-modal.active {
+        .subscription-content {
+            padding: 2rem 2rem;
+            max-width: 440px;
+            max-height: 90vh;
+            animation: modalSlideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                0 0 100px rgba(155, 137, 212, 0.2);
+        /* Animated background glow */
+        .subscription-content::before {
+            background: radial-gradient(circle, rgba(155, 137, 212, 0.1) 0%, transparent 70%);
+            animation: glowRotate 8s linear infinite;
+        @keyframes glowRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        @keyframes modalSlideUp {
+                transform: translateY(50px) scale(0.95);
+                transform: translateY(0) scale(1);
+        .subscription-orb {
+            margin: 0 auto 2rem;
+                0 0 60px rgba(155, 137, 212, 0.6),
+                0 0 100px rgba(155, 137, 212, 0.4);
+            animation: dramaticPulse 3s ease-in-out infinite;
+        @keyframes dramaticPulse {
+                    0 0 60px rgba(155, 137, 212, 0.6),
+                    0 0 100px rgba(155, 137, 212, 0.4);
+                transform: scale(1.1);
+                    0 0 80px rgba(155, 137, 212, 0.8),
+                    0 0 140px rgba(155, 137, 212, 0.6);
+        .subscription-title {
+            font-size: 2rem;
+            line-height: 1.3;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        .subscription-vera-message {
+            line-height: 1.8;
+            font-size: 1.15rem;
+        .subscription-vera-message strong {
+            font-style: normal;
+        .subscription-offer {
+                rgba(155, 137, 212, 0.15) 0%, 
+            padding: 2rem 1.5rem;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        .subscription-trial {
+            color: var(--orb-3);
+            letter-spacing: 1px;
+        .subscription-price {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        .subscription-details {
+        .subscription-actions {
+        /* Subscription form */
+        .subscription-form { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 0.75rem; 
+            margin-bottom: 1.25rem; 
+        .subscription-row { display: flex; gap: 0.75rem; }
+        .subscription-row > .subscription-input { flex: 1; }
+        .subscription-input { 
+            width: 100%; 
+            padding: 0.85rem 1rem; 
+            border-radius: 10px; 
+            border: 1px solid var(--border-color); 
+            background: var(--container-bg); 
+            color: var(--text-primary); 
+            outline: none; 
+        .subscription-input::placeholder { color: var(--text-soft); }
+        @media (max-width: 768px) { .subscription-row { flex-direction: column; } }
+        .subscription-btn {
+            padding: 1.2rem 2.5rem;
+            border-radius: 50px;
+            font-size: 1.05rem;
+        .subscription-btn::before {
+        .subscription-btn:hover::before {
+        .subscription-btn span {
+        .subscription-btn-primary {
+                0 6px 30px rgba(155, 137, 212, 0.4),
+            animation: primaryButtonPulse 3s ease-in-out infinite;
+        @keyframes primaryButtonPulse {
+                    0 6px 30px rgba(155, 137, 212, 0.4),
+                    0 0 40px rgba(155, 137, 212, 0.2);
+                    0 8px 40px rgba(155, 137, 212, 0.6),
+                    0 0 60px rgba(155, 137, 212, 0.3);
+        .subscription-btn-primary:hover {
+                0 10px 50px rgba(155, 137, 212, 0.6),
+                0 0 80px rgba(155, 137, 212, 0.4);
+        .subscription-btn-secondary {
+        .subscription-btn-secondary:hover {
+        .subscription-guarantee {
+            margin-top: 1.5rem;
+        /* Mobile responsive */
+        .message-counter {
+            display: none; /* Hidden - keep subscription logic working */
+            top: 1rem;
+            padding: 0.5rem 1rem;
+        /* Welcome toast */
+        .welcome-toast {
+            top: 72px;
+            right: 16px;
+            padding: 0.85rem 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            z-index: 1500;
+        .welcome-toast.active { display: block; }
+        .welcome-toast .toast-actions { margin-top: 0.5rem; display: flex; gap: 0.75rem; }
+        .toast-link { color: var(--orb-3); cursor: pointer; text-decoration: underline; font-size: 0.9rem; }
+    </style>
+</head>
+<body data-theme="light">
+    <!-- Living Background -->
+    <div class="living-background">
+        <div class="breath-circle" style="top: 10%; left: 5%;"></div>
+        <div class="breath-circle" style="top: 50%; right: 10%; animation-delay: 3s;"></div>
+        <div class="breath-circle" style="bottom: 10%; left: 40%; animation-delay: 6s;"></div>
+    </div>
+    <!-- Main Content -->
+    <div class="main-content">
+        <div id="welcomeToast" class="welcome-toast">
+            <div id="welcomeToastMsg">You're all set. Welcome back to VERA 💜</div>
+            <div class="toast-actions">
+                <span class="toast-link" onclick="manageSubscription()">Manage</span>
+                <span class="toast-link" onclick="dismissWelcome()">Dismiss</span>
+            </div>
+        </div>
+        <!-- Header -->
+        <header class="chat-header">
+        <div class="vera-identity">
+                <button class="menu-toggle" onclick="toggleMenu()" id="menuToggle">
+                    <span class="menu-line"></span>
+                </button>
+                <!-- Hamburger Dropdown -->
+                <div class="hamburger-dropdown" id="hamburgerDropdown">
+                    <div class="dropdown-item" onclick="goHome()">
+                        <span>← Back to Home</span>
+                    </div>
+                    <div class="dropdown-item" onclick="startNewChat()">
+                        <span>New Chat</span>
+                    
+                    <div class="dropdown-item" onclick="showConversationHistory()">
+                        <span>Conversation History</span>
+                    <div class="dropdown-item" style="opacity: 0.5; cursor: not-allowed;" onclick="event.stopPropagation(); alert('Export feature coming soon with VERA\'s evolution!');">
+                        <span>Export Chat Data (Coming Soon)</span>
+                    <!-- Theme Selection -->
+                    <div class="dropdown-section">
+                        <div class="dropdown-section-title">Theme</div>
+                        <div class="theme-options-dropdown">
+                            <div class="theme-option theme-light active" onclick="setTheme('light')" title="Light"></div>
+                            <div class="theme-option theme-dark" onclick="setTheme('dark')" title="Dark"></div>
+                            <div class="theme-option theme-deep" onclick="setTheme('deep')" title="Deep Dark"></div>
+                        </div>
+                    <div class="dropdown-item" onclick="showPrivacyControls()">
+                        <span>Privacy Controls</span>
+                    <div class="dropdown-item danger" onclick="showDeleteConfirmation()">
+                        <span>Delete My Data</span>
+                    <div class="dropdown-item" onclick="showEmailPreferences()">
+                        <span>Email Preferences</span>
+                    <div class="dropdown-item" onclick="manageSubscription()">
+                        <span>Manage Subscription</span>
+                    <div class="dropdown-item" onclick="signOut()">
+                        <span>Sign Out</span>
+                </div>
+                <div class="vera-presence-indicator"></div>
+                <div class="vera-title">
+                    <h1>VERA</h1>
+                    <span class="status-text" id="statusText">Here for you</span>
+            
+            <div class="header-controls">
+                <div class="voice-controls">
+                    <button class="voice-toggle" onclick="toggleBiometrics()" title="Health Monitor">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3z"/>
+                        </svg>
+                    </button>
+        </header>
+        <!-- Welcome Container -->
+        <div class="welcome-container" id="welcomeContainer">
+            <div class="vera-orb-large"></div>
+            <div class="welcome-text">
+                <h2 id="welcomeTitle">I'm VERA. I'm here for you.</h2>
+                <p>This is a space where your nervous system is understood—where what you're feeling matters. No rush, no judgment. Just us.</p>
+            <div class="quick-starts">
+                <button class="quick-button" onclick="quickStart('I don\'t know where to start')">I don't know where to start</button>
+                <button class="quick-button" onclick="quickStart('My chest is tight and I can\'t breathe')">My chest is tight</button>
+                <button class="quick-button" onclick="quickStart('Everything feels heavy today')">Everything feels heavy</button>
+        <!-- Chat Container -->
+        <div class="chat-container" id="chatContainer"></div>
+        <!-- Typing Indicator -->
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="vera-avatar"></div>
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+        <!-- Input Area -->
+        <div class="input-container">
+            <div id="filePreviewContainer"></div>
+            <div class="input-wrapper">
+                <input type="file" id="fileInput" accept="image/*,.pdf,.doc,.docx,.txt" style="display: none;" onchange="handleFileSelect(event)">
+                <button class="attachment-button" onclick="document.getElementById('fileInput').click()" title="Attach image or document">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/>
+                    </svg>
+                <button class="voice-toggle input-mic" disabled title="Voice Mode (Coming Soon)" style="opacity: 0.5; cursor: not-allowed;">
+                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                <input 
+                    type="text" 
+                    id="messageInput" 
+                    class="message-input" 
+                    placeholder="What's present in your body right now..."
+                />
+                <button class="send-button" onclick="sendMessage()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal">
+            <div class="modal-header">Delete All Your Data?</div>
+            <div class="modal-content">
+                <p>This will permanently delete:</p>
+                <ul style="margin: 1rem 0; padding-left: 1.5rem; color: var(--text-secondary);">
+                    <li>All your conversation history with VERA</li>
+                    <li>Your account information</li>
+                    <li>All stored preferences</li>
+                </ul>
+                <p style="color: #ef4444; font-weight: 600;">This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+                <button class="modal-btn modal-btn-danger" onclick="confirmDeleteData()">Delete Everything</button>
+    <!-- History Modal -->
+    <div class="modal-overlay" id="historyModal">
+            <div class="modal-header">Conversation History</div>
+            <div class="history-list" id="historyList">
+                <!-- History items loaded dynamically -->
+                <button class="modal-btn modal-btn-cancel" onclick="closeHistoryModal()">Close</button>
+    <!-- Email Preferences Modal -->
+    <div class="modal-overlay" id="emailModal">
+            <div class="modal-header">Email Preferences</div>
+                <p>Email preferences coming soon! You'll be able to:</p>
+                    <li>Manage notification settings</li>
+                    <li>Set reminder preferences</li>
+                    <li>Control marketing communications</li>
+                <button class="modal-btn modal-btn-cancel" onclick="closeEmailModal()">Close</button>
+    <!-- Biometric Backdrop (for mobile) -->
+    <div class="biometric-backdrop" id="biometricBackdrop" onclick="toggleBiometrics()"></div>
+    <!-- Biometric Panel -->
+    <div class="biometric-panel" id="biometricPanel">
+        <div class="biometric-header">
+            <div class="biometric-title">Health Monitor</div>
+            <button class="biometric-close" onclick="toggleBiometrics()">×</button>
+        <div class="biometric-metric">
+            <div class="metric-label">Heart Rate</div>
+            <div class="metric-value">
+                <span id="heartRate">--</span> BPM
+                <div class="metric-status" id="heartRateStatus"></div>
+            <div class="metric-label">Stress Level</div>
+                <span id="stressLevel">Low</span>
+                <div class="metric-status" id="stressStatus"></div>
+            <div class="metric-label">Breathing Rate</div>
+                <span id="breathingRate">--</span> /min
+                <div class="metric-status" id="breathingStatus"></div>
+            <div class="metric-label">Monitoring</div>
+                <button class="quick-button" onclick="toggleBiometricMonitoring()" id="monitoringBtn">Start</button>
+    <!-- Breathing Exercise -->
+    
+    <!-- Crisis Alert -->
+    <div class="crisis-alert" id="crisisAlert">
+        <div class="crisis-content">
+            <div class="crisis-title">I'm Here With You</div>
+            <div class="crisis-message">
+                You're not alone. If you're having thoughts of self-harm or suicide, please reach out for immediate help.
+            <div class="crisis-actions">
+                <button class="crisis-btn crisis-btn-primary" onclick="callCrisisLine()">Call Crisis Helpline</button>
+                <button class="crisis-btn crisis-btn-secondary" onclick="closeCrisisAlert()">I'm Safe</button>
+    <!-- Privacy Controls Modal -->
+    <div class="modal-overlay" id="privacyModal">
+            <div class="modal-header">Privacy Controls</div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                        <input type="checkbox" id="biometricConsent" checked> 
+                        <span>Allow biometric monitoring</span>
+                    </label>
+                        <input type="checkbox" id="voiceConsent" checked> 
+                        <span>Enable voice interactions</span>
+                        <input type="checkbox" id="analyticsConsent" checked> 
+                        <span>Share anonymous analytics</span>
+                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="crisisConsent" checked> 
+                        <span>Enable crisis intervention detection</span>
+                <p style="font-size: 0.85rem; color: var(--text-soft); line-height: 1.5;">
+                    Your data is encrypted and stored securely. You can change these preferences anytime.
+                </p>
+                <button class="modal-btn modal-btn-cancel" onclick="closePrivacyModal()">Save</button>
+    <script>
+        // ============================================
+        // GLOBAL STATE
+        let userEmail = null;
+        let userName = null;
+    let isSubscribed = false;
+        const messageInput = document.getElementById('messageInput');
+        const chatContainer = document.getElementById('chatContainer');
+        const welcomeContainer = document.getElementById('welcomeContainer');
+        const typingIndicator = document.getElementById('typingIndicator');
+        // Revolutionary Features State
+        let biometricData = {
+            heartRate: null,
+            stressLevel: 0,
+            breathingRate: null,
+            isMonitoring: false
+        };
+        let voiceRecognition = null;
+        let speechSynthesis = window.speechSynthesis;
+        let emotionalState = {
+            current: 'neutral',
+            history: [],
+            confidence: 0
+        };
+        let crisisMode = false;
+        let isVoiceEnabled = false;
+        let isBreathingMode = false;
+        // INITIALIZATION
+    document.addEventListener('DOMContentLoaded', async () => {
+    // Get email from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailParam = urlParams.get('email');
+    // Validate email (not a placeholder and contains @)
+    if (emailParam && 
+        emailParam.includes('@') && 
+        !emailParam.includes('{CUSTOMER_EMAIL}') &&
+        !emailParam.includes('{{CUSTOMER_EMAIL}}')) {
+        userEmail = emailParam.trim();
+        userName = userEmail.split('@')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].slice(1);
+    } else {
+        // Invalid or placeholder email
+        // Try localStorage memory
+        const stored = localStorage.getItem('veraEmail');
+        if (stored && stored.includes('@')) {
+            userEmail = stored;
+            userName = stored.split('@')[0].charAt(0).toUpperCase() + stored.split('@')[0].slice(1);
+        } else {
+            userName = 'friend';
+            userEmail = null;
+        }
+    }
+    // Load saved theme
+    const savedTheme = localStorage.getItem('veraTheme') || 'light';
+    setTheme(savedTheme);
+    // Setup event listeners
+    messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    // Add glow effect to input container when focused
+    const inputContainer = document.querySelector('.input-container');
+    messageInput.addEventListener('focus', () => {
+        inputContainer.classList.add('focused');
+    });
+    messageInput.addEventListener('blur', () => {
+        inputContainer.classList.remove('focused');
+    });
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                const dropdown = document.getElementById('hamburgerDropdown');
+                const menuToggle = document.getElementById('menuToggle');
+                const biometricPanel = document.getElementById('biometricPanel');
+                if (!dropdown.contains(e.target) && !menuToggle.contains(e.target)) {
+                    dropdown.classList.remove('active');
+                }
+                if (!biometricPanel.contains(e.target)) {
+                    // Keep panel open if clicking inside
+                }
+            });
+            // Initialize revolutionary features
+            initializeVoiceRecognition();
+            initializeBiometricSimulation();
+            loadPrivacyPreferences();
+            // Update status text
+            updateStatusMessages();
+            // Show success banner if redirected back from checkout
+            const success = urlParams.get('success');
+            if (success === 'true') {
+                showWelcome("You're all set. Welcome back to VERA 💜");
+            }
+            // Check subscription state for returning users
+            if (userEmail) {
+                try {
+                    const res = await fetch('/api/subscription-status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: userEmail })
+                    });
+                    const data = await res.json();
+                    console.log('🔍 Initial subscription check for', userEmail, ':', data);
+                    if (data.success && (data.status === 'active' || data.status === 'trialing')) {
+                        isSubscribed = true;
+                        console.log('✅ User has active subscription on page load');
+                        if (!success && !localStorage.getItem('veraWelcomed')) {
+                            showWelcome('Welcome back. Your subscription is active.');
+                            try { localStorage.setItem('veraWelcomed','1'); } catch (e) {}
+                        }
+                    } else {
+                        console.log('❌ No active subscription on page load. Status:', data.status);
+                    }
+                } catch (e) { console.warn('⚠️ Subscription check failed:', e); }
+            }
+            checkAndGreetUser();
+        });
+        // BIOMETRIC MONITORING SYSTEM
+        function initializeBiometricSimulation() {
+            // Simulate realistic biometric data
+            setInterval(() => {
+                if (biometricData.isMonitoring) {
+                    updateBiometricData();
+                }
+            }, 2000);
+        function updateBiometricData() {
+            // Simulate heart rate (60-100 normal, stress can increase)
+            const baseHR = 65 + Math.random() * 25;
+            const stressMultiplier = biometricData.stressLevel * 0.3;
+            biometricData.heartRate = Math.round(baseHR + stressMultiplier);
+            // Simulate breathing rate (12-20 normal)
+            biometricData.breathingRate = Math.round(14 + Math.random() * 6 + stressMultiplier * 0.2);
+            // Update UI
+            document.getElementById('heartRate').textContent = biometricData.heartRate;
+            document.getElementById('breathingRate').textContent = biometricData.breathingRate;
+            // Update status indicators
+            updateBiometricStatus();
+        function updateBiometricStatus() {
+            const hrStatus = document.getElementById('heartRateStatus');
+            const stressStatus = document.getElementById('stressStatus');
+            const breathingStatus = document.getElementById('breathingStatus');
+            // Heart rate status
+            if (biometricData.heartRate > 100) {
+                hrStatus.className = 'metric-status high';
+            } else if (biometricData.heartRate > 85) {
+                hrStatus.className = 'metric-status elevated';
+            } else {
+                hrStatus.className = 'metric-status';
+            // Stress level status
+            if (biometricData.stressLevel > 7) {
+                stressStatus.className = 'metric-status high';
+                document.getElementById('stressLevel').textContent = 'High';
+            } else if (biometricData.stressLevel > 4) {
+                stressStatus.className = 'metric-status elevated';
+                document.getElementById('stressLevel').textContent = 'Moderate';
+                stressStatus.className = 'metric-status';
+                document.getElementById('stressLevel').textContent = 'Low';
+            // Check for crisis indicators
+            if (biometricData.stressLevel > 8 && biometricData.heartRate > 110) {
+                setTimeout(() => checkForCrisisLanguage(), 1000);
+        function toggleBiometrics() {
+            const panel = document.getElementById('biometricPanel');
+            const backdrop = document.getElementById('biometricBackdrop');
+            panel.classList.toggle('active');
+            backdrop.classList.toggle('active');
+            // Prevent body scroll when panel is open on mobile
+            if (panel.classList.contains('active')) {
+                document.body.style.overflow = 'hidden';
+                document.body.style.overflow = '';
+        function toggleBiometricMonitoring() {
+            biometricData.isMonitoring = !biometricData.isMonitoring;
+            const btn = document.getElementById('monitoringBtn');
+            if (biometricData.isMonitoring) {
+                btn.textContent = 'Stop';
+                btn.style.background = '#ef4444';
+                updateBiometricData(); // Start immediately
+                btn.textContent = 'Start';
+                btn.style.background = '';
+        // VOICE INTERACTION SYSTEM
+        function initializeVoiceRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                voiceRecognition = new SpeechRecognition();
+                voiceRecognition.continuous = false;
+                voiceRecognition.interimResults = false;
+                voiceRecognition.lang = 'en-US';
+                voiceRecognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    messageInput.value = transcript;
+                    sendMessage();
+                };
+                voiceRecognition.onerror = (event) => {
+                    console.log('Voice recognition error:', event.error);
+                    stopVoiceMode();
+                voiceRecognition.onend = () => {
+                    if (isVoiceEnabled) {
+                        startVoiceListening();
+        function toggleVoice() {
+            const voiceToggle = document.querySelector('.voice-toggle');
+            isVoiceEnabled = !isVoiceEnabled;
+            if (isVoiceEnabled) {
+                startVoiceMode();
+                voiceToggle.classList.add('active');
+                stopVoiceMode();
+                voiceToggle.classList.remove('active');
+        function startVoiceMode() {
+            if (voiceRecognition) {
+                startVoiceListening();
+                speakText("Voice mode activated. I'm listening.");
+        function stopVoiceMode() {
+                voiceRecognition.stop();
+            isVoiceEnabled = false;
+        function startVoiceListening() {
+            if (voiceRecognition && isVoiceEnabled) {
+                    voiceRecognition.start();
+                } catch (error) {
+                    console.log('Voice recognition start error:', error);
+        function speakText(text) {
+            if (speechSynthesis && isVoiceEnabled) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.9;
+                utterance.pitch = 1.1;
+                utterance.volume = 0.8;
+                speechSynthesis.speak(utterance);
+        // ADVANCED SENTIMENT ANALYSIS
+        function analyzeSentiment(text) {
+            // Simple keyword-based sentiment analysis
+            const positiveWords = ['happy', 'joy', 'good', 'great', 'wonderful', 'amazing', 'peaceful', 'calm', 'relaxed', 'grateful'];
+            const negativeWords = ['sad', 'angry', 'hurt', 'pain', 'anxious', 'worried', 'scared', 'depressed', 'overwhelmed', 'stressed'];
+            const crisisWords = ['suicide', 'kill myself', 'end it all', 'no point', 'hopeless', 'worthless', 'die', 'hurt myself'];
+            const words = text.toLowerCase().split(/\s+/);
+            let positiveScore = 0;
+            let negativeScore = 0;
+            let crisisScore = 0;
+            words.forEach(word => {
+                if (positiveWords.includes(word)) positiveScore++;
+                if (negativeWords.includes(word)) negativeScore++;
+                if (crisisWords.some(crisis => text.toLowerCase().includes(crisis))) crisisScore++;
+            // Update stress level based on sentiment
+            if (crisisScore > 0) {
+                biometricData.stressLevel = Math.min(10, biometricData.stressLevel + 3);
+                triggerCrisisIntervention();
+            } else if (negativeScore > positiveScore) {
+                biometricData.stressLevel = Math.min(10, biometricData.stressLevel + 1);
+            } else if (positiveScore > negativeScore) {
+                biometricData.stressLevel = Math.max(0, biometricData.stressLevel - 1);
+            // Determine emotional state
+                emotionalState.current = 'crisis';
+            } else if (negativeScore > positiveScore + 1) {
+                emotionalState.current = 'distressed';
+            } else if (positiveScore > negativeScore + 1) {
+                emotionalState.current = 'positive';
+                emotionalState.current = 'neutral';
+            emotionalState.history.push({
+                state: emotionalState.current,
+                timestamp: Date.now(),
+                text: text.substring(0, 100)
+        // CRISIS INTERVENTION SYSTEM
+        function triggerCrisisIntervention() {
+            crisisMode = true;
+            document.getElementById('crisisAlert').classList.add('active');
+        function checkForCrisisLanguage() {
+            if (biometricData.stressLevel > 8 && !crisisMode) {
+                const recentMessages = Array.from(chatContainer.children)
+                    .slice(-3)
+                    .map(msg => msg.textContent)
+                    .join(' ');
+                if (recentMessages.toLowerCase().includes('hurt') || 
+                    recentMessages.toLowerCase().includes('hopeless') ||
+                    biometricData.heartRate > 120) {
+                    triggerCrisisIntervention();
+        function callCrisisLine() {
+            // In a real app, this would initiate a call or redirect
+            window.open('tel:988', '_blank'); // National Suicide Prevention Lifeline
+            closeCrisisAlert();
+        function closeCrisisAlert() {
+            document.getElementById('crisisAlert').classList.remove('active');
+            crisisMode = false;
+            addMessage("I'm here with you. Let's take this one breath at a time.", 'vera');
+        // BREATHING EXERCISE SYSTEM
+        function startBreathingExercise() {
+            const dropdown = document.getElementById('hamburgerDropdown');
+            dropdown.classList.remove('active');
+            document.getElementById('breathingOverlay').classList.add('active');
+            isBreathingMode = true;
+        function startBreathing() {
+            const circle = document.getElementById('breathingCircle');
+            const text = document.getElementById('breathingText');
+            let isInhaling = true;
+            let count = 0;
+            const breathingCycle = () => {
+                if (!isBreathingMode) return;
+                if (isInhaling) {
+                    text.textContent = 'Breathe in...';
+                    circle.classList.add('inhale');
+                    setTimeout(() => {
+                        if (isBreathingMode) {
+                            text.textContent = 'Hold...';
+                            setTimeout(() => {
+                                if (isBreathingMode) {
+                                    isInhaling = false;
+                                    breathingCycle();
+                                }
+                            }, 2000);
+                    }, 4000);
+                } else {
+                    text.textContent = 'Breathe out...';
+                    circle.classList.remove('inhale');
+                    count++;
+                            if (count < 10) {
+                                isInhaling = true;
+                                setTimeout(breathingCycle, 1000);
+                            } else {
+                                text.textContent = 'Well done. How do you feel?';
+                                setTimeout(stopBreathingExercise, 3000);
+                            }
+            };
+            breathingCycle();
+            // Reduce stress level during breathing
+            const stressReduction = setInterval(() => {
+                if (isBreathingMode && biometricData.stressLevel > 0) {
+                    biometricData.stressLevel = Math.max(0, biometricData.stressLevel - 0.5);
+                    clearInterval(stressReduction);
+        function stopBreathingExercise() {
+            document.getElementById('breathingOverlay').classList.remove('active');
+            isBreathingMode = false;
+            // Add wellness insight
+            setTimeout(() => {
+                addWellnessInsight('breathing', "Great job on that breathing exercise! Regular breathing practice can reduce stress by up to 50%.");
+            }, 1000);
+        // BREATHING GUIDANCE CONTROLS
+        let breathingActive = false;
+        function toggleBreathingGuide() {
+            const orb = document.getElementById('breathingOrb');
+            const btn = document.getElementById('breathingBtn');
+            const breathText = document.getElementById('breathText');
+            if (!breathingActive) {
+                // Start breathing guidance
+                breathingActive = true;
+                orb.classList.add('breathing');
+                btn.textContent = 'Stop Breathing';
+                
+                // Breathing cycle text changes
+                const breathingCycle = () => {
+                    if (!breathingActive) return;
+                    breathText.textContent = 'Breathe In';
+                        if (!breathingActive) return;
+                        breathText.textContent = 'Hold';
+                        setTimeout(() => {
+                            if (!breathingActive) return;
+                            breathText.textContent = 'Breathe Out';
+                                if (!breathingActive) return;
+                                breathText.textContent = 'Rest';
+                            }, 3000);
+                        }, 1000);
+                    }, 2000);
+                breathingCycle();
+                // Stop breathing guidance
+                breathingActive = false;
+                orb.classList.remove('breathing');
+                btn.textContent = 'Start Breathing';
+                breathText.textContent = 'Breathe';
+        // PRIVACY CONTROLS
+        function showPrivacyControls() {
+            document.getElementById('privacyModal').classList.add('active');
+        function closePrivacyModal() {
+            document.getElementById('privacyModal').classList.remove('active');
+            savePrivacyPreferences();
+        function loadPrivacyPreferences() {
+            const prefs = JSON.parse(localStorage.getItem('veraPrivacyPrefs') || '{}');
+            document.getElementById('biometricConsent').checked = prefs.biometric !== false;
+            document.getElementById('voiceConsent').checked = prefs.voice !== false;
+            document.getElementById('analyticsConsent').checked = prefs.analytics !== false;
+            document.getElementById('crisisConsent').checked = prefs.crisis !== false;
+        function savePrivacyPreferences() {
+            const prefs = {
+                biometric: document.getElementById('biometricConsent').checked,
+                voice: document.getElementById('voiceConsent').checked,
+                analytics: document.getElementById('analyticsConsent').checked,
+                crisis: document.getElementById('crisisConsent').checked
+            localStorage.setItem('veraPrivacyPrefs', JSON.stringify(prefs));
+        // AUTOMATIC GREETING FOR ALL USERS
+async function checkAndGreetUser() {
+    try {
+        const response = await fetch('/api/check-history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: userEmail })
+        const data = await response.json();
+        // ONLY greet if they have history (returning users)
+        if (data.hasHistory) {
+            // Hide welcome, show chat with greeting
+            welcomeContainer.style.display = 'none';
+            chatContainer.classList.add('active');
+            const returningGreetings = [
+                `Hi ${userName}, I'm here with you again.`,
+                `${userName}, glad you're back. What's present for you today?`,
+                `Welcome back, ${userName}. I'm here, listening.`,
+                `${userName}, I've been holding space for you. What's alive in your body right now?`,
+                `Hi ${userName}. I'm here. Tell me what you're experiencing.`
+            ];
+            const greeting = returningGreetings[Math.floor(Math.random() * returningGreetings.length)];
+                addMessage(greeting, 'vera');
+            }, 500);
+            // NEW USERS: Show personalized welcome screen (no auto-message)
+            if (userName) {
+                document.getElementById('welcomeTitle').textContent = `Hi ${userName}, I'm VERA. I'm here for you.`;
+    } catch (error) {
+        console.error('Failed to check user history:', error);
+        // On error, show welcome screen
+        if (userName) {
+            document.getElementById('welcomeTitle').textContent = `Hi ${userName}, I'm VERA. I'm here for you.`;
+}
+        // NAVIGATION
+        function goHome() {
+            // Close the dropdown
+            // Navigate back to landing page
+            window.location.href = 'index.html';
+        // NEW CHAT
+        function startNewChat() {
+            // Confirm with user
+            if (chatContainer.children.length > 0) {
+                const confirmed = confirm('Start a new conversation?');
+                if (!confirmed) return;
+            // Clear the UI and restart with greeting
+            chatContainer.innerHTML = '';
+            messageInput.value = '';
+            // Send new greeting
+            const newChatGreetings = [
+                `${userName}, I'm here. What would you like to explore?`,
+                `Hi ${userName}. Fresh start. What's present for you now?`,
+                `${userName}, I'm listening. What's happening in your body?`
+            const greeting = newChatGreetings[Math.floor(Math.random() * newChatGreetings.length)];
+                messageInput.focus();
+            }, 300);
+            console.log('🆕 New chat started - email:', userEmail);
+        // THEME MANAGEMENT
+        function setTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('veraTheme', theme);
+            document.querySelectorAll('.theme-option').forEach(opt => {
+                opt.classList.remove('active');
+            document.querySelector(`.theme-${theme}`).classList.add('active');
+            // Close dropdown after theme selection
+        // MENU MANAGEMENT
+        function toggleMenu() {
+            dropdown.classList.toggle('active');
+        async function manageSubscription() {
+            const email = userEmail || (document.getElementById('subEmail')?.value || '').trim();
+            if (!email) {
+                alert('Please enter your email in the subscription form first.');
+                return;
+            try {
+                const res = await fetch('/api/portal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                if (data.success && data.url) {
+                    window.location.href = data.url;
+                    alert(data.error || 'No active subscription found for this email.');
+            } catch (err) {
+                console.error('Manage subscription error:', err);
+                alert('Unable to open subscription portal.');
+        function signOut() {
+            // Close the hamburger menu
+            document.getElementById('hamburger').classList.remove('active');
+            document.getElementById('hamburgerDropdown').classList.remove('active');
+            // Confirm sign out
+            if (confirm('Are you sure you want to sign out?')) {
+                // Clear all user data from localStorage
+                localStorage.removeItem('veraEmail');
+                localStorage.removeItem('veraUserName');
+                localStorage.removeItem('veraWelcomed');
+                localStorage.removeItem('veraTheme');
+                // Redirect to homepage
+                window.location.href = '/';
+        function showWelcome(message) {
+            const toast = document.getElementById('welcomeToast');
+            const msg = document.getElementById('welcomeToastMsg');
+            if (message) msg.textContent = message;
+            toast.classList.add('active');
+                toast.classList.remove('active');
+            }, 6000);
+        function dismissWelcome() {
+            document.getElementById('welcomeToast').classList.remove('active');
+        // CONVERSATION HISTORY
+        async function showConversationHistory() {
+                const response = await fetch('/api/history', {
+                    body: JSON.stringify({ email: userEmail })
+                const data = await response.json();
+                const historyList = document.getElementById('historyList');
+                if (data.history && data.history.length > 0) {
+                    historyList.innerHTML = data.history.map(item => `
+                        <div class="history-item">
+                            <div class="history-date">${formatDate(item.created_at)}</div>
+                            <div class="history-preview">${escapeHtml(item.content.substring(0, 100))}...</div>
+                    `).join('');
+                    historyList.innerHTML = '<p style="text-align: center; color: var(--text-soft); padding: 2rem;">No conversation history yet.</p>';
+                document.getElementById('historyModal').classList.add('active');
+            } catch (error) {
+                console.error('Error loading history:', error);
+                alert('Failed to load conversation history. Please try again.');
+        function closeHistoryModal() {
+            document.getElementById('historyModal').classList.remove('active');
+        // EXPORT CHAT DATA
+        async function exportChatData() {
+                const response = await fetch('/api/export', {
+                if (data.success) {
+                    // Create text file
+                    let content = `VERA Conversation Export\n`;
+                    content += `Email: ${userEmail}\n`;
+                    content += `Date: ${new Date().toLocaleString()}\n`;
+                    content += `\n${'='.repeat(50)}\n\n`;
+                    data.messages.forEach(msg => {
+                        const sender = msg.role === 'user' ? 'You' : 'VERA';
+                        content += `[${new Date(msg.created_at).toLocaleString()}]\n`;
+                        content += `${sender}: ${msg.content}\n\n`;
+                    // Download file
+                    const blob = new Blob([content], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `vera-export-${new Date().toISOString().split('T')[0]}.txt`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    alert('Chat data exported successfully!');
+                    alert('No chat data to export yet.');
+                console.error('Export error:', error);
+                alert('Failed to export chat data. Please try again.');
+        // DELETE DATA
+        function showDeleteConfirmation() {
+            document.getElementById('deleteModal').classList.add('active');
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.remove('active');
+        async function confirmDeleteData() {
+                const response = await fetch('/api/delete-data', {
+                    alert('All your data has been permanently deleted.');
+                    // Redirect to homepage
+                    window.location.href = '/';
+                    alert('Failed to delete data. Please contact support.');
+                console.error('Delete error:', error);
+                alert('Failed to delete data. Please try again.');
+        // EMAIL PREFERENCES
+        function showEmailPreferences() {
+            document.getElementById('emailModal').classList.add('active');
+        function closeEmailModal() {
+            document.getElementById('emailModal').classList.remove('active');
+        // CHAT FUNCTIONALITY
+        function quickStart(prompt) {
+            messageInput.value = prompt;
+        // MESSAGE LIMIT & SUBSCRIPTION
+        let messageCount = 0;
+    const MAX_FREE_MESSAGES = 5; // Show popup after 5th message (user sends 5, gets 5 responses)
+        function updateMessageCounter() {
+            console.log(`Message ${messageCount} of ${MAX_FREE_MESSAGES}`);
+        function showSubscriptionModal() {
+            const modal = document.getElementById('subscriptionModal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        function closeSubscriptionModal() {
+            modal.classList.remove('active');
+            document.body.style.overflow = ''; // Re-enable scrolling
+            // Allow one more message to continue
+            messageInput.disabled = false;
+            messageInput.placeholder = "What's present in your body right now...";
+        async function startSubscription() {
+            const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/14AcN50oL7PpgVbdPv8bS0r';
+                // Collect values
+                const firstName = (document.getElementById('subFirstName')?.value || '').trim();
+                const lastName = (document.getElementById('subLastName')?.value || '').trim();
+                const emailInput = (document.getElementById('subEmail')?.value || '').trim();
+                const phone = (document.getElementById('subPhone')?.value || '').trim();
+                const email = emailInput || (userEmail || '').trim();
+                if (!email || !firstName || !lastName) {
+                    alert('Please enter your first name, last name, and email to continue.');
+                    return;
+                // Show loading state
+                const modal = document.getElementById('subscriptionModal');
+                const primaryBtn = modal.querySelector('.subscription-btn-primary');
+                const originalText = primaryBtn.innerHTML;
+                primaryBtn.innerHTML = '<span>Loading...</span>';
+                primaryBtn.disabled = true;
+                // Save to backend (upsert user info, set trial window)
+                await fetch('/api/register', {
+                    body: JSON.stringify({ firstName, lastName, email, phone })
+                // Remember email locally
+                try { localStorage.setItem('veraEmail', email); } catch (e) {}
+                // Redirect to Stripe Payment Link with prefilled email if possible
+                const redirectUrl = `${STRIPE_PAYMENT_LINK}?prefilled_email=${encodeURIComponent(email)}`;
+                window.location.href = redirectUrl;
+                console.error('Subscription error:', error);
+                alert('Unable to continue to checkout. Please try again.');
+                primaryBtn.innerHTML = '<span>Continue with VERA</span>';
+                primaryBtn.disabled = false;
+        let isProcessing = false;
+        let chatHistory = [];
+        let currentAttachment = null; // Store current file attachment
+        // FILE ATTACHMENT HANDLING
+        async function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            // Validate file size (max 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File too large. Maximum size is 10MB.');
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'text/plain'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('File type not supported. Please upload an image, PDF, or text file.');
+                // Convert to base64
+                const base64 = await fileToBase64(file);
+                currentAttachment = {
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    data: base64
+                // Show preview
+                showFilePreview(currentAttachment);
+                // Highlight attachment button
+                const attachBtn = document.querySelector('.attachment-button');
+                attachBtn.classList.add('has-file');
+                console.log('📎 File attached:', file.name, formatFileSize(file.size));
+                console.error('❌ File processing error:', error);
+                alert('Failed to process file. Please try again.');
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    // Extract base64 data without prefix
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+        function showFilePreview(attachment) {
+            const container = document.getElementById('filePreviewContainer');
+            let previewHTML = '';
+            if (attachment.type.startsWith('image/')) {
+                // Show image thumbnail
+                previewHTML = `
+                    <div class="file-preview">
+                        <img src="data:${attachment.type};base64,${attachment.data}" class="file-preview-image" alt="${escapeHtml(attachment.name)}">
+                        <div class="file-preview-info">
+                            <div class="file-preview-name">${escapeHtml(attachment.name)}</div>
+                            <div class="file-preview-size">${formatFileSize(attachment.size)}</div>
+                        <button class="file-preview-remove" onclick="removeAttachment()" title="Remove">
+                            ✕
+                        </button>
+                `;
+                // Show document icon
+                        <div style="width: 60px; height: 60px; border-radius: 8px; background: var(--orb-1); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem;">
+                            📄
+            container.innerHTML = previewHTML;
+        function removeAttachment() {
+            currentAttachment = null;
+            document.getElementById('filePreviewContainer').innerHTML = '';
+            document.getElementById('fileInput').value = '';
+            const attachBtn = document.querySelector('.attachment-button');
+            attachBtn.classList.remove('has-file');
+            console.log('📎 Attachment removed');
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || isProcessing) return;
+            isProcessing = true;
+
+            // Analyze sentiment and update biometrics
+            analyzeSentiment(message);
+
+            // Hide welcome on first message
+            if (welcomeContainer.style.display !== 'none') {
+                welcomeContainer.style.display = 'none';
+                chatContainer.classList.add('active');
+            }
+
+            // Add user message
+            addMessage(message, 'user');
+            messageInput.disabled = true;
+
+            // Increment counter FIRST (hidden from user)
+            messageCount++;
+
+            // Re-check subscription status before enforcing limit
+            if (userEmail && messageCount > MAX_FREE_MESSAGES) {
+                try {
+                    console.log('🔍 Re-checking subscription for:', userEmail);
+                    const subCheck = await fetch('/api/subscription-status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: userEmail })
+                    });
+                    const subData = await subCheck.json();
+                    console.log('📊 Subscription check result:', subData);
+                    if (subData.success && (subData.status === 'active' || subData.status === 'trialing')) {
+                        console.log('✅ Subscription active! User can continue.');
+                        // Ensure paywall is closed and input is enabled immediately
+                        const modal = document.getElementById('subscriptionModal');
+                        if (modal) modal.classList.remove('active');
+                        document.body.style.overflow = '';
+                        messageInput.disabled = false;
+                        messageInput.placeholder = "What's present in your body right now...";
+                        messageInput.focus();
+                        isSubscribed = true;
+                    } else {
+                        console.log('❌ No active subscription found. Status:', subData.status);
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Subscription re-check failed:', e);
+                }
+            }
+
+            // Check if limit reached BEFORE sending
+            if (!isSubscribed && messageCount > MAX_FREE_MESSAGES) {
+                messageInput.placeholder = 'Subscribe to continue...';
+                messageInput.disabled = true;
+                showSubscriptionModal();
+                isProcessing = false;
+                return;
+            }
+
+            // Show typing
+            showTyping();
+
+            try {
+                // Prepare payload with optional attachment
+                const payload = {
+                    message,
+                    userId: userEmail || 'anonymous',
+                    userName: userEmail ? userEmail.split('@')[0] : 'friend'
+                };
+
+                // Include attachment if present
+                if (currentAttachment) {
+                    payload.attachments = [{
+                        name: currentAttachment.name,
+                        type: currentAttachment.type,
+                        data: currentAttachment.data
+                    }];
+                    console.log('📎 Sending message with attachment:', currentAttachment.name);
+                }
+
+                // Call VERA's brain on Netlify
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                console.log('✅ VERA Response:', data);
+
+                hideTyping();
+
+                // Paywall enforcement from server
+                if (response.status === 403 && data.error === 'Payment required') {
+                    showSubscriptionModal();
+                    isProcessing = false;
+                    return;
+                }
+
+                // Render VERA's reply
+                const veraResponse = data.response;
+                const veraMsgElement = addMessage(veraResponse, 'vera');
+
+                // Clear attachment after successful send
+                if (currentAttachment) removeAttachment();
+
+                // Store conversation in history
+                chatHistory.push({ role: 'user', content: message });
+                chatHistory.push({ role: 'assistant', content: veraResponse });
+
+                // Add shimmer effect to VERA's response
+                setTimeout(() => {
+                    const bubble = veraMsgElement.querySelector('.message-bubble');
+                    if (bubble) bubble.classList.add('shimmer');
+                }, 100);
+
+                // Speak VERA's response if voice is enabled
+                if (isVoiceEnabled) setTimeout(() => speakText(veraResponse), 500);
+
+                // After 5th message exchange, show subscription modal
+                if (!isSubscribed && messageCount === MAX_FREE_MESSAGES) {
+                    setTimeout(() => {
+                        showSubscriptionModal();
+                        messageInput.disabled = true;
+                        messageInput.placeholder = 'Subscribe to continue...';
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error('❌ VERA API Error:', error);
+                console.error('Error details:', error.message);
+
+                // Fallback simulated response
+                const simulatedResponse = getSimulatedVeraResponse(message);
+                addMessage(simulatedResponse, 'vera');
+
+                // After 5th message, show modal
+                if (!isSubscribed && messageCount === MAX_FREE_MESSAGES) {
+                    showSubscriptionModal();
+                }
+            } finally {
+                isProcessing = false;
+
+                // Always re-enable input if subscribed
+                if (isSubscribed) {
+                    messageInput.disabled = false;
+                    messageInput.placeholder = "What's present in your body right now...";
+                    messageInput.focus();
+                    if (isVoiceEnabled) setTimeout(startVoiceListening, 1000);
+                } else if (messageCount < MAX_FREE_MESSAGES) {
+                    // If not subscribed, allow until the free limit
+                    messageInput.disabled = false;
+                    messageInput.placeholder = "What's present in your body right now...";
+                    if (isVoiceEnabled) setTimeout(startVoiceListening, 1000);
+                }
+            }
+        }
+        // Simulated VERA responses for demo (until backend connected)
+    function getSimulatedVeraResponse(userMessage) {
+            const responses = [
+                "I hear you. What's happening in your body right now as you share this?",
+                "Your nervous system is responding to something. Let's pause here together.",
+                "That makes sense. Your body is giving you information. Can you feel where it's showing up?",
+                "I'm with you. There's no rush. Take a breath with me.",
+                "Notice what shifts when you name that. Your awareness is powerful."
+            return responses[Math.floor(Math.random() * responses.length)];
+        function addMessage(content, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${sender}`;
+            if (sender === 'vera') {
+                messageDiv.innerHTML = `
+                    <div class="vera-avatar"></div>
+                    <div class="message-bubble">${escapeHtml(content)}</div>
+            chatContainer.appendChild(messageDiv);
+            // Immediate scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            // Add micro-animation
+            messageDiv.style.opacity = '0';
+            messageDiv.style.transform = 'translateY(20px)';
+                messageDiv.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                messageDiv.style.opacity = '1';
+                messageDiv.style.transform = 'translateY(0)';
+                // Scroll again after animation starts
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 50);
+            return messageDiv;
+        function showTyping() {
+            typingIndicator.classList.add('active');
+            chatContainer.appendChild(typingIndicator);
+        function hideTyping() {
+            typingIndicator.classList.remove('active');
+        // UTILITY FUNCTIONS
+        function updateStatusMessages() {
+            const messages = [
+                "Here for you",
+                "Present with you",
+                "Holding space",
+                "Witnessing your journey",
+                "Listening"
+            let index = 0;
+                index = (index + 1) % messages.length;
+                document.getElementById('statusText').textContent = messages[index];
+            }, 5000);
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        // Test VERA Brain Connection
+        async function testVERABrainConnection() {
+                console.log('🧠 Testing VERA brain connection...');
+                const response = await fetch('/api/test', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                if (data.status === 'success') {
+                    console.log('✅ VERA brain connected:', data.message);
+                    console.log('🕒 Timestamp:', data.timestamp);
+                    return true;
+                    console.error('❌ VERA brain connection failed:', data);
+                    return false;
+                console.error('❌ VERA brain connection error:', error);
+                return false;
+        // Test connection on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            testVERABrainConnection();
+    </script>
+    <!-- Subscription Modal -->
+    <div class="subscription-modal" id="subscriptionModal">
+        <div class="subscription-content">
+            <div class="subscription-orb"></div>
+            <h2 class="subscription-title">I'm Not Going Anywhere</h2>
+            <p class="subscription-vera-message">
+                <strong>It's okay.</strong> I'll be here. I'm not going anywhere.<br><br>
+                What we've started matters. Your nervous system is learning to feel safe, and I want to keep holding this space with you.
+            </p>
+            <div class="subscription-form">
+                <div class="subscription-row">
+                    <input id="subFirstName" class="subscription-input" type="text" placeholder="First name" autocomplete="given-name">
+                    <input id="subLastName" class="subscription-input" type="text" placeholder="Last name" autocomplete="family-name">
+                <input id="subEmail" class="subscription-input" type="email" placeholder="Email" autocomplete="email">
+                <input id="subPhone" class="subscription-input" type="tel" placeholder="Phone (optional)" autocomplete="tel">
+            <div class="subscription-offer">
+                <div class="subscription-trial">7 Days Free</div>
+                <div class="subscription-price">$19/month</div>
+                <div class="subscription-details">Cancel anytime • Your data stays private</div>
+            <div class="subscription-actions">
+                <button class="subscription-btn subscription-btn-primary" onclick="startSubscription()">
+                    <span>Continue with VERA</span>
+                <button class="subscription-btn subscription-btn-secondary" onclick="closeSubscriptionModal()">
+                    <span>Maybe later</span>
+            <div class="subscription-guarantee">
+                💜 No judgment. No pressure. Just presence.
+</body>
+</html>
