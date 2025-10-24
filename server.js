@@ -964,6 +964,8 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
   // Create magic link (respect APP_URL)
   const baseUrl = process.env.APP_URL || 'http://localhost:8080';
   const magicLink = `${baseUrl}/verify-magic-link?token=${token}`;
+  // Developer aid: log magic link so you can copy it during local testing
+  console.log('🔗 Magic link URL:', magicLink);
 
     // Send email
     await transporter.sendMail({
