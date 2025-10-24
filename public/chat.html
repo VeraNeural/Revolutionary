@@ -380,6 +380,27 @@
 
             console.log('📧 Managing subscription for:', userEmail);
 
+            // First check if subscription exists
+            try {
+                const statusResponse = await fetch('/api/subscription-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: userEmail })
+                });
+
+                const statusData = await statusResponse.json();
+                console.log('📊 Subscription status:', statusData);
+
+                if (!statusData.found || statusData.status === 'none') {
+                    alert('No active subscription found. Please subscribe from the home page first, then you can manage your subscription here.');
+                    return;
+                }
+            } catch (error) {
+                console.error('Status check failed:', error);
+                // Continue anyway - let portal endpoint handle it
+            }
+
+            // Now open portal
             try {
                 const response = await fetch('/api/portal', {
                     method: 'POST',
@@ -399,9 +420,9 @@
                     
                     // Better error messaging
                     if (errorMsg.includes('No Stripe customer')) {
-                        alert('No subscription found. Please subscribe first from the home page.');
+                        alert('No subscription found. Please refresh the page and try again, or subscribe from the home page.');
                     } else if (errorMsg.includes('not found')) {
-                        alert('Subscription not found. You may need to create an account first.');
+                        alert('Subscription not found. Please refresh the page and try again.');
                     } else {
                         alert('Unable to open subscription portal: ' + errorMsg);
                     }
