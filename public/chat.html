@@ -260,11 +260,12 @@
         let userName = 'friend';
     // Stable anonymous id for guests to preserve conversation continuity
     let anonId = null;
-    const freeMessageLimit = 5; // allow 5 free user messages
+    const freeMessageLimit = 20; // allow 20 free user messages (testing)
     let freeMessageCount = Number(sessionStorage.getItem('vera_free_count') || '0'); // persist within tab
-        const messageInput = document.getElementById('messageInput');
+    const messageInput = document.getElementById('messageInput');
         const chatContainer = document.getElementById('chatContainer');
         const sendBtn = document.getElementById('sendBtn');
+    let isSending = false; // prevent duplicate sends
         const typingIndicator = document.getElementById('typingIndicator');
 
     // Initialize
@@ -333,7 +334,7 @@
 
         async function sendMessage() {
             const message = messageInput.value.trim();
-            if (!message) return;
+            if (!message || isSending) return; // guard against duplicates
 
             // Paywall: if unauthenticated and exceeded free limit, prompt to subscribe
             if (!userEmail) {
@@ -351,7 +352,8 @@
                 }
             }
 
-            // Disable input
+            // Disable input and set sending flag
+            isSending = true;
             sendBtn.disabled = true;
             messageInput.disabled = true;
 
@@ -390,6 +392,7 @@
                 sendBtn.disabled = false;
                 messageInput.disabled = false;
                 messageInput.focus();
+                isSending = false;
             }
         }
 
