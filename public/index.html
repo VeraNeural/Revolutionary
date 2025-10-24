@@ -1032,19 +1032,20 @@
         
         try {
             // Call your server to create Stripe checkout session
+            // Email will be collected by Stripe during checkout
             const response = await fetch('/api/create-checkout-session', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    name: userName || 'Guest',
-                    email: '' // Optional: you could ask for email too
+                    // Don't send email - let Stripe collect it
                 })
             });
             
             if (!response.ok) {
-                throw new Error('Failed to create checkout session');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to create checkout session');
             }
             
             const { url } = await response.json();
@@ -1056,7 +1057,7 @@
             console.error('Checkout error:', error);
             continueBtn.disabled = false;
             continueBtn.textContent = 'Enter';
-            alert('Something went wrong. Please try again.');
+            alert(error.message || 'Something went wrong. Please try again.');
         }
     }
 

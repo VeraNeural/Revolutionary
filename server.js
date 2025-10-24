@@ -688,9 +688,9 @@ app.post('/api/create-checkout-session', async (req, res) => {
   const { email } = req.body;
   
   try {
-    console.log('🔵 Creating checkout session for email:', email);
+    console.log('🔵 Creating checkout session for email:', email || 'no email provided');
     
-    // CRITICAL: Check if user already exists to prevent duplicates
+    // CRITICAL: Check if user already exists to prevent duplicates (only if email provided)
     if (email) {
       const existingUser = await pool.query(
         'SELECT stripe_customer_id, subscription_status FROM users WHERE email = $1',
@@ -794,8 +794,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
     
     // Create new checkout session for new customer
     console.log('🆕 Creating new customer checkout session');
-    const session = await stripe.checkout.sessions.create({
-      customer_email: email, // Pre-fill email if provided
+    const sessionConfig = {
       line_items: [
         {
           price: 'price_1SIgAtF8aJ0BDqA3WXVJsuVD', // VERA $19/month price
@@ -810,13 +809,20 @@ app.post('/api/create-checkout-session', async (req, res) => {
       automatic_tax: {
         enabled: true,
       },
-    });
+    };
+    
+    // Only add customer_email if provided
+    if (email) {
+      sessionConfig.customer_email = email;
+    }
+    
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     console.log('✅ New checkout session created:', session.id);
     res.json({ url: session.url });
   } catch (error) {
     console.error('❌ Error creating checkout session:', error);
-    res.status(500).json({ error: 'Failed to create checkout session' });
+    res.status(500).json({ error: 'Failed to create checkout session', details: error.message });
   }
 });
 
