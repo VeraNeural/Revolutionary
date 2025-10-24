@@ -1120,15 +1120,25 @@ app.post('/api/chat', async (req, res) => {
 
 app.get('/api/history', async (req, res) => {
   const userEmail = req.session.userEmail;
+  let userId = userEmail || null;
 
-  if (!userEmail) {
+  // Allow guests to load their own anon history using a limited anonId pattern
+  if (!userId && req.query && req.query.anonId) {
+    const maybeAnon = String(req.query.anonId);
+    // Accept only our generated anon_XXXXXXXX format (8 char base36)
+    if (/^anon_[a-z0-9]{8}$/i.test(maybeAnon)) {
+      userId = maybeAnon;
+    }
+  }
+
+  if (!userId) {
     return res.json({ messages: [] });
   }
 
   try {
     const result = await pool.query(
       'SELECT role, content, created_at FROM messages WHERE user_id = $1 ORDER BY created_at ASC',
-      [userEmail]
+      [userId]
     );
 
     res.json({ messages: result.rows });

@@ -147,6 +147,22 @@
             display: block;
         }
 
+        /* Animated typing dots */
+        .typing-dots { display: inline-flex; gap: 6px; align-items: center; }
+        .typing-dot { width: 6px; height: 6px; background: #667eea; border-radius: 50%; opacity: 0.4; animation: blink 1.2s infinite; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink { 0%, 80%, 100% { opacity: 0.2; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+
+        /* Free messages badge */
+        .free-badge { background: rgba(255,255,255,0.9); color: #4c51bf; border: 1px solid rgba(102,126,234,0.3); padding: 6px 10px; border-radius: 999px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; }
+        .badge-dot { width: 8px; height: 8px; background: #48bb78; border-radius: 50%; box-shadow: 0 0 6px rgba(72,187,120,0.6); }
+
+        /* Quick-start chips */
+        .quick-starts { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin-top: 0.75rem; }
+        .quick-chip { background: rgba(255,255,255,0.9); border: 1px solid rgba(155, 137, 212, 0.3); color: #4a5568; padding: 0.35rem 0.7rem; border-radius: 999px; font-size: 0.85rem; cursor: pointer; }
+        .quick-chip:hover { background: rgba(155, 137, 212, 0.15); }
+
         .welcome {
             text-align: center;
             padding: 2rem;
@@ -216,14 +232,22 @@
     </div>
 
     <div class="container">
+        <div style="display:flex; justify-content:flex-end; margin: 0.25rem 0;">
+            <div id="freeBadge" class="free-badge" style="display:none;"><span class="badge-dot"></span><span id="freeBadgeText">5 free messages left</span></div>
+        </div>
         <div class="chat-container" id="chatContainer">
             <div class="welcome">
                 <h2>I'm VERA. I'm here for you.</h2>
                 <p>This is a space where your nervous system is understood—where what you're feeling matters. No rush, no judgment. Just us.</p>
+                <div class="quick-starts">
+                    <button class="quick-chip" onclick="quickStart('I don\'t know where to start')">I don't know where to start</button>
+                    <button class="quick-chip" onclick="quickStart('My chest feels tight and I\'m anxious')">Chest feels tight</button>
+                    <button class="quick-chip" onclick="quickStart('Everything feels heavy today')">Everything feels heavy</button>
+                </div>
             </div>
         </div>
 
-        <div class="typing-indicator" id="typingIndicator">VERA is typing...</div>
+        <div class="typing-indicator" id="typingIndicator"><span style="margin-right:8px;">VERA is typing</span><span class="typing-dots"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span></div>
 
         <div class="input-container">
             <textarea id="messageInput" placeholder="What's present in your body right now?"></textarea>
@@ -243,7 +267,7 @@
         const sendBtn = document.getElementById('sendBtn');
         const typingIndicator = document.getElementById('typingIndicator');
 
-        // Initialize
+    // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             // Initialize anonId in localStorage (for guests)
             try {
@@ -279,6 +303,9 @@
                     const signInItem = document.getElementById('signInMenuItem');
                     if (signInItem) signInItem.style.display = 'flex';
                 }
+
+                // Update free badge on load
+                updateFreeBadge();
             } catch (error) {
                 console.error('Auth check failed:', error);
             }
@@ -290,6 +317,15 @@
                     sendMessage();
                 }
             });
+
+            // Auto-resize textarea
+            const adjustHeight = () => {
+                messageInput.style.height = 'auto';
+                const newH = Math.min(150, Math.max(50, messageInput.scrollHeight));
+                messageInput.style.height = newH + 'px';
+            };
+            messageInput.addEventListener('input', adjustHeight);
+            adjustHeight();
 
             // Load chat history
             loadHistory();
@@ -311,6 +347,7 @@
                 } else {
                     freeMessageCount += 1;
                     sessionStorage.setItem('vera_free_count', String(freeMessageCount));
+                    updateFreeBadge();
                 }
             }
 
@@ -356,6 +393,12 @@
             }
         }
 
+        function quickStart(text) {
+            messageInput.value = text;
+            messageInput.dispatchEvent(new Event('input'));
+            sendMessage();
+        }
+
         async function startSubscriptionFlow() {
             try {
                 let emailForCheckout = userEmail;
@@ -398,10 +441,11 @@
         }
 
         async function loadHistory() {
-            if (!userEmail) return;
+            if (!userEmail && !anonId) return;
 
             try {
-                const response = await fetch('/api/history');
+                const url = userEmail ? '/api/history' : `/api/history?anonId=${encodeURIComponent(anonId)}`;
+                const response = await fetch(url);
                 const data = await response.json();
 
                 if (data.messages && data.messages.length > 0) {
@@ -415,6 +459,19 @@
             } catch (error) {
                 console.error('Error loading history:', error);
             }
+        }
+
+        function updateFreeBadge() {
+            const badge = document.getElementById('freeBadge');
+            const text = document.getElementById('freeBadgeText');
+            if (!badge || !text) return;
+            if (userEmail) {
+                badge.style.display = 'none';
+                return;
+            }
+            const remaining = Math.max(0, freeMessageLimit - freeMessageCount);
+            text.textContent = `${remaining} free message${remaining === 1 ? '' : 's'} left`;
+            badge.style.display = 'inline-flex';
         }
 
         function toggleMenu() {
