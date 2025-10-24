@@ -1121,6 +1121,7 @@
             current: 'neutral',
             history: [],
             confidence: 0
+        };
         let crisisMode = false;
         let isVoiceEnabled = false;
         let isBreathingMode = false;
@@ -1146,6 +1147,7 @@
         } else {
             userName = 'friend';
             userEmail = null;
+        }
     }
     // Load saved theme
     const savedTheme = localStorage.getItem('veraTheme') || 'light';
@@ -1155,13 +1157,16 @@
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
+        }
     });
     // Add glow effect to input container when focused
     const inputContainer = document.querySelector('.input-container');
     messageInput.addEventListener('focus', () => {
         inputContainer.classList.add('focused');
+    });
     messageInput.addEventListener('blur', () => {
         inputContainer.classList.remove('focused');
+    });
             // Close dropdown when clicking outside
             document.addEventListener('click', (e) => {
                 const dropdown = document.getElementById('hamburgerDropdown');
