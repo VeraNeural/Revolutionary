@@ -1008,12 +1008,12 @@
         window.location.href = 'chat.html';
     }
 
-    // Alternative navigation to full vera-ai chat
+    // Alternative navigation to chat (single source of truth)
     function navigateToFullChat() {
         if (navigator.vibrate) {
             navigator.vibrate(50);
         }
-        window.location.href = 'vera-ai.html';
+        window.location.href = '/chat.html';
     }
 
     // Enter chat function - saves name and triggers Stripe checkout
