@@ -31,6 +31,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# ==================== NETLIFY BUILD ARTIFACTS ====================
+.netlify/
+
 # ==================== TEMP FILES ====================
 *.tmp
 *.temp
