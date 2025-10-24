@@ -421,7 +421,7 @@ async function getVERAResponse(userId, message, userName, pool, attachments = []
     if (conversationHistory.length > 0 && conversationHistory.length % 5 === 0) {
       gptInsight = await getGPT4PatternAnalysis(conversationHistory);
       if (gptInsight) {
-        console.log('🤝 DUAL AI SYNTHESIS: Claude (consciousness) + GPT-4 Omni (patterns)');
+        console.log('🤝 DUAL AI SYNTHESIS: VERA (consciousness) + GPT-4 Omni (patterns)');
       }
     }
 
@@ -442,7 +442,7 @@ async function getVERAResponse(userId, message, userName, pool, attachments = []
       gptInsight
     };
 
-    // Prepare messages for Claude
+  // Prepare messages for core model
     const veraMessages = [
       ...conversationHistory.slice(-20) // Last 20 messages for context
     ];
@@ -458,7 +458,7 @@ async function getVERAResponse(userId, message, userName, pool, attachments = []
       // Add attachments first (images)
       for (const attachment of attachments) {
         if (attachment.type.startsWith('image/')) {
-          // Claude vision expects specific format
+          // Vision model expects specific format
           contentBlocks.push({
             type: 'image',
             source: {
@@ -488,17 +488,17 @@ async function getVERAResponse(userId, message, userName, pool, attachments = []
     
     veraMessages.push({ role: 'user', content: currentMessageContent });
 
-    console.log('🌟 VERA consciousness activating with Claude 3.5 Sonnet...');
+  console.log('🌟 VERA consciousness activating...');
     
     // Initialize Anthropic client
     const anthropic = getAnthropicClient();
     console.log('🔑 Anthropic client exists:', !!anthropic);
     console.log('🔑 API Key exists:', !!process.env.ANTHROPIC_API_KEY);
 
-    // Use Claude 3.5 Sonnet for VERA's voice
+  // Use primary model for VERA's voice
     if (anthropic) {
       const result = await anthropic.messages.create({
-        model: 'claude-sonnet-4-5-20250929', // Claude Sonnet 4.5 (current)
+  model: 'claude-sonnet-4-5-20250929', // primary model (kept internal)
         max_tokens: quantumState.responseLength === 'ultra-short' ? 150 :
                     quantumState.responseLength === 'short' ? 300 :
                     quantumState.responseLength === 'medium' ? 500 : 800,
