@@ -354,10 +354,28 @@
         }
 
         async function manageSubscription() {
+            // Close menu first
+            document.getElementById('menuDropdown').classList.remove('active');
+
+            // If email not loaded yet, check auth again
             if (!userEmail) {
-                alert('Please log in to manage your subscription.');
-                window.location.href = '/';
-                return;
+                try {
+                    const authResponse = await fetch('/api/auth/check');
+                    const authData = await authResponse.json();
+                    
+                    if (authData.authenticated && authData.email) {
+                        userEmail = authData.email;
+                        userName = authData.email.split('@')[0];
+                    } else {
+                        alert('Please sign in to manage your subscription.');
+                        window.location.href = '/';
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Auth check failed:', error);
+                    alert('Unable to verify authentication. Please refresh and try again.');
+                    return;
+                }
             }
 
             console.log('📧 Managing subscription for:', userEmail);
@@ -376,7 +394,17 @@
                     // Open Stripe Billing Portal
                     window.location.href = data.url;
                 } else {
-                    alert('Unable to open subscription portal: ' + (data.error || 'Unknown error'));
+                    const errorMsg = data.error || 'Unknown error';
+                    console.error('Portal error:', errorMsg);
+                    
+                    // Better error messaging
+                    if (errorMsg.includes('No Stripe customer')) {
+                        alert('No subscription found. Please subscribe first from the home page.');
+                    } else if (errorMsg.includes('not found')) {
+                        alert('Subscription not found. You may need to create an account first.');
+                    } else {
+                        alert('Unable to open subscription portal: ' + errorMsg);
+                    }
                 }
             } catch (error) {
                 console.error('Portal error:', error);
