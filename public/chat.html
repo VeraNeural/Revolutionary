@@ -236,13 +236,27 @@
         const typingIndicator = document.getElementById('typingIndicator');
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            // Get email from URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const emailParam = urlParams.get('email');
-            if (emailParam && emailParam.includes('@')) {
-                userEmail = emailParam;
-                userName = emailParam.split('@')[0];
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check authentication first
+            try {
+                const authResponse = await fetch('/api/auth/check');
+                const authData = await authResponse.json();
+                
+                if (authData.authenticated && authData.email) {
+                    userEmail = authData.email;
+                    userName = authData.email.split('@')[0];
+                    console.log('✅ Authenticated as:', userEmail);
+                } else {
+                    // Fallback to URL param (for backward compatibility)
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const emailParam = urlParams.get('email');
+                    if (emailParam && emailParam.includes('@')) {
+                        userEmail = emailParam;
+                        userName = emailParam.split('@')[0];
+                    }
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
             }
 
             // Enter key to send
@@ -342,8 +356,11 @@
         async function manageSubscription() {
             if (!userEmail) {
                 alert('Please log in to manage your subscription.');
+                window.location.href = '/';
                 return;
             }
+
+            console.log('📧 Managing subscription for:', userEmail);
 
             try {
                 const response = await fetch('/api/portal', {
@@ -353,12 +370,13 @@
                 });
 
                 const data = await response.json();
+                console.log('🔗 Portal response:', data);
 
                 if (data.success && data.url) {
                     // Open Stripe Billing Portal
                     window.location.href = data.url;
                 } else {
-                    alert('Unable to open subscription portal. Please try again or contact support.');
+                    alert('Unable to open subscription portal: ' + (data.error || 'Unknown error'));
                 }
             } catch (error) {
                 console.error('Portal error:', error);
