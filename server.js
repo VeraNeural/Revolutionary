@@ -1092,7 +1092,8 @@ app.post('/api/chat', async (req, res) => {
     userName,
     anonId,
     debug,
-    attachments = []
+    attachments = [],
+    conversationId // Optional: specify which conversation to add to
   } = req.body;
   
   const userId = req.session.userEmail || email || anonId || `temp_${Math.random().toString(36).substr(2, 9)}`;
@@ -1101,7 +1102,8 @@ app.post('/api/chat', async (req, res) => {
     userId, 
     userName, 
     messageLength: message?.length,
-    attachments: attachments.length 
+    attachments: attachments.length,
+    conversationId: conversationId || 'current'
   });
 
   if (!message) {
@@ -1112,6 +1114,35 @@ app.post('/api/chat', async (req, res) => {
   const wantDebug = debug === true || debug === '1' || req.headers['x-vera-debug'] === '1';
 
   try {
+    // Get or create conversation
+    let currentConversationId = conversationId;
+    
+    if (!currentConversationId) {
+      // Check if user has an active conversation (created within last 24 hours)
+      const activeConv = await pool.query(
+        `SELECT id FROM conversations 
+         WHERE user_id = $1 
+         AND created_at > NOW() - INTERVAL '24 hours'
+         ORDER BY updated_at DESC 
+         LIMIT 1`,
+        [userId]
+      );
+      
+      if (activeConv.rows.length > 0) {
+        currentConversationId = activeConv.rows[0].id;
+      } else {
+        // Create new conversation
+        const newConv = await pool.query(
+          `INSERT INTO conversations (user_id, title, created_at, updated_at)
+           VALUES ($1, $2, NOW(), NOW())
+           RETURNING id`,
+          [userId, `Conversation ${new Date().toLocaleDateString()}`]
+        );
+        currentConversationId = newConv.rows[0].id;
+        console.log('📝 Created new conversation:', currentConversationId);
+      }
+    }
+
     // Lightweight idempotency: if the last user message matches and is recent, return the last assistant reply
     const lastUser = await pool.query(
       "SELECT id, content, created_at FROM messages WHERE user_id = $1 AND role = 'user' ORDER BY created_at DESC LIMIT 1",
@@ -1131,6 +1162,7 @@ app.post('/api/chat', async (req, res) => {
             success: true,
             response: lastAssistant.rows[0].content,
             duplicate: true,
+            conversationId: currentConversationId,
             timestamp: new Date().toISOString()
           });
         }
@@ -1153,21 +1185,22 @@ app.post('/api/chat', async (req, res) => {
       error: veraResult.error 
     });
 
-    // ✅ FIXED: Now save both messages in order (user first, then assistant)
+    // ✅ FIXED: Now save both messages in order (user first, then assistant) with conversation_id
     await pool.query(
-      'INSERT INTO messages (user_id, role, content) VALUES ($1, $2, $3)',
-      [userId, 'user', message]
+      'INSERT INTO messages (user_id, role, content, conversation_id) VALUES ($1, $2, $3, $4)',
+      [userId, 'user', message, currentConversationId]
     );
 
     await pool.query(
-      'INSERT INTO messages (user_id, role, content) VALUES ($1, $2, $3)',
-      [userId, 'assistant', veraResult.response]
+      'INSERT INTO messages (user_id, role, content, conversation_id) VALUES ($1, $2, $3, $4)',
+      [userId, 'assistant', veraResult.response, currentConversationId]
     );
 
 
     res.json({ 
       success: true, 
       response: veraResult.response,
+      conversationId: currentConversationId,
       state: veraResult.state,
       adaptiveCodes: veraResult.adaptiveCodes,
       trustLevel: veraResult.trustLevel,
@@ -1216,6 +1249,179 @@ app.get('/api/history', async (req, res) => {
   } catch (error) {
     console.error('❌ History fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch history' });
+  }
+});
+
+// ==================== CONVERSATIONS ENDPOINTS ====================
+
+// Get all conversations for a user
+app.get('/api/conversations', async (req, res) => {
+  const userEmail = req.session.userEmail;
+  let userId = userEmail || null;
+
+  // Allow guests to view their conversations
+  if (!userId && req.query && req.query.anonId) {
+    const maybeAnon = String(req.query.anonId);
+    if (/^anon_[a-z0-9]{8}$/i.test(maybeAnon)) {
+      userId = maybeAnon;
+    }
+  }
+
+  if (!userId) {
+    return res.json({ conversations: [] });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT id, title, created_at, updated_at, message_count, last_message_preview
+       FROM conversations 
+       WHERE user_id = $1 
+       ORDER BY updated_at DESC`,
+      [userId]
+    );
+
+    res.json({ conversations: result.rows });
+  } catch (error) {
+    console.error('❌ Conversations fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch conversations' });
+  }
+});
+
+// Get messages for a specific conversation
+app.get('/api/conversations/:id', async (req, res) => {
+  const conversationId = req.params.id;
+  const userEmail = req.session.userEmail;
+  let userId = userEmail || null;
+
+  // Allow guests
+  if (!userId && req.query && req.query.anonId) {
+    const maybeAnon = String(req.query.anonId);
+    if (/^anon_[a-z0-9]{8}$/i.test(maybeAnon)) {
+      userId = maybeAnon;
+    }
+  }
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    // Verify conversation belongs to user
+    const convCheck = await pool.query(
+      'SELECT id FROM conversations WHERE id = $1 AND user_id = $2',
+      [conversationId, userId]
+    );
+
+    if (convCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    // Get messages
+    const result = await pool.query(
+      'SELECT role, content, created_at FROM messages WHERE conversation_id = $1 ORDER BY created_at ASC',
+      [conversationId]
+    );
+
+    res.json({ messages: result.rows });
+  } catch (error) {
+    console.error('❌ Conversation messages fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+// Create a new conversation
+app.post('/api/conversations', async (req, res) => {
+  const userEmail = req.session.userEmail;
+  const { title, anonId } = req.body;
+  let userId = userEmail || anonId || null;
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO conversations (user_id, title, created_at, updated_at)
+       VALUES ($1, $2, NOW(), NOW())
+       RETURNING id, title, created_at, updated_at`,
+      [userId, title || 'New Conversation']
+    );
+
+    res.json({ conversation: result.rows[0] });
+  } catch (error) {
+    console.error('❌ Create conversation error:', error);
+    res.status(500).json({ error: 'Failed to create conversation' });
+  }
+});
+
+// Update conversation title
+app.patch('/api/conversations/:id', async (req, res) => {
+  const conversationId = req.params.id;
+  const userEmail = req.session.userEmail;
+  const { title, anonId } = req.body;
+  let userId = userEmail || anonId || null;
+
+  if (!userId || !title) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    // Verify ownership
+    const convCheck = await pool.query(
+      'SELECT id FROM conversations WHERE id = $1 AND user_id = $2',
+      [conversationId, userId]
+    );
+
+    if (convCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    // Update title
+    await pool.query(
+      'UPDATE conversations SET title = $1, updated_at = NOW() WHERE id = $2',
+      [title, conversationId]
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('❌ Update conversation error:', error);
+    res.status(500).json({ error: 'Failed to update conversation' });
+  }
+});
+
+// Delete a conversation
+app.delete('/api/conversations/:id', async (req, res) => {
+  const conversationId = req.params.id;
+  const userEmail = req.session.userEmail;
+  let userId = userEmail || null;
+
+  // Allow guests
+  if (!userId && req.query && req.query.anonId) {
+    const maybeAnon = String(req.query.anonId);
+    if (/^anon_[a-z0-9]{8}$/i.test(maybeAnon)) {
+      userId = maybeAnon;
+    }
+  }
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    // Verify ownership and delete (messages will cascade delete)
+    const result = await pool.query(
+      'DELETE FROM conversations WHERE id = $1 AND user_id = $2 RETURNING id',
+      [conversationId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('❌ Delete conversation error:', error);
+    res.status(500).json({ error: 'Failed to delete conversation' });
   }
 });
 
