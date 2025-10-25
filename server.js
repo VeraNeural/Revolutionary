@@ -10,16 +10,16 @@ console.log('📍 Environment:', process.env.NODE_ENV || 'not set');
 require('dotenv').config({ path: '.env.local' });
 
 console.log('✅ Environment variables loaded');
-console.log('📍 DATABASE_URL exists:', !!process.env.DATABASE_URL);
+console.log('📍 DATABASE_PUBLIC_URL exists:', !!process.env.DATABASE_PUBLIC_URL);
 console.log('📍 ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
 
 const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
 const pgSession = require('connect-pg-simple')(session);
-const { Pool } = require('pg');
 const path = require('path');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const db = require('./lib/database-manager');
 const { getVERAResponse, setVERADebug } = require('./lib/vera-ai');
 const { handleDatabaseError } = require('./lib/database-helpers');
 const rateLimiter = require('./lib/rate-limiter');
@@ -124,7 +124,7 @@ async function handleCheckoutCompleted(session) {
 
   // CHECK FOR DUPLICATE - CRITICAL!
   // Check BOTH email AND customer ID to prevent any duplicate accounts
-  const existingUser = await pool.query(
+  const existingUser = await db.query(
     'SELECT * FROM users WHERE email = $1 OR stripe_customer_id = $2',
     [customerEmail, customerId]
   );
@@ -169,7 +169,7 @@ async function handleCheckoutCompleted(session) {
   trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
   try {
-    await pool.query(
+    await db.query(
       `INSERT INTO users (email, name, stripe_customer_id, stripe_subscription_id, subscription_status, trial_ends_at)
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [customerEmail, customerEmail.split('@')[0], customerId, subscriptionId, 'active', trialEndsAt]
@@ -192,7 +192,7 @@ async function handleSubscriptionCreated(subscription) {
     const email = customer.email;
     
     // Update user subscription status
-    await pool.query(
+    await db.query(
       'UPDATE users SET subscription_status = $1, stripe_subscription_id = $2 WHERE email = $3',
       ['active', subscription.id, email]
     );
@@ -209,7 +209,7 @@ async function handleSubscriptionUpdated(subscription) {
   const status = subscription.status; // active, past_due, canceled, etc.
   
   try {
-    await pool.query(
+    await db.query(
       'UPDATE users SET subscription_status = $1 WHERE stripe_subscription_id = $2',
       [status, subscription.id]
     );
@@ -225,7 +225,7 @@ async function handleSubscriptionDeleted(subscription) {
   
   try {
     // Mark subscription as cancelled but keep user data
-    await pool.query(
+    await db.query(
       'UPDATE users SET subscription_status = $1 WHERE stripe_subscription_id = $2',
       ['cancelled', subscription.id]
     );
@@ -248,7 +248,7 @@ async function handlePaymentFailed(invoice) {
     const email = customer.email;
     
     // Update user status to payment_failed
-    await pool.query(
+    await db.query(
       'UPDATE users SET subscription_status = $1 WHERE email = $2',
       ['payment_failed', email]
     );
@@ -273,7 +273,7 @@ async function handlePaymentSucceeded(invoice) {
     const email = customer.email;
     
     // Update user status to active
-    await pool.query(
+    await db.query(
       'UPDATE users SET subscription_status = $1 WHERE email = $2',
       ['active', email]
     );
@@ -284,35 +284,7 @@ async function handlePaymentSucceeded(invoice) {
   }
 }
 
-// ==================== DATABASE CONNECTION ====================
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
-
-// Test database connection
-pool.query('SELECT NOW(), version()', (err, res) => {
-  if (err) {
-    console.error('❌ DATABASE CONNECTION FAILED:', err);
-    console.error('   Check your DATABASE_URL in .env.local');
-    console.error('   Make sure database is running');
-  } else {
-    const dbTime = res.rows[0].now;
-    const dbVersion = res.rows[0].version;
-    console.log('✅ DATABASE CONNECTED SUCCESSFULLY');
-    console.log(`   Database time: ${dbTime}`);
-    console.log(`   PostgreSQL: ${dbVersion.split(' ')[0]} ${dbVersion.split(' ')[1]}`);
-    
-    // Detect if using Supabase
-    if (process.env.DATABASE_URL.includes('supabase.co')) {
-      console.log('🔥 Supabase PostgreSQL detected - VERA\'s memory is in the cloud');
-    } else if (process.env.DATABASE_URL.includes('neon.tech')) {
-      console.log('⚡ Neon PostgreSQL detected - Serverless database ready');
-    } else {
-      console.log('🗄️ PostgreSQL connected - VERA\'s memory active');
-    }
-  }
-});
+// Database is already initialized by database-manager module
 
 // ==================== MIDDLEWARE ====================
 // Restrict CORS in production to APP_URL; allow all during local dev for convenience
@@ -338,7 +310,7 @@ app.use((req, res, next) => {
 // Session middleware
 app.use(session({
   store: new pgSession({
-    pool: pool,
+    pool: db.pool,  // Use the pool from our database manager
     tableName: 'session'
   }),
   secret: process.env.SESSION_SECRET || 'vera-secret-key-change-in-production',
@@ -358,7 +330,7 @@ app.use(express.static('public'));
 async function initializeDatabase() {
   try {
     // Create users table
-    await pool.query(`
+    await db.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
@@ -376,7 +348,7 @@ async function initializeDatabase() {
     `);
 
     // Create conversations table (ensure this exists before messages use it)
-    await pool.query(`
+    await db.query(`
       CREATE TABLE IF NOT EXISTS conversations (
         id SERIAL PRIMARY KEY,
         user_id VARCHAR(255) NOT NULL,
@@ -389,7 +361,7 @@ async function initializeDatabase() {
     `);
 
     // Create messages table (include conversation_id column)
-    await pool.query(`
+    await db.query(`
       CREATE TABLE IF NOT EXISTS messages (
         id SERIAL PRIMARY KEY,
         user_id VARCHAR(255) NOT NULL,
@@ -402,14 +374,14 @@ async function initializeDatabase() {
 
     // If messages table was already present without conversation_id, add column defensively
     try {
-      await pool.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS conversation_id INTEGER`);
+      await db.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS conversation_id INTEGER`);
     } catch (e) {
       // Non-fatal: log and continue; queries will still run but without FK enforcement
       console.warn('⚠️ Could not ensure conversation_id column exists on messages table:', e.message);
     }
 
     // Create session table for express-session
-    await pool.query(`
+    await db.query(`
       CREATE TABLE IF NOT EXISTS session (
         sid VARCHAR NOT NULL COLLATE "default",
         sess JSON NOT NULL,
@@ -419,7 +391,7 @@ async function initializeDatabase() {
     `);
 
     // Create crisis_alerts table for VERA's crisis detection
-    await pool.query(`
+    await db.query(`
       CREATE TABLE IF NOT EXISTS crisis_alerts (
         id SERIAL PRIMARY KEY,
         user_id VARCHAR(255) NOT NULL,
@@ -429,7 +401,7 @@ async function initializeDatabase() {
     `);
 
     // Create leads table for comprehensive lead tracking
-    await pool.query(`
+    await db.query(`
       CREATE TABLE IF NOT EXISTS leads (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
@@ -467,7 +439,7 @@ app.get('/', (req, res) => {
 
 // ==================== HEALTH CHECK & MONITORING ====================
 const SystemMonitor = require('./lib/monitoring');
-const monitor = new SystemMonitor(pool);
+const monitor = new SystemMonitor(db.pool);
 
 // Basic health endpoint for quick checks
 app.get('/health', (req, res) => {
@@ -538,7 +510,7 @@ app.get('/create-account', async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await pool.query(
+    const existingUser = await db.query(
       'SELECT * FROM users WHERE email = $1 OR stripe_customer_id = $2',
       [customerEmail, customerId]
     );
@@ -588,7 +560,7 @@ app.get('/create-account', async (req, res) => {
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
-    await pool.query(
+    await db.query(
       `INSERT INTO users (email, name, stripe_customer_id, stripe_subscription_id, subscription_status, trial_ends_at)
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [customerEmail, customerEmail.split('@')[0], customerId, subscriptionId, 'active', trialEndsAt]
@@ -670,7 +642,7 @@ app.post('/api/check-user', async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
+    const result = await db.query(
       'SELECT email FROM users WHERE email = $1',
       [email]
     );
@@ -710,7 +682,7 @@ app.post('/api/save-lead', async (req, res) => {
     console.log('💾 Saving lead data for:', email);
     
     // Create leads table if it doesn't exist
-    await pool.query(`
+    await db.query(`
       CREATE TABLE IF NOT EXISTS leads (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
@@ -733,7 +705,7 @@ app.post('/api/save-lead', async (req, res) => {
     `);
 
     // Insert or update lead data
-    const result = await pool.query(`
+    const result = await db.query(`
       INSERT INTO leads (
         email, first_name, last_name, company, phone, use_case,
         lead_source, referrer, utm_source, utm_medium, utm_campaign,
@@ -777,7 +749,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
     
     // CRITICAL: Check if user already exists to prevent duplicates (only if email provided)
     if (email) {
-      const existingUser = await pool.query(
+      const existingUser = await db.query(
         'SELECT stripe_customer_id, subscription_status FROM users WHERE email = $1',
         [email]
       );
@@ -935,7 +907,7 @@ app.get('/admin/leads', async (req, res) => {
     }
 
     // Get leads analytics
-    const leads = await pool.query(`
+    const leads = await db.query(`
       SELECT 
         id, email, first_name, last_name, company, phone, use_case,
         lead_source, utm_source, utm_medium, utm_campaign,
@@ -945,7 +917,7 @@ app.get('/admin/leads', async (req, res) => {
       LIMIT 100
     `);
 
-    const stats = await pool.query(`
+    const stats = await db.query(`
       SELECT 
         COUNT(*) as total_leads,
         COUNT(CASE WHEN status = 'converted' THEN 1 END) as converted_leads,
@@ -954,7 +926,7 @@ app.get('/admin/leads', async (req, res) => {
       FROM leads
     `);
 
-    const sourceStats = await pool.query(`
+    const sourceStats = await db.query(`
       SELECT 
         lead_source,
         COUNT(*) as count,
@@ -964,7 +936,7 @@ app.get('/admin/leads', async (req, res) => {
       ORDER BY count DESC
     `);
 
-    const useCaseStats = await pool.query(`
+    const useCaseStats = await db.query(`
       SELECT 
         use_case,
         COUNT(*) as count
@@ -995,7 +967,7 @@ app.get('/api/auth/check', async (req, res) => {
 
   try {
     // Check if user exists and has active subscription
-    const userResult = await pool.query(
+    const userResult = await db.query(
       'SELECT subscription_status, stripe_subscription_id FROM users WHERE email = $1',
       [req.session.userEmail]
     );
@@ -1021,7 +993,7 @@ app.get('/api/auth/check', async (req, res) => {
       const subscription = await stripe.subscriptions.retrieve(user.stripe_subscription_id);
       if (subscription.status === 'active' || subscription.status === 'trialing') {
         // Update local status
-        await pool.query(
+        await db.query(
           'UPDATE users SET subscription_status = $1 WHERE email = $2',
           [subscription.status, req.session.userEmail]
         );
@@ -1064,7 +1036,7 @@ app.post('/api/auth/login-link', async (req, res) => {
 
   try {
     // Check if user exists and has subscription
-    const userResult = await pool.query(
+    const userResult = await db.query(
       'SELECT subscription_status, stripe_subscription_id FROM users WHERE email = $1',
       [email]
     );
@@ -1095,7 +1067,7 @@ app.post('/api/auth/login-link', async (req, res) => {
     const token = require('crypto').randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-    await pool.query(
+    await db.query(
       'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE email = $3',
       [token, expires, email]
     );
@@ -1155,7 +1127,7 @@ app.post('/api/auth/recover', async (req, res) => {
 
   try {
     // Check if user exists
-    const userResult = await pool.query(
+    const userResult = await db.query(
       'SELECT * FROM users WHERE email = $1',
       [email]
     );
@@ -1173,7 +1145,7 @@ app.post('/api/auth/recover', async (req, res) => {
     const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     // Store token in database
-    await pool.query(
+    await db.query(
       'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE email = $3',
       [token, expires, email]
     );
@@ -1256,7 +1228,7 @@ app.get('/verify-recovery', async (req, res) => {
 
   try {
     // Find user with this token that hasn't expired
-    const userResult = await pool.query(
+    const userResult = await db.query(
       'SELECT * FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()',
       [token]
     );
@@ -1268,7 +1240,7 @@ app.get('/verify-recovery', async (req, res) => {
     const user = userResult.rows[0];
 
     // Clear the token (one-time use only)
-    await pool.query(
+    await db.query(
       'UPDATE users SET reset_token = NULL, reset_token_expires = NULL WHERE email = $1',
       [user.email]
     );
@@ -1298,7 +1270,7 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
 
   try {
     // Check if user exists
-    const userResult = await pool.query(
+    const userResult = await db.query(
       'SELECT * FROM users WHERE email = $1',
       [email]
     );
@@ -1312,7 +1284,7 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
     const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     // Store token
-    await pool.query(
+    await db.query(
       'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE email = $3',
       [token, expires, email]
     );
@@ -1377,7 +1349,7 @@ app.get('/verify-magic-link', async (req, res) => {
 
   try {
     // Find user with this token
-    const userResult = await pool.query(
+    const userResult = await db.query(
       'SELECT * FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()',
       [token]
     );
@@ -1389,7 +1361,7 @@ app.get('/verify-magic-link', async (req, res) => {
     const user = userResult.rows[0];
 
     // Clear token
-    await pool.query(
+    await db.query(
       'UPDATE users SET reset_token = NULL, reset_token_expires = NULL WHERE email = $1',
       [user.email]
     );
@@ -1441,9 +1413,11 @@ app.post('/api/chat', async (req, res) => {
     let currentConversationId = conversationId;
     
     if (!currentConversationId) {
+      let activeConv = null;  // ✅ CHANGE 1: Added this line
+      
       try {
         // Check if user has an active conversation (created within last 24 hours)
-        const activeConv = await pool.query(
+        activeConv = await db.query(  // ✅ CHANGE 2: Removed 'const'
           `SELECT id FROM conversations 
            WHERE user_id = $1 
            AND created_at > NOW() - INTERVAL '24 hours'
@@ -1459,7 +1433,7 @@ app.post('/api/chat', async (req, res) => {
         if (dbError.code === '42P01') {
           // Conversations table doesn't exist, create it
           console.log('⚠️ Creating missing conversations table...');
-          await pool.query(`
+          await db.query(`
             CREATE TABLE IF NOT EXISTS conversations (
               id SERIAL PRIMARY KEY,
               user_id VARCHAR(255) NOT NULL,
@@ -1475,11 +1449,11 @@ app.post('/api/chat', async (req, res) => {
         }
       }
       
-      if (activeConv.rows.length > 0) {
+      if (activeConv && activeConv.rows.length > 0) {  // ✅ CHANGE 3: Added null check
         currentConversationId = activeConv.rows[0].id;
       } else {
         // Create new conversation
-        const newConv = await pool.query(
+        const newConv = await db.query(
           `INSERT INTO conversations (user_id, title, created_at, updated_at)
            VALUES ($1, $2, NOW(), NOW())
            RETURNING id`,
@@ -1491,7 +1465,7 @@ app.post('/api/chat', async (req, res) => {
     }
 
     // Lightweight idempotency: if the last user message matches and is recent, return the last assistant reply
-    const lastUser = await pool.query(
+    const lastUser = await db.query(
       "SELECT id, content, created_at FROM messages WHERE user_id = $1 AND role = 'user' ORDER BY created_at DESC LIMIT 1",
       [userId]
     );
@@ -1500,7 +1474,7 @@ app.post('/api/chat', async (req, res) => {
       const sameContent = (lu.content || '') === message;
       const withinWindow = (Date.now() - new Date(lu.created_at).getTime()) < 15000; // 15s window
       if (sameContent && withinWindow) {
-        const lastAssistant = await pool.query(
+        const lastAssistant = await db.query(
           "SELECT content FROM messages WHERE user_id = $1 AND role = 'assistant' AND created_at > $2 ORDER BY created_at ASC LIMIT 1",
           [userId, lu.created_at]
         );
@@ -1524,7 +1498,7 @@ app.post('/api/chat', async (req, res) => {
     if (wantDebug) setVERADebug(true);
     console.log('🧠 Calling getVERAResponse...');
     const startTime = Date.now();
-    const veraResult = await getVERAResponse(userId, message, userName || 'friend', pool, attachments);
+    const veraResult = await getVERAResponse(userId, message, userName || 'friend', db.pool, attachments);
     const duration = Date.now() - startTime;
     
     // Record metrics
@@ -1545,12 +1519,12 @@ app.post('/api/chat', async (req, res) => {
     });
 
     // ✅ FIXED: Now save both messages in order (user first, then assistant) with conversation_id
-    await pool.query(
+    await db.query(
       'INSERT INTO messages (user_id, role, content, conversation_id) VALUES ($1, $2, $3, $4)',
       [userId, 'user', message, currentConversationId]
     );
 
-    await pool.query(
+    await db.query(
       'INSERT INTO messages (user_id, role, content, conversation_id) VALUES ($1, $2, $3, $4)',
       [userId, 'assistant', veraResult.response, currentConversationId]
     );
@@ -1599,7 +1573,7 @@ app.get('/api/history', async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
+    const result = await db.query(
       'SELECT role, content, created_at FROM messages WHERE user_id = $1 ORDER BY created_at ASC',
       [userId]
     );
@@ -1631,7 +1605,7 @@ app.get('/api/conversations', async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
+    const result = await db.query(
       `SELECT id, title, created_at, updated_at, message_count, last_message_preview
        FROM conversations 
        WHERE user_id = $1 
@@ -1666,7 +1640,7 @@ app.get('/api/conversations/:id', async (req, res) => {
 
   try {
     // Verify conversation belongs to user
-    const convCheck = await pool.query(
+    const convCheck = await db.query(
       'SELECT id FROM conversations WHERE id = $1 AND user_id = $2',
       [conversationId, userId]
     );
@@ -1676,7 +1650,7 @@ app.get('/api/conversations/:id', async (req, res) => {
     }
 
     // Get messages
-    const result = await pool.query(
+    const result = await db.query(
       'SELECT role, content, created_at FROM messages WHERE conversation_id = $1 ORDER BY created_at ASC',
       [conversationId]
     );
@@ -1699,7 +1673,7 @@ app.post('/api/conversations', async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
+    const result = await db.query(
       `INSERT INTO conversations (user_id, title, created_at, updated_at)
        VALUES ($1, $2, NOW(), NOW())
        RETURNING id, title, created_at, updated_at`,
@@ -1726,7 +1700,7 @@ app.patch('/api/conversations/:id', async (req, res) => {
 
   try {
     // Verify ownership
-    const convCheck = await pool.query(
+    const convCheck = await db.query(
       'SELECT id FROM conversations WHERE id = $1 AND user_id = $2',
       [conversationId, userId]
     );
@@ -1736,7 +1710,7 @@ app.patch('/api/conversations/:id', async (req, res) => {
     }
 
     // Update title
-    await pool.query(
+    await db.query(
       'UPDATE conversations SET title = $1, updated_at = NOW() WHERE id = $2',
       [title, conversationId]
     );
@@ -1768,7 +1742,7 @@ app.delete('/api/conversations/:id', async (req, res) => {
 
   try {
     // Verify ownership and delete (messages will cascade delete)
-    const result = await pool.query(
+    const result = await db.query(
       'DELETE FROM conversations WHERE id = $1 AND user_id = $2 RETURNING id',
       [conversationId, userId]
     );
@@ -1792,7 +1766,7 @@ app.post('/api/check-history', async (req, res) => {
 
     console.log('🔍 Checking history for:', userId);
 
-    const result = await pool.query(
+    const result = await db.query(
       `SELECT COUNT(*) as message_count 
        FROM messages 
        WHERE user_id = $1`,
@@ -1828,12 +1802,12 @@ app.post('/api/register', async (req, res) => {
     }
 
     // Ensure phone column exists without breaking existing schema
-    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)");
+    await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)");
 
     const fullName = `${firstName} ${lastName}`.trim();
 
     // Upsert user and mark as trialing with a 7-day trial window
-    await pool.query(
+    await db.query(
       `INSERT INTO users (email, name, phone, subscription_status, trial_ends_at)
        VALUES ($1, $2, $3, 'trialing', NOW() + INTERVAL '7 days')
        ON CONFLICT (email)
