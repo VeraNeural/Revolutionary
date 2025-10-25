@@ -6,11 +6,7 @@
     <title>VERA - Your Nervous System Companion</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -34,6 +30,7 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .menu-btn {
@@ -42,6 +39,11 @@
             font-size: 1.5rem;
             cursor: pointer;
             padding: 0.5rem;
+            transition: transform 0.2s;
+        }
+
+        .menu-btn:hover {
+            transform: scale(1.1);
         }
 
         .container {
@@ -62,23 +64,30 @@
             margin-bottom: 1rem;
             overflow-y: auto;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            scroll-behavior: smooth;
         }
 
-        .message {
-            margin-bottom: 1rem;
-            display: flex;
+        .message { 
+            margin-bottom: 1rem; 
+            display: flex; 
             gap: 0.75rem;
+            animation: fadeIn 0.3s ease-in;
         }
-
-        .message-user {
-            flex-direction: row-reverse;
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
+        
+        .message-user { flex-direction: row-reverse; }
 
         .message-bubble {
             max-width: 70%;
             padding: 1rem;
             border-radius: 15px;
             line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
 
         .message-vera .message-bubble {
@@ -109,11 +118,13 @@
             resize: none;
             min-height: 50px;
             max-height: 150px;
+            font-family: inherit;
         }
 
         #messageInput:focus {
             outline: none;
             border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         #sendBtn {
@@ -124,16 +135,18 @@
             padding: 0.75rem 1.5rem;
             font-size: 1rem;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: transform 0.2s, opacity 0.2s;
+            white-space: nowrap;
         }
 
-        #sendBtn:hover {
-            transform: scale(1.05);
+        #sendBtn:hover:not(:disabled) { 
+            transform: scale(1.05); 
         }
-
-        #sendBtn:disabled {
-            opacity: 0.5;
+        
+        #sendBtn:disabled { 
+            opacity: 0.5; 
             cursor: not-allowed;
+            transform: scale(1);
         }
 
         .typing-indicator {
@@ -142,35 +155,94 @@
             color: #667eea;
             font-style: italic;
         }
-
-        .typing-indicator.active {
-            display: block;
-        }
+        .typing-indicator.active { display: block; }
 
         /* Animated typing dots */
-        .typing-dots { display: inline-flex; gap: 6px; align-items: center; }
-        .typing-dot { width: 6px; height: 6px; background: #667eea; border-radius: 50%; opacity: 0.4; animation: blink 1.2s infinite; }
+        .typing-dots { 
+            display: inline-flex; 
+            gap: 6px; 
+            align-items: center; 
+        }
+        
+        .typing-dot { 
+            width: 6px; 
+            height: 6px; 
+            background: #667eea; 
+            border-radius: 50%; 
+            opacity: 0.4; 
+            animation: blink 1.2s infinite; 
+        }
+        
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes blink { 0%, 80%, 100% { opacity: 0.2; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
-
-        /* Free messages badge */
-        .free-badge { background: rgba(255,255,255,0.9); color: #4c51bf; border: 1px solid rgba(102,126,234,0.3); padding: 6px 10px; border-radius: 999px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; }
-        .badge-dot { width: 8px; height: 8px; background: #48bb78; border-radius: 50%; box-shadow: 0 0 6px rgba(72,187,120,0.6); }
-
-        /* Quick-start chips */
-        .quick-starts { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin-top: 0.75rem; }
-        .quick-chip { background: rgba(255,255,255,0.9); border: 1px solid rgba(155, 137, 212, 0.3); color: #4a5568; padding: 0.35rem 0.7rem; border-radius: 999px; font-size: 0.85rem; cursor: pointer; }
-        .quick-chip:hover { background: rgba(155, 137, 212, 0.15); }
-
-        .welcome {
-            text-align: center;
-            padding: 2rem;
-            color: #667eea;
+        
+        @keyframes blink { 
+            0%, 80%, 100% { opacity: 0.2; transform: translateY(0); } 
+            40% { opacity: 1; transform: translateY(-3px); } 
         }
 
-        .welcome h2 {
-            margin-bottom: 1rem;
+        /* Free messages badge */
+        .free-badge { 
+            background: rgba(255,255,255,0.9); 
+            color: #4c51bf; 
+            border: 1px solid rgba(102,126,234,0.3); 
+            padding: 6px 10px; 
+            border-radius: 999px; 
+            font-size: 0.85rem; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 6px; 
+        }
+        
+        .badge-dot { 
+            width: 8px; 
+            height: 8px; 
+            background: #48bb78; 
+            border-radius: 50%; 
+            box-shadow: 0 0 6px rgba(72,187,120,0.6); 
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Quick-start chips */
+        .quick-starts { 
+            display: flex; 
+            gap: 0.5rem; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            margin-top: 0.75rem; 
+        }
+        
+        .quick-chip { 
+            background: rgba(255,255,255,0.9); 
+            border: 1px solid rgba(155, 137, 212, 0.3); 
+            color: #4a5568; 
+            padding: 0.35rem 0.7rem; 
+            border-radius: 999px; 
+            font-size: 0.85rem; 
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .quick-chip:hover { 
+            background: rgba(155, 137, 212, 0.15); 
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .welcome { 
+            text-align: center; 
+            padding: 2rem; 
+            color: #667eea; 
+        }
+        
+        .welcome h2 { 
+            margin-bottom: 1rem; 
+            font-size: 1.5rem;
         }
 
         /* Menu dropdown */
@@ -186,10 +258,7 @@
             z-index: 1000;
             min-width: 200px;
         }
-
-        .menu-dropdown.active {
-            display: block;
-        }
+        .menu-dropdown.active { display: block; }
 
         .menu-item {
             padding: 0.75rem 1rem;
@@ -200,32 +269,73 @@
             align-items: center;
             gap: 0.5rem;
         }
+        .menu-item:hover { background: rgba(102, 126, 234, 0.1); }
+        .menu-item-icon { font-size: 1.2rem; }
 
-        .menu-item:hover {
-            background: rgba(102, 126, 234, 0.1);
+        /* Error message */
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            display: none;
+        }
+        .error-message.active { display: block; }
+
+        /* Loading state */
+        .loading {
+            pointer-events: none;
+            opacity: 0.6;
         }
 
-        .menu-item-icon {
-            font-size: 1.2rem;
+        /* Accessibility */
+        .sr-only {
+            position: absolute; 
+            width: 1px; 
+            height: 1px; 
+            padding: 0; 
+            margin: -1px;
+            overflow: hidden; 
+            clip: rect(0,0,0,0); 
+            white-space: nowrap; 
+            border: 0;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .message-bubble {
+                max-width: 85%;
+            }
+            
+            .quick-chip {
+                font-size: 0.8rem;
+                padding: 0.3rem 0.6rem;
+            }
+            
+            #sendBtn {
+                padding: 0.75rem 1rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>VERA</h1>
-        <button class="menu-btn" onclick="toggleMenu()">☰</button>
+        <button id="menuBtn" class="menu-btn" aria-haspopup="true" aria-expanded="false" aria-controls="menuDropdown" aria-label="Menu">☰</button>
     </div>
 
-    <div class="menu-dropdown" id="menuDropdown">
-        <div class="menu-item" id="signInMenuItem" onclick="window.location.href='/login.html'" style="display:none;">
+    <div class="menu-dropdown" id="menuDropdown" role="menu" aria-labelledby="menuBtn">
+        <div class="menu-item" id="signInMenuItem" role="menuitem" style="display:none;">
             <span class="menu-item-icon">🔑</span>
             <span>Sign in</span>
         </div>
-        <div class="menu-item" onclick="manageSubscription()">
+        <div class="menu-item" id="manageSubscriptionItem" role="menuitem">
             <span class="menu-item-icon">💳</span>
             <span>Manage Subscription</span>
         </div>
-        <div class="menu-item" onclick="logout()">
+        <div class="menu-item" id="logoutItem" role="menuitem">
             <span class="menu-item-icon">🚪</span>
             <span>Logout</span>
         </div>
@@ -233,382 +343,540 @@
 
     <div class="container">
         <div style="display:flex; justify-content:flex-end; margin: 0.25rem 0;">
-            <div id="freeBadge" class="free-badge" style="display:none;"><span class="badge-dot"></span><span id="freeBadgeText">5 free messages left</span></div>
-        </div>
-        <div class="chat-container" id="chatContainer">
-            <div class="welcome">
-                <h2>I'm VERA. I'm here for you.</h2>
-                <p>This is a space where your nervous system is understood—where what you're feeling matters. No rush, no judgment. Just us.</p>
-                <div class="quick-starts">
-                    <button class="quick-chip" onclick="quickStart('I don\'t know where to start')">I don't know where to start</button>
-                    <button class="quick-chip" onclick="quickStart('My chest feels tight and I\'m anxious')">Chest feels tight</button>
-                    <button class="quick-chip" onclick="quickStart('Everything feels heavy today')">Everything feels heavy</button>
-                </div>
+            <div id="freeBadge" class="free-badge" style="display:none;">
+                <span class="badge-dot"></span>
+                <span id="freeBadgeText">5 free messages left</span>
             </div>
         </div>
 
-        <div class="typing-indicator" id="typingIndicator"><span style="margin-right:8px;">VERA is typing</span><span class="typing-dots"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span></div>
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome">
+                <h2>Welcome to VERA 🌟</h2>
+                <p>Your revolutionary consciousness companion. I'm here to meet you exactly where you are.</p>
+                <div class="quick-starts">
+                    <button class="quick-chip" data-message="I'm feeling overwhelmed right now">I'm feeling overwhelmed</button>
+                    <button class="quick-chip" data-message="I notice tension in my chest">Tension in my chest</button>
+                    <button class="quick-chip" data-message="I'm not sure what I'm feeling">Not sure what I'm feeling</button>
+                </div>
+            </div>
+            <div class="typing-indicator" id="typingIndicator">
+                VERA is reflecting
+                <span class="typing-dots">
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                </span>
+            </div>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
 
         <div class="input-container">
-            <textarea id="messageInput" placeholder="What's present in your body right now?"></textarea>
-            <button id="sendBtn" onclick="sendMessage()">Send</button>
+            <textarea 
+                id="messageInput" 
+                placeholder="What's here for you right now?" 
+                rows="1"
+                aria-label="Message input"
+            ></textarea>
+            <button id="sendBtn" aria-label="Send message">Send</button>
         </div>
     </div>
 
     <script>
+    // ==================== GLOBAL STATE ====================
+    let isAuthenticated = false;
+    let isSubscriber = false;
     let userEmail = null;
-        let userName = 'friend';
-    let hasActiveSubscription = false; // track if user has paid subscription
-    // Stable anonymous id for guests to preserve conversation continuity
-    let anonId = null;
-    const freeMessageLimit = 20; // allow 20 free user messages (testing)
-    let freeMessageCount = Number(sessionStorage.getItem('vera_free_count') || '0'); // persist within tab
+    let userName = 'friend';
+    let anonId = '';
+    let isSending = false;
+    
+    // Free message tracking (set high for testing - unlimited for now)
+    const freeMessageLimit = 999999;
+    let freeMessageCount = 0;
+
+    // DOM elements
+    const chatContainer = document.getElementById('chatContainer');
     const messageInput = document.getElementById('messageInput');
-        const chatContainer = document.getElementById('chatContainer');
-        const sendBtn = document.getElementById('sendBtn');
-    let isSending = false; // prevent duplicate sends
-        const typingIndicator = document.getElementById('typingIndicator');
+    const sendBtn = document.getElementById('sendBtn');
+    const typingIndicator = document.getElementById('typingIndicator');
+    const freeBadge = document.getElementById('freeBadge');
+    const freeBadgeText = document.getElementById('freeBadgeText');
+    const menuBtn = document.getElementById('menuBtn');
+    const menuDropdown = document.getElementById('menuDropdown');
+    const errorMessage = document.getElementById('errorMessage');
 
-    // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Initialize anonId in localStorage (for guests)
-            try {
-                const stored = localStorage.getItem('vera_anon_id');
-                if (stored) {
-                    anonId = stored;
-                } else {
-                    anonId = 'anon_' + Math.random().toString(36).slice(2, 10);
-                    localStorage.setItem('vera_anon_id', anonId);
-                }
-            } catch (e) {
-                // Fallback if storage blocked
-                anonId = 'anon_' + Math.random().toString(36).slice(2, 10);
-            }
-            // Check authentication first
-            try {
-                const authResponse = await fetch('/api/auth/check');
-                const authData = await authResponse.json();
-                
-                if (authData.authenticated && authData.email) {
-                    userEmail = authData.email;
-                    userName = authData.email.split('@')[0];
-                    console.log('✅ Authenticated as:', userEmail);
-                    const signInItem = document.getElementById('signInMenuItem');
-                    if (signInItem) signInItem.style.display = 'none';
-
-                    // Check if user has active subscription
-                    try {
-                        const subResponse = await fetch('/api/subscription-status', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ email: userEmail })
-                        });
-                        const subData = await subResponse.json();
-                        if (subData.success && subData.found && (subData.status === 'active' || subData.status === 'trialing')) {
-                            hasActiveSubscription = true;
-                            console.log('✅ Active subscription detected:', subData.status);
-                        }
-                    } catch (subError) {
-                        console.error('Subscription check failed:', subError);
-                    }
-                } else {
-                    // Fallback only for display name; do NOT set userEmail from URL (prevents bypassing paywall)
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const emailParam = urlParams.get('email');
-                    if (emailParam && emailParam.includes('@')) {
-                        userName = emailParam.split('@')[0];
-                    }
-                    const signInItem = document.getElementById('signInMenuItem');
-                    if (signInItem) signInItem.style.display = 'flex';
-                }
-
-                // Update free badge on load
-                updateFreeBadge();
-            } catch (error) {
-                console.error('Auth check failed:', error);
-            }
-
-            // Enter key to send
-            messageInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
+    // ==================== UTILITY FUNCTIONS ====================
+    
+    /**
+     * ✅ CORRECTED: Improved error handling for fetch requests
+     */
+    async function safeJsonFetch(url, options = {}) {
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
                 }
             });
 
-            // Auto-resize textarea
-            const adjustHeight = () => {
-                messageInput.style.height = 'auto';
-                const newH = Math.min(150, Math.max(50, messageInput.scrollHeight));
-                messageInput.style.height = newH + 'px';
-            };
-            messageInput.addEventListener('input', adjustHeight);
-            adjustHeight();
-
-            // Load chat history
-            loadHistory();
-        });
-
-        async function sendMessage() {
-            const message = messageInput.value.trim();
-            if (!message || isSending) return; // guard against duplicates
-
-            // Paywall: if unauthenticated and exceeded free limit, prompt to subscribe
-            // Skip paywall check if user has active subscription
-            if (!userEmail && !hasActiveSubscription) {
-                if (freeMessageCount >= freeMessageLimit) {
-                    const proceed = confirm("You've reached the free messages limit. Subscribe to keep going?");
-                    if (proceed) {
-                        return startSubscriptionFlow();
-                    } else {
-                        return; // do not send further messages
-                    }
-                } else {
-                    freeMessageCount += 1;
-                    sessionStorage.setItem('vera_free_count', String(freeMessageCount));
-                    updateFreeBadge();
-                }
-            }
-
-            // Disable input and set sending flag
-            isSending = true;
-            sendBtn.disabled = true;
-            messageInput.disabled = true;
-
-            // Add user message
-            addMessage('user', message);
-            messageInput.value = '';
-
-            // Show typing indicator
-            typingIndicator.classList.add('active');
-
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        message,
-                        email: userEmail,
-                        userName,
-                        anonId
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success && data.response) {
-                    addMessage('vera', data.response);
-                } else {
-                    addMessage('vera', "I'm here. Let me gather my thoughts and try again.");
-                }
-            } catch (error) {
-                console.error('Chat error:', error);
-                addMessage('vera', "I'm having trouble connecting right now. Please try again in a moment.");
-            } finally {
-                // Re-enable input
-                typingIndicator.classList.remove('active');
-                sendBtn.disabled = false;
-                messageInput.disabled = false;
-                messageInput.focus();
-                isSending = false;
-            }
-        }
-
-        function quickStart(text) {
-            messageInput.value = text;
-            messageInput.dispatchEvent(new Event('input'));
-            sendMessage();
-        }
-
-        async function startSubscriptionFlow() {
-            try {
-                let emailForCheckout = userEmail;
-                if (!emailForCheckout) {
-                    const entered = window.prompt('Enter your email for checkout (you can leave blank and enter it on Stripe):');
-                    if (entered && entered.includes('@')) {
-                        emailForCheckout = entered.trim();
-                    }
-                }
-
-                const response = await fetch('/api/create-checkout-session', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: emailForCheckout || undefined })
-                });
-                const data = await response.json();
-                if (response.ok && data.url) {
-                    window.location.href = data.url;
-                } else if (data.redirect) {
-                    window.location.href = data.redirect;
-                } else {
-                    alert(data.error || 'Unable to start checkout. Please try again.');
-                }
-            } catch (err) {
-                console.error('Checkout error:', err);
-                alert('There was a problem starting checkout. Please try again.');
-            }
-        }
-
-        function addMessage(role, content) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message message-${role}`;
-            messageDiv.innerHTML = `
-                <div class="message-bubble">
-                    ${content}
-                </div>
-            `;
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        async function loadHistory() {
-            if (!userEmail && !anonId) return;
-
-            try {
-                const url = userEmail ? '/api/history' : `/api/history?anonId=${encodeURIComponent(anonId)}`;
-                const response = await fetch(url);
-                const data = await response.json();
-
-                if (data.messages && data.messages.length > 0) {
-                    // Clear welcome message
-                    chatContainer.innerHTML = '';
-                    
-                    data.messages.forEach(msg => {
-                        addMessage(msg.role === 'user' ? 'user' : 'vera', msg.content);
-                    });
-                }
-            } catch (error) {
-                console.error('Error loading history:', error);
-            }
-        }
-
-        function updateFreeBadge() {
-            const badge = document.getElementById('freeBadge');
-            const text = document.getElementById('freeBadgeText');
-            if (!badge || !text) return;
-            // Hide badge if user has active subscription
-            if (userEmail && hasActiveSubscription) {
-                badge.style.display = 'none';
-                return;
-            }
-            if (userEmail) {
-                badge.style.display = 'none';
-                return;
-            }
-            const remaining = Math.max(0, freeMessageLimit - freeMessageCount);
-            text.textContent = `${remaining} free message${remaining === 1 ? '' : 's'} left`;
-            badge.style.display = 'inline-flex';
-        }
-
-        function toggleMenu() {
-            const menu = document.getElementById('menuDropdown');
-            menu.classList.toggle('active');
-        }
-
-        async function manageSubscription() {
-            // Close menu first
-            document.getElementById('menuDropdown').classList.remove('active');
-
-            // If email not loaded yet, check auth again
-            if (!userEmail) {
+            // Check if response is ok
+            if (!response.ok) {
+                const errorText = await response.text();
+                let errorData;
                 try {
-                    const authResponse = await fetch('/api/auth/check');
-                    const authData = await authResponse.json();
-                    
-                    if (authData.authenticated && authData.email) {
-                        userEmail = authData.email;
-                        userName = authData.email.split('@')[0];
-                    } else {
-                        // No active session – ask for email to proceed (MVP-friendly)
-                        const entered = window.prompt('Enter your email to manage your subscription:');
-                        if (!entered || !entered.includes('@')) {
-                            alert('Valid email required to open the billing portal.');
-                            return;
-                        }
-                        userEmail = entered.trim();
-                        userName = userEmail.split('@')[0];
-                    }
-                } catch (error) {
-                    console.error('Auth check failed:', error);
-                    alert('Unable to verify authentication. Please refresh and try again.');
-                    return;
+                    errorData = JSON.parse(errorText);
+                } catch {
+                    errorData = { error: errorText || `HTTP ${response.status}` };
                 }
+                throw new Error(errorData.error || `Request failed with status ${response.status}`);
             }
 
-            console.log('📧 Managing subscription for:', userEmail);
+            // Try to parse JSON
+            const text = await response.text();
+            if (!text || text.trim().length === 0) {
+                return { success: true };
+            }
 
-            // First check if subscription exists
             try {
-                const statusResponse = await fetch('/api/subscription-status', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: userEmail })
-                });
-
-                const statusData = await statusResponse.json();
-                console.log('📊 Subscription status:', statusData);
-
-                if (!statusData.found || statusData.status === 'none') {
-                    alert('No active subscription found for ' + userEmail + '. If this is unexpected, double-check the email used at checkout.');
-                    return;
-                }
-            } catch (error) {
-                console.error('Status check failed:', error);
-                // Continue anyway - let portal endpoint handle it
+                return JSON.parse(text);
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError);
+                console.error('Response text:', text);
+                throw new Error('Invalid JSON response from server');
             }
+        } catch (error) {
+            console.error(`Fetch error for ${url}:`, error);
+            throw error;
+        }
+    }
 
-            // Now open portal
-            try {
-                const response = await fetch('/api/portal', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: userEmail })
-                });
+    /**
+     * ✅ CORRECTED: Show error messages to user
+     */
+    function showError(message, duration = 5000) {
+        errorMessage.textContent = message;
+        errorMessage.classList.add('active');
+        
+        setTimeout(() => {
+            errorMessage.classList.remove('active');
+        }, duration);
+    }
 
-                const data = await response.json();
-                console.log('🔗 Portal response:', data);
+    /**
+     * ✅ CORRECTED: Sanitize HTML to prevent XSS
+     */
+    function sanitizeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 
-                if (data.success && data.url) {
-                    // Open Stripe Billing Portal
-                    window.location.href = data.url;
-                } else {
-                    const errorMsg = data.error || 'Unknown error';
-                    console.error('Portal error:', errorMsg);
-                    
-                    // Better error messaging
-                    if (errorMsg.includes('No Stripe customer')) {
-                        alert('No subscription found. Please refresh the page and try again, or subscribe from the home page.');
-                    } else if (errorMsg.includes('not found')) {
-                        alert('Subscription not found. Please refresh the page and try again.');
-                    } else {
-                        alert('Unable to open subscription portal: ' + errorMsg);
-                    }
-                }
-            } catch (error) {
-                console.error('Portal error:', error);
-                alert('Error opening subscription portal. Please try again.');
-            }
+    /**
+     * ✅ CORRECTED: Add message with proper sanitization
+     */
+    function addMessage(role, content) {
+        if (!content || typeof content !== 'string') {
+            console.error('Invalid message content:', content);
+            return;
         }
 
-        function logout() {
-            if (confirm('Are you sure you want to log out?')) {
-                fetch('/api/auth/logout', { method: 'POST' })
-                    .then(() => window.location.href = '/')
-                    .catch(err => {
-                        console.error('Logout error:', err);
-                        window.location.href = '/';
-                    });
-            }
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message message-${role}`;
+        
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        bubble.textContent = content; // Using textContent for automatic escaping
+        
+        messageDiv.appendChild(bubble);
+        
+        // Remove welcome message if present
+        const welcome = chatContainer.querySelector('.welcome');
+        if (welcome) {
+            welcome.remove();
+        }
+        
+        // Insert before typing indicator
+        chatContainer.insertBefore(messageDiv, typingIndicator);
+        
+        // Scroll to bottom
+        setTimeout(() => {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }, 100);
+    }
+
+    /**
+     * ✅ CORRECTED: Auto-resize textarea
+     */
+    function adjustTextareaHeight() {
+        messageInput.style.height = 'auto';
+        const newHeight = Math.min(messageInput.scrollHeight, 150);
+        messageInput.style.height = newHeight + 'px';
+    }
+
+    /**
+     * ✅ CORRECTED: Update free message badge
+     */
+    function updateFreeBadge() {
+        if (isAuthenticated || isSubscriber) {
+            freeBadge.style.display = 'none';
+            return;
         }
 
-        // Close menu when clicking outside
+        const remaining = Math.max(0, freeMessageLimit - freeMessageCount);
+        freeBadgeText.textContent = `${remaining} free message${remaining !== 1 ? 's' : ''} left`;
+        freeBadge.style.display = remaining > 0 ? 'inline-flex' : 'none';
+    }
+
+    /**
+     * ✅ CORRECTED: Generate anonymous ID
+     */
+    function getOrCreateAnonId() {
+        let id = sessionStorage.getItem('vera_anon_id');
+        if (!id) {
+            id = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('vera_anon_id', id);
+        }
+        return id;
+    }
+
+    // ==================== INITIALIZATION ====================
+    
+    document.addEventListener('DOMContentLoaded', async () => {
+        console.log('🌟 VERA initializing...');
+
+        // Get anonymous ID
+        anonId = getOrCreateAnonId();
+
+        // Load free message count
+        const storedCount = sessionStorage.getItem('vera_free_count');
+        freeMessageCount = storedCount ? parseInt(storedCount, 10) : 0;
+
+        // Check authentication
+        try {
+            const authData = await safeJsonFetch('/api/auth/check');
+            if (authData && authData.authenticated) {
+                isAuthenticated = true;
+                userEmail = authData.email || null;
+                userName = userEmail ? userEmail.split('@')[0] : 'friend';
+                isSubscriber = authData.isSubscriber || false;
+                console.log('✅ Authenticated as:', userName);
+            } else {
+                console.log('👤 Guest mode');
+            }
+        } catch (error) {
+            console.error('Auth check failed:', error);
+            // Continue in guest mode
+        }
+
+        // ✅ CORRECTED: Menu toggle with proper event handling
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = menuDropdown.classList.toggle('active');
+            menuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        // ✅ CORRECTED: Close menu when clicking outside
         document.addEventListener('click', (e) => {
-            const menu = document.getElementById('menuDropdown');
-            const menuBtn = document.querySelector('.menu-btn');
-            if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
-                menu.classList.remove('active');
+            if (!menuDropdown.contains(e.target) && e.target !== menuBtn) {
+                menuDropdown.classList.remove('active');
+                menuBtn.setAttribute('aria-expanded', 'false');
             }
         });
+
+        // Menu item handlers
+        document.getElementById('manageSubscriptionItem').addEventListener('click', manageSubscription);
+        document.getElementById('logoutItem').addEventListener('click', logout);
+
+        // Send button handler
+        sendBtn.addEventListener('click', sendMessage);
+
+        // ✅ CORRECTED: Enter to send, Shift+Enter for new line
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Auto-resize textarea
+        messageInput.addEventListener('input', adjustTextareaHeight);
+
+        // ✅ CORRECTED: Quick-start buttons with proper delegation
+        chatContainer.addEventListener('click', (e) => {
+            const chip = e.target.closest('.quick-chip');
+            if (chip) {
+                const text = chip.getAttribute('data-message') || chip.textContent || '';
+                quickStart(text);
+            }
+        });
+
+        // Update badge
+        updateFreeBadge();
+
+        // Load history
+        try {
+            await loadHistory();
+        } catch (err) {
+            console.error('Error loading history:', err);
+        }
+
+        console.log('✨ VERA ready');
+    });
+
+    // ==================== CORE FUNCTIONS ====================
+
+    /**
+     * ✅ CORRECTED: Send message with comprehensive error handling
+     */
+    async function sendMessage() {
+        const message = messageInput.value.trim();
+        
+        // Validation
+        if (!message) {
+            messageInput.focus();
+            return;
+        }
+        
+        if (isSending) {
+            console.log('⏳ Already sending a message');
+            return;
+        }
+
+        // ✅ CORRECTED: Paywall check with better UX
+        if (!isAuthenticated && !isSubscriber) {
+            if (freeMessageCount >= freeMessageLimit) {
+                const proceed = confirm("You've reached the free message limit. Would you like to subscribe to continue chatting with VERA?");
+                if (proceed) {
+                    startSubscriptionFlow();
+                }
+                return;
+            }
+            
+            freeMessageCount += 1;
+            sessionStorage.setItem('vera_free_count', String(freeMessageCount));
+            updateFreeBadge();
+        }
+
+        // Disable UI
+        isSending = true;
+        sendBtn.disabled = true;
+        messageInput.disabled = true;
+        chatContainer.classList.add('loading');
+
+        // Add user message
+        addMessage('user', message);
+        messageInput.value = '';
+        adjustTextareaHeight();
+
+        // Show typing indicator
+        typingIndicator.classList.add('active');
+
+        try {
+            const data = await safeJsonFetch('/api/chat', {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    message, 
+                    email: userEmail, 
+                    userName, 
+                    anonId 
+                })
+            });
+
+            if (data && data.success && data.response) {
+                addMessage('vera', data.response);
+            } else {
+                throw new Error(data?.error || 'No response from VERA');
+            }
+        } catch (error) {
+            console.error('Chat error:', error);
+            showError('Unable to connect to VERA. Please try again.');
+            addMessage('vera', "I'm having trouble connecting right now. Please try again in a moment.");
+        } finally {
+            // Re-enable UI
+            typingIndicator.classList.remove('active');
+            sendBtn.disabled = false;
+            messageInput.disabled = false;
+            chatContainer.classList.remove('loading');
+            messageInput.focus();
+            isSending = false;
+        }
+    }
+
+    /**
+     * ✅ CORRECTED: Quick start with proper input handling
+     */
+    function quickStart(text) {
+        if (!text) return;
+        
+        messageInput.value = text;
+        adjustTextareaHeight();
+        messageInput.focus();
+        
+        // Send after a brief delay for UX
+        setTimeout(() => {
+            sendMessage();
+        }, 100);
+    }
+
+    /**
+     * ✅ CORRECTED: Subscription flow with better error handling
+     */
+    async function startSubscriptionFlow() {
+        try {
+            let emailForCheckout = userEmail;
+            
+            if (!emailForCheckout) {
+                emailForCheckout = window.prompt('Enter your email for checkout (optional - you can enter it on Stripe):');
+                if (emailForCheckout && !emailForCheckout.includes('@')) {
+                    showError('Please enter a valid email address');
+                    return;
+                }
+                emailForCheckout = emailForCheckout?.trim() || undefined;
+            }
+
+            const data = await safeJsonFetch('/api/create-checkout-session', {
+                method: 'POST',
+                body: JSON.stringify({ email: emailForCheckout })
+            });
+
+            if (data && (data.url || data.redirect)) {
+                window.location.href = data.url || data.redirect;
+            } else {
+                throw new Error(data?.error || 'Unable to start checkout');
+            }
+        } catch (err) {
+            console.error('Checkout error:', err);
+            showError('Unable to start checkout. Please try again.');
+        }
+    }
+
+    /**
+     * ✅ CORRECTED: Load conversation history
+     */
+    async function loadHistory() {
+        if (!userEmail && !anonId) {
+            console.log('No user identity for history');
+            return;
+        }
+
+        try {
+            const url = userEmail 
+                ? '/api/history' 
+                : `/api/history?anonId=${encodeURIComponent(anonId)}`;
+            
+            const data = await safeJsonFetch(url, { method: 'GET' });
+
+            if (data && Array.isArray(data.messages) && data.messages.length > 0) {
+                // Clear welcome message
+                const welcome = chatContainer.querySelector('.welcome');
+                if (welcome) {
+                    welcome.remove();
+                }
+                
+                // Add messages
+                data.messages.forEach(msg => {
+                    if (msg && msg.content) {
+                        addMessage((msg.role === 'user') ? 'user' : 'vera', msg.content);
+                    }
+                });
+                
+                console.log(`✅ Loaded ${data.messages.length} messages from history`);
+            }
+        } catch (error) {
+            console.error('Error loading history:', error);
+            // Don't show error to user - just log it
+        }
+    }
+
+    /**
+     * ✅ CORRECTED: Manage subscription with better flow
+     */
+    async function manageSubscription() {
+        // Close menu
+        menuDropdown.classList.remove('active');
+        menuBtn.setAttribute('aria-expanded', 'false');
+
+        try {
+            // Refresh auth status
+            const authData = await safeJsonFetch('/api/auth/check');
+            if (authData && authData.authenticated && authData.email) {
+                isAuthenticated = true;
+                userEmail = authData.email;
+                userName = userEmail.split('@')[0];
+            }
+        } catch (error) {
+            console.error('Auth refresh failed:', error);
+        }
+
+        // Get email for portal
+        let emailForPortal = userEmail;
+        
+        if (!isAuthenticated && !emailForPortal) {
+            emailForPortal = window.prompt('Enter your email to manage your subscription:');
+            if (!emailForPortal || !emailForPortal.includes('@')) {
+                showError('Valid email required to access billing portal');
+                return;
+            }
+            emailForPortal = emailForPortal.trim();
+        }
+
+        // Check subscription status
+        try {
+            const statusData = await safeJsonFetch('/api/subscription-status', {
+                method: 'POST',
+                body: JSON.stringify({ email: emailForPortal })
+            });
+            
+            if (!statusData || !statusData.found || statusData.status === 'none') {
+                showError(`No active subscription found for ${emailForPortal}`);
+                return;
+            }
+        } catch (error) {
+            console.error('Status check failed:', error);
+            // Continue to portal anyway
+        }
+
+        // Open portal
+        try {
+            const data = await safeJsonFetch('/api/portal', {
+                method: 'POST',
+                body: JSON.stringify({ email: emailForPortal })
+            });
+
+            if (data && data.success && data.url) {
+                window.location.href = data.url;
+            } else {
+                throw new Error(data?.error || 'Unable to open portal');
+            }
+        } catch (error) {
+            console.error('Portal error:', error);
+            showError('Unable to open subscription portal. Please try again.');
+        }
+    }
+
+    /**
+     * ✅ CORRECTED: Logout with proper error handling
+     */
+    function logout() {
+        if (!confirm('Are you sure you want to log out?')) {
+            return;
+        }
+
+        fetch('/api/auth/logout', { method: 'POST' })
+            .then(() => {
+                // Clear session storage
+                sessionStorage.clear();
+                window.location.href = '/';
+            })
+            .catch(err => {
+                console.error('Logout error:', err);
+                // Redirect anyway
+                sessionStorage.clear();
+                window.location.href = '/';
+            });
+    }
     </script>
 </body>
 </html>
