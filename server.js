@@ -1106,13 +1106,10 @@ app.post('/api/chat', async (req, res) => {
       }
     }
 
-    // Save user message
-    await pool.query(
-      'INSERT INTO messages (user_id, role, content) VALUES ($1, $2, $3)',
-      [userId, 'user', message]
-    );
 
-    // Get VERA's revolutionary response (with optional attachments)
+    // ✅ FIXED: Get VERA's response BEFORE saving to database
+    // This prevents the current message from appearing in the conversation history
+    // which would cause duplicates when building the context for Claude
     console.log('🧠 Calling getVERAResponse...');
     const veraResult = await getVERAResponse(userId, message, userName || 'friend', pool, attachments);
     console.log('✅ VERA result:', { 
@@ -1121,11 +1118,17 @@ app.post('/api/chat', async (req, res) => {
       error: veraResult.error 
     });
 
-    // Save VERA's response
+    // ✅ FIXED: Now save both messages in order (user first, then assistant)
+    await pool.query(
+      'INSERT INTO messages (user_id, role, content) VALUES ($1, $2, $3)',
+      [userId, 'user', message]
+    );
+
     await pool.query(
       'INSERT INTO messages (user_id, role, content) VALUES ($1, $2, $3)',
       [userId, 'assistant', veraResult.response]
     );
+
 
     res.json({ 
       success: true, 
