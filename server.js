@@ -373,16 +373,38 @@ async function initializeDatabase() {
       )
     `);
 
-    // Create messages table
+    // Create conversations table (ensure this exists before messages use it)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS conversations (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        title VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        message_count INTEGER DEFAULT 0,
+        last_message_preview TEXT
+      )
+    `);
+
+    // Create messages table (include conversation_id column)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS messages (
         id SERIAL PRIMARY KEY,
         user_id VARCHAR(255) NOT NULL,
         role VARCHAR(50) NOT NULL,
         content TEXT NOT NULL,
+        conversation_id INTEGER,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // If messages table was already present without conversation_id, add column defensively
+    try {
+      await pool.query(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS conversation_id INTEGER`);
+    } catch (e) {
+      // Non-fatal: log and continue; queries will still run but without FK enforcement
+      console.warn('⚠️ Could not ensure conversation_id column exists on messages table:', e.message);
+    }
 
     // Create session table for express-session
     await pool.query(`
