@@ -49,3 +49,9 @@ coverage/
 *.pem
 *.key
 *.cert
+
+# ==================== DEPLOYMENT CONFIG (LOCAL ONLY) ====================
+# Ignore local deployment configs that shouldn't be committed
+netlify/
+netlify.toml
+vercel.json
