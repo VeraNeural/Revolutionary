@@ -463,13 +463,29 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// ==================== HEALTH CHECK ====================
+// ==================== HEALTH CHECK & MONITORING ====================
+const SystemMonitor = require('./lib/monitoring');
+const monitor = new SystemMonitor(pool);
+
+// Basic health endpoint for quick checks
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy',
     vera: 'revolutionary',
     timestamp: new Date().toISOString()
   });
+});
+
+// Detailed monitoring endpoint with system stats
+app.get('/monitoring', async (req, res) => {
+  // Basic auth check for monitoring access
+  const authHeader = req.headers.authorization;
+  if (!authHeader || authHeader !== `Bearer ${process.env.MONITOR_KEY || 'vera-monitor-key'}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const health = await monitor.checkHealth();
+  res.json(health);
 });
 
 // ==================== VERSION ENDPOINT ====================
@@ -1198,13 +1214,25 @@ app.post('/api/chat', async (req, res) => {
     // which would cause duplicates when building the context for Claude
     if (wantDebug) setVERADebug(true);
     console.log('🧠 Calling getVERAResponse...');
+    const startTime = Date.now();
     const veraResult = await getVERAResponse(userId, message, userName || 'friend', pool, attachments);
+    const duration = Date.now() - startTime;
+    
+    // Record metrics
+    monitor.recordResponse(duration);
+    monitor.recordAICall({
+      model: veraResult.model,
+      state: veraResult.state,
+      responseLength: veraResult.response?.length
+    });
+    
     console.log('✅ VERA result:', { 
       responseLength: veraResult.response?.length, 
       state: veraResult.state,
       model: veraResult.model,
       fallback: !!veraResult.fallback,
-      error: veraResult.error 
+      error: veraResult.error,
+      duration: duration + 'ms'
     });
 
     // ✅ FIXED: Now save both messages in order (user first, then assistant) with conversation_id
