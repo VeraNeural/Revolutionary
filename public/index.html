@@ -1031,27 +1031,46 @@
         continueBtn.textContent = 'Preparing your space...';
         
         try {
-            // Call your server to create Stripe checkout session
-            // Email will be collected by Stripe during checkout
-            const response = await fetch('/api/create-checkout-session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    // Don't send email - let Stripe collect it
-                })
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || 'Failed to create checkout session');
+            // First check if user exists and has active subscription
+            const email = prompt("Please enter your email to continue:");
+            if (!email) {
+                throw new Error('Email is required');
             }
-            
-            const { url } = await response.json();
-            
-            // Redirect to Stripe checkout
-            window.location.href = url;
+
+            // Try to log in first
+            const loginResponse = await fetch('/api/auth/login-link', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+
+            const loginData = await loginResponse.json();
+
+            if (loginResponse.ok) {
+                // User exists and has active subscription
+                alert('Please check your email for a login link!');
+                continueBtn.textContent = 'Check your email';
+                return;
+            }
+
+            if (loginResponse.status === 404 || loginData.redirect) {
+                // New user or needs to resubscribe - proceed with Stripe checkout
+                const response = await fetch('/api/create-checkout-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Failed to create checkout session');
+                }
+                
+                const { url } = await response.json();
+                window.location.href = url;
+            } else {
+                throw new Error(loginData.error || 'Unknown error occurred');
+            }
             
         } catch (error) {
             console.error('Checkout error:', error);

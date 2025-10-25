@@ -21,6 +21,8 @@ const { Pool } = require('pg');
 const path = require('path');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { getVERAResponse, setVERADebug } = require('./lib/vera-ai');
+const { handleDatabaseError } = require('./lib/database-helpers');
+const rateLimiter = require('./lib/rate-limiter');
 
 // ==================== EMAIL SETUP - TEMPORARILY DISABLED ====================
 // Nodemailer has import issues - disabling for now so Stripe works
@@ -986,11 +988,60 @@ app.get('/admin/leads', async (req, res) => {
 });
 
 // ==================== AUTHENTICATION ENDPOINTS ====================
-app.get('/api/auth/check', (req, res) => {
-  if (req.session.userEmail) {
-    res.json({ authenticated: true, email: req.session.userEmail });
-  } else {
-    res.json({ authenticated: false });
+app.get('/api/auth/check', async (req, res) => {
+  if (!req.session.userEmail) {
+    return res.json({ authenticated: false });
+  }
+
+  try {
+    // Check if user exists and has active subscription
+    const userResult = await pool.query(
+      'SELECT subscription_status, stripe_subscription_id FROM users WHERE email = $1',
+      [req.session.userEmail]
+    );
+
+    if (userResult.rows.length === 0) {
+      req.session.destroy();
+      return res.json({ authenticated: false });
+    }
+
+    const user = userResult.rows[0];
+    
+    // Check subscription status
+    if (user.subscription_status === 'active' || user.subscription_status === 'trialing') {
+      return res.json({ 
+        authenticated: true, 
+        email: req.session.userEmail,
+        subscription: user.subscription_status
+      });
+    }
+
+    // If subscription is not active, check with Stripe
+    if (user.stripe_subscription_id) {
+      const subscription = await stripe.subscriptions.retrieve(user.stripe_subscription_id);
+      if (subscription.status === 'active' || subscription.status === 'trialing') {
+        // Update local status
+        await pool.query(
+          'UPDATE users SET subscription_status = $1 WHERE email = $2',
+          [subscription.status, req.session.userEmail]
+        );
+        return res.json({ 
+          authenticated: true, 
+          email: req.session.userEmail,
+          subscription: subscription.status
+        });
+      }
+    }
+
+    // No active subscription found
+    return res.json({ 
+      authenticated: true, 
+      email: req.session.userEmail,
+      subscription: 'inactive'
+    });
+  } catch (error) {
+    console.error('❌ Auth check error:', error);
+    return res.json({ authenticated: false, error: 'Auth check failed' });
   }
 });
 
@@ -1001,6 +1052,240 @@ app.post('/api/auth/logout', (req, res) => {
     }
     res.json({ success: true });
   });
+});
+
+// Magic link login for returning users
+app.post('/api/auth/login-link', async (req, res) => {
+  const { email } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({ error: 'Email required' });
+  }
+
+  try {
+    // Check if user exists and has subscription
+    const userResult = await pool.query(
+      'SELECT subscription_status, stripe_subscription_id FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'No account found with this email' });
+    }
+
+    const user = userResult.rows[0];
+    
+    // Check subscription with Stripe
+    if (user.stripe_subscription_id) {
+      const subscription = await stripe.subscriptions.retrieve(user.stripe_subscription_id);
+      if (subscription.status !== 'active' && subscription.status !== 'trialing') {
+        return res.status(403).json({ 
+          error: 'Subscription inactive', 
+          redirect: '/?resubscribe=true' 
+        });
+      }
+    } else if (user.subscription_status !== 'active' && user.subscription_status !== 'trialing') {
+      return res.status(403).json({ 
+        error: 'Subscription inactive', 
+        redirect: '/?resubscribe=true' 
+      });
+    }
+
+    // Generate magic link token
+    const token = require('crypto').randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    await pool.query(
+      'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE email = $3',
+      [token, expires, email]
+    );
+
+    // Create magic link URL
+    const baseUrl = process.env.APP_URL || 'http://localhost:8080';
+    const magicLink = `${baseUrl}/verify-magic-link?token=${token}`;
+
+    // Send email with magic link
+    await transporter.sendMail({
+      from: `"VERA" <${process.env.SMTP_FROM}>`,
+      to: email,
+      subject: 'Sign in to VERA',
+      html: `
+        <p>Click here to sign in to your VERA account:</p>
+        <a href="${magicLink}">Sign In</a>
+      `
+    });
+
+    res.json({ 
+      success: true, 
+      message: 'Check your email for the login link' 
+    });
+
+  } catch (error) {
+    console.error('❌ Login link error:', error);
+    res.status(500).json({ error: 'Failed to send login link' });
+  }
+});
+
+// ==================== PASSWORD RECOVERY ====================
+app.post('/api/auth/recover', async (req, res) => {
+  const { email } = req.body;
+  const ip = req.ip;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email required' });
+  }
+
+  // Check rate limits
+  if (rateLimiter.isBlocked(ip)) {
+    return res.status(429).json({ 
+      error: 'Too many attempts. Please try again tomorrow.',
+      blocked: true 
+    });
+  }
+
+  if (!rateLimiter.canAttempt(ip, 'email')) {
+    return res.status(429).json({ 
+      error: 'Too many recovery attempts. Please wait an hour and try again.',
+      timeout: true
+    });
+  }
+
+  // Record this attempt
+  rateLimiter.recordAttempt(ip, 'email');
+
+  try {
+    // Check if user exists
+    const userResult = await pool.query(
+      'SELECT * FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (userResult.rows.length === 0) {
+      // Don't reveal whether the email exists
+      return res.json({ 
+        success: true, 
+        message: 'If an account exists with this email, you will receive recovery instructions.'
+      });
+    }
+
+    // Generate secure token (32 bytes = 256 bits of entropy)
+    const token = require('crypto').randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Store token in database
+    await pool.query(
+      'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE email = $3',
+      [token, expires, email]
+    );
+
+    // Create recovery link
+    const baseUrl = process.env.APP_URL || 'http://localhost:8080';
+    const recoveryLink = `${baseUrl}/verify-recovery?token=${token}`;
+
+    // Send recovery email
+    await transporter.sendMail({
+      from: `"VERA" <${process.env.SMTP_FROM}>`,
+      to: email,
+      subject: 'VERA Account Recovery',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 20px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: white; padding: 40px; border-radius: 0 0 10px 10px; }
+            .button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Recover Your VERA Account</h1>
+            </div>
+            <div class="content">
+              <p>A request was made to recover your VERA account. Click the button below to continue:</p>
+              <a href="${recoveryLink}" class="button">Recover Account</a>
+              <p style="margin-top: 30px; color: #666; font-size: 14px;">
+                This link expires in 15 minutes and can only be used once.<br>
+                If you didn't request this, you can safely ignore this email.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    });
+
+    // Log for development
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🔐 Recovery link (DEV ONLY):', recoveryLink);
+    }
+
+    res.json({
+      success: true,
+      message: 'Recovery instructions sent. Check your email.'
+    });
+
+  } catch (error) {
+    console.error('❌ Account recovery error:', error);
+    res.status(500).json({ error: 'Recovery request failed. Please try again.' });
+  }
+});
+
+app.get('/verify-recovery', async (req, res) => {
+  const { token } = req.query;
+  const ip = req.ip;
+
+  if (!token) {
+    return res.redirect('/account-recovery.html?error=invalid_token');
+  }
+
+  // Check rate limits
+  if (rateLimiter.isBlocked(ip)) {
+    return res.redirect('/account-recovery.html?error=ip_blocked');
+  }
+
+  if (!rateLimiter.canAttempt(ip, 'auth')) {
+    return res.redirect('/account-recovery.html?error=too_many_attempts');
+  }
+
+  // Record this attempt
+  rateLimiter.recordAttempt(ip, 'auth');
+
+  try {
+    // Find user with this token that hasn't expired
+    const userResult = await pool.query(
+      'SELECT * FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()',
+      [token]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.redirect('/account-recovery.html?error=expired_token');
+    }
+
+    const user = userResult.rows[0];
+
+    // Clear the token (one-time use only)
+    await pool.query(
+      'UPDATE users SET reset_token = NULL, reset_token_expires = NULL WHERE email = $1',
+      [user.email]
+    );
+
+    // Log user in
+    req.session.userEmail = user.email;
+    await req.session.save();
+
+    console.log('✅ Account recovery verified for:', user.email);
+    
+    // Redirect to chat with success message
+    res.redirect('/chat.html?recovery=success');
+
+  } catch (error) {
+    console.error('❌ Recovery verification error:', error);
+    res.redirect('/account-recovery.html?error=verification_failed');
+  }
 });
 
 // ==================== MAGIC LINK LOGIN ====================
@@ -1156,15 +1441,39 @@ app.post('/api/chat', async (req, res) => {
     let currentConversationId = conversationId;
     
     if (!currentConversationId) {
-      // Check if user has an active conversation (created within last 24 hours)
-      const activeConv = await pool.query(
-        `SELECT id FROM conversations 
-         WHERE user_id = $1 
-         AND created_at > NOW() - INTERVAL '24 hours'
-         ORDER BY updated_at DESC 
-         LIMIT 1`,
-        [userId]
-      );
+      try {
+        // Check if user has an active conversation (created within last 24 hours)
+        const activeConv = await pool.query(
+          `SELECT id FROM conversations 
+           WHERE user_id = $1 
+           AND created_at > NOW() - INTERVAL '24 hours'
+           ORDER BY updated_at DESC 
+           LIMIT 1`,
+          [userId]
+        );
+
+        if (activeConv.rows.length > 0) {
+          currentConversationId = activeConv.rows[0].id;
+        }
+      } catch (dbError) {
+        if (dbError.code === '42P01') {
+          // Conversations table doesn't exist, create it
+          console.log('⚠️ Creating missing conversations table...');
+          await pool.query(`
+            CREATE TABLE IF NOT EXISTS conversations (
+              id SERIAL PRIMARY KEY,
+              user_id VARCHAR(255) NOT NULL,
+              title VARCHAR(255),
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              message_count INTEGER DEFAULT 0,
+              last_message_preview TEXT
+            )
+          `);
+        } else {
+          throw dbError;
+        }
+      }
       
       if (activeConv.rows.length > 0) {
         currentConversationId = activeConv.rows[0].id;
