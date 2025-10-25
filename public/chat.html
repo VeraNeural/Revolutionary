@@ -1001,6 +1001,178 @@
             background: var(--orb-1);
         }
 
+        /* Breathing Exercise Modal */
+        .breathing-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .breathing-modal.active {
+            display: flex;
+        }
+
+        .breathing-content {
+            background: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 3rem 2rem;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            animation: modalSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes modalSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .breathing-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: var(--message-bg);
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .breathing-close:hover {
+            background: var(--border-color);
+            transform: rotate(90deg);
+        }
+
+        .breathing-title {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            background: linear-gradient(135deg, var(--orb-1), var(--orb-3));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .breathing-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+
+        .breathing-circle {
+            width: 200px;
+            height: 200px;
+            margin: 2rem auto;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle, var(--orb-3) 0%, transparent 70%);
+            position: relative;
+        }
+
+        .breathing-orb {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, var(--orb-3) 0%, var(--orb-2) 50%, var(--orb-1) 100%);
+            box-shadow: 0 0 60px rgba(155, 137, 212, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        .breathing-orb.breathe-in {
+            animation: breatheIn 4s ease-in-out;
+        }
+
+        .breathing-orb.breathe-out {
+            animation: breatheOut 6s ease-in-out;
+        }
+
+        @keyframes breatheIn {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 40px rgba(155, 137, 212, 0.5);
+            }
+            100% {
+                transform: scale(1.5);
+                box-shadow: 0 0 80px rgba(155, 137, 212, 0.9);
+            }
+        }
+
+        @keyframes breatheOut {
+            0% {
+                transform: scale(1.5);
+                box-shadow: 0 0 80px rgba(155, 137, 212, 0.9);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 40px rgba(155, 137, 212, 0.5);
+            }
+        }
+
+        .breathing-instruction {
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-weight: 500;
+            min-height: 2rem;
+        }
+
+        .breathing-count {
+            color: var(--text-soft);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .breathing-start-btn {
+            background: linear-gradient(135deg, var(--orb-1), var(--orb-3));
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 1rem 3rem;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(155, 137, 212, 0.4);
+        }
+
+        .breathing-start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(155, 137, 212, 0.6);
+        }
+
+        .breathing-start-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         /* Mobile */
         @media (max-width: 768px) {
             .chat-header {
@@ -1112,6 +1284,9 @@
                     <div class="dropdown-item" onclick="startNewChat()">
                         <span>🆕 New Chat</span>
                     </div>
+                    <div class="dropdown-item" onclick="openBreathingExercise()">
+                        <span>🌬️ Breathe with VERA</span>
+                    </div>
                     <div class="dropdown-item" onclick="manageSubscription()">
                         <span>💳 Manage Subscription</span>
                     </div>
@@ -1178,6 +1353,24 @@
                         <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
                     </svg>
                 </button>
+            </div>
+        </div>
+
+        <!-- Breathing Exercise Modal -->
+        <div class="breathing-modal" id="breathingModal">
+            <div class="breathing-content">
+                <button class="breathing-close" onclick="closeBreathingExercise()">✕</button>
+                <h2 class="breathing-title">Breathe with VERA</h2>
+                <p class="breathing-subtitle">Let's ground together</p>
+                
+                <div class="breathing-circle" id="breathingCircle">
+                    <div class="breathing-orb"></div>
+                </div>
+                
+                <p class="breathing-instruction" id="breathingInstruction">Breathe in...</p>
+                <p class="breathing-count" id="breathingCount">Round 1 of 5</p>
+                
+                <button class="breathing-start-btn" id="breathingStartBtn" onclick="startBreathing()">Start</button>
             </div>
         </div>
     </div>
@@ -1469,6 +1662,90 @@
             messageInput.value = '';
             
             console.log('🆕 New chat started');
+        }
+
+        // ============================================
+        // BREATHING EXERCISE
+        // ============================================
+        
+        let breathingInterval = null;
+        let breathingRound = 0;
+        const totalRounds = 5;
+
+        function openBreathingExercise() {
+            const dropdown = document.getElementById('hamburgerDropdown');
+            dropdown.classList.remove('active');
+            
+            const modal = document.getElementById('breathingModal');
+            modal.classList.add('active');
+            
+            // Reset state
+            breathingRound = 0;
+            document.getElementById('breathingInstruction').textContent = 'Breathe in...';
+            document.getElementById('breathingCount').textContent = 'Round 1 of 5';
+            document.getElementById('breathingStartBtn').style.display = 'block';
+            document.querySelector('.breathing-orb').classList.remove('breathe-in', 'breathe-out');
+        }
+
+        function closeBreathingExercise() {
+            const modal = document.getElementById('breathingModal');
+            modal.classList.remove('active');
+            
+            if (breathingInterval) {
+                clearInterval(breathingInterval);
+                breathingInterval = null;
+            }
+        }
+
+        function startBreathing() {
+            document.getElementById('breathingStartBtn').style.display = 'none';
+            breathingRound = 0;
+            runBreathingCycle();
+        }
+
+        function runBreathingCycle() {
+            if (breathingRound >= totalRounds) {
+                // Breathing complete
+                document.getElementById('breathingInstruction').textContent = '✨ Beautiful. You did it.';
+                document.getElementById('breathingCount').textContent = 'Take a moment to notice how you feel';
+                document.getElementById('breathingStartBtn').textContent = 'Close';
+                document.getElementById('breathingStartBtn').style.display = 'block';
+                document.getElementById('breathingStartBtn').onclick = closeBreathingExercise;
+                return;
+            }
+
+            breathingRound++;
+            document.getElementById('breathingCount').textContent = `Round ${breathingRound} of ${totalRounds}`;
+
+            const orb = document.querySelector('.breathing-orb');
+            const instruction = document.getElementById('breathingInstruction');
+
+            // Breathe IN (4 seconds)
+            instruction.textContent = 'Breathe in...';
+            orb.classList.remove('breathe-out');
+            orb.classList.add('breathe-in');
+
+            setTimeout(() => {
+                // Hold (2 seconds)
+                instruction.textContent = 'Hold...';
+                orb.classList.remove('breathe-in');
+
+                setTimeout(() => {
+                    // Breathe OUT (6 seconds)
+                    instruction.textContent = 'Breathe out...';
+                    orb.classList.add('breathe-out');
+
+                    setTimeout(() => {
+                        // Pause (2 seconds)
+                        instruction.textContent = 'Rest...';
+                        orb.classList.remove('breathe-out');
+
+                        setTimeout(() => {
+                            runBreathingCycle(); // Next round
+                        }, 2000);
+                    }, 6000);
+                }, 2000);
+            }, 4000);
         }
 
         async function manageSubscription() {
