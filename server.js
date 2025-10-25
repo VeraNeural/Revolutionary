@@ -2,8 +2,16 @@
 // Backend API for VERA - Your Nervous System Companion
 // This handles authentication, AI chat, Stripe payments, and more
 
+console.log('🚀 VERA server.js starting...');
+console.log('📍 Node version:', process.version);
+console.log('📍 Environment:', process.env.NODE_ENV || 'not set');
+
 // Load environment variables
 require('dotenv').config({ path: '.env.local' });
+
+console.log('✅ Environment variables loaded');
+console.log('📍 DATABASE_URL exists:', !!process.env.DATABASE_URL);
+console.log('📍 ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
 
 const express = require('express');
 const cors = require('cors');
