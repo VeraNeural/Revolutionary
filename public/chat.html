@@ -258,6 +258,7 @@
     <script>
     let userEmail = null;
         let userName = 'friend';
+    let hasActiveSubscription = false; // track if user has paid subscription
     // Stable anonymous id for guests to preserve conversation continuity
     let anonId = null;
     const freeMessageLimit = 20; // allow 20 free user messages (testing)
@@ -294,6 +295,22 @@
                     console.log('✅ Authenticated as:', userEmail);
                     const signInItem = document.getElementById('signInMenuItem');
                     if (signInItem) signInItem.style.display = 'none';
+
+                    // Check if user has active subscription
+                    try {
+                        const subResponse = await fetch('/api/subscription-status', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: userEmail })
+                        });
+                        const subData = await subResponse.json();
+                        if (subData.success && subData.found && (subData.status === 'active' || subData.status === 'trialing')) {
+                            hasActiveSubscription = true;
+                            console.log('✅ Active subscription detected:', subData.status);
+                        }
+                    } catch (subError) {
+                        console.error('Subscription check failed:', subError);
+                    }
                 } else {
                     // Fallback only for display name; do NOT set userEmail from URL (prevents bypassing paywall)
                     const urlParams = new URLSearchParams(window.location.search);
@@ -337,7 +354,8 @@
             if (!message || isSending) return; // guard against duplicates
 
             // Paywall: if unauthenticated and exceeded free limit, prompt to subscribe
-            if (!userEmail) {
+            // Skip paywall check if user has active subscription
+            if (!userEmail && !hasActiveSubscription) {
                 if (freeMessageCount >= freeMessageLimit) {
                     const proceed = confirm("You've reached the free messages limit. Subscribe to keep going?");
                     if (proceed) {
@@ -468,6 +486,11 @@
             const badge = document.getElementById('freeBadge');
             const text = document.getElementById('freeBadgeText');
             if (!badge || !text) return;
+            // Hide badge if user has active subscription
+            if (userEmail && hasActiveSubscription) {
+                badge.style.display = 'none';
+                return;
+            }
             if (userEmail) {
                 badge.style.display = 'none';
                 return;

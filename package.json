@@ -108,5 +108,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "commonjs",
+  "engines": { "node": ">=18 <23" }
 }

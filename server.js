@@ -700,6 +700,9 @@ app.post('/api/save-lead', async (req, res) => {
 // ==================== EMBEDDED STRIPE CHECKOUT ENDPOINT ====================
 app.post('/api/create-checkout-session', async (req, res) => {
   const { email } = req.body;
+  const appUrl = process.env.APP_URL || 'http://localhost:8080';
+  const successUrl = `${appUrl}/create-account?session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl = `${appUrl}/?cancelled=true`;
   
   try {
     console.log('🔵 Creating checkout session for email:', email || 'no email provided');
@@ -740,8 +743,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
               },
             ],
             mode: 'subscription',
-            success_url: `${process.env.APP_URL || 'http://localhost:8080'}/create-account?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${process.env.APP_URL || 'http://localhost:8080'}/?cancelled=true`,
+            success_url: successUrl,
+            cancel_url: cancelUrl,
             subscription_data: {
               trial_period_days: 7,
             },
@@ -797,8 +800,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
             },
           ],
           mode: 'subscription',
-          success_url: `${process.env.APP_URL || 'http://localhost:8080'}/create-account?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${process.env.APP_URL || 'http://localhost:8080'}/?cancelled=true`,
+          success_url: successUrl,
+          cancel_url: cancelUrl,
           subscription_data: {
             trial_period_days: 7,
           },
@@ -827,8 +830,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
         },
       ],
       mode: 'subscription',
-      success_url: `${process.env.APP_URL || 'http://localhost:8080'}/create-account?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.APP_URL || 'http://localhost:8080'}/?cancelled=true`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       subscription_data: {
         trial_period_days: 7,
       },
@@ -1077,6 +1080,32 @@ app.post('/api/chat', async (req, res) => {
   }
 
   try {
+    // Lightweight idempotency: if the last user message matches and is recent, return the last assistant reply
+    const lastUser = await pool.query(
+      "SELECT id, content, created_at FROM messages WHERE user_id = $1 AND role = 'user' ORDER BY created_at DESC LIMIT 1",
+      [userId]
+    );
+    if (lastUser.rows.length > 0) {
+      const lu = lastUser.rows[0];
+      const sameContent = (lu.content || '') === message;
+      const withinWindow = (Date.now() - new Date(lu.created_at).getTime()) < 15000; // 15s window
+      if (sameContent && withinWindow) {
+        const lastAssistant = await pool.query(
+          "SELECT content FROM messages WHERE user_id = $1 AND role = 'assistant' AND created_at > $2 ORDER BY created_at ASC LIMIT 1",
+          [userId, lu.created_at]
+        );
+        if (lastAssistant.rows.length > 0) {
+          return res.json({
+            success: true,
+            response: lastAssistant.rows[0].content,
+            duplicate: true,
+            timestamp: new Date().toISOString()
+          });
+        }
+        // Else fall through and process normally
+      }
+    }
+
     // Save user message
     await pool.query(
       'INSERT INTO messages (user_id, role, content) VALUES ($1, $2, $3)',
