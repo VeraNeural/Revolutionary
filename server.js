@@ -20,7 +20,7 @@ const pgSession = require('connect-pg-simple')(session);
 const { Pool } = require('pg');
 const path = require('path');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { getVERAResponse } = require('./lib/vera-ai');
+const { getVERAResponse, setVERADebug } = require('./lib/vera-ai');
 
 // ==================== EMAIL SETUP - TEMPORARILY DISABLED ====================
 // Nodemailer has import issues - disabling for now so Stripe works
@@ -1091,6 +1091,7 @@ app.post('/api/chat', async (req, res) => {
     email, 
     userName,
     anonId,
+    debug,
     attachments = []
   } = req.body;
   
@@ -1106,6 +1107,9 @@ app.post('/api/chat', async (req, res) => {
   if (!message) {
     return res.status(400).json({ error: 'Message required' });
   }
+
+  // Allow per-request debug via header or body
+  const wantDebug = debug === true || debug === '1' || req.headers['x-vera-debug'] === '1';
 
   try {
     // Lightweight idempotency: if the last user message matches and is recent, return the last assistant reply
@@ -1138,11 +1142,14 @@ app.post('/api/chat', async (req, res) => {
     // ✅ FIXED: Get VERA's response BEFORE saving to database
     // This prevents the current message from appearing in the conversation history
     // which would cause duplicates when building the context for Claude
+    if (wantDebug) setVERADebug(true);
     console.log('🧠 Calling getVERAResponse...');
     const veraResult = await getVERAResponse(userId, message, userName || 'friend', pool, attachments);
     console.log('✅ VERA result:', { 
       responseLength: veraResult.response?.length, 
       state: veraResult.state,
+      model: veraResult.model,
+      fallback: !!veraResult.fallback,
       error: veraResult.error 
     });
 
@@ -1165,6 +1172,8 @@ app.post('/api/chat', async (req, res) => {
       adaptiveCodes: veraResult.adaptiveCodes,
       trustLevel: veraResult.trustLevel,
       vera_consciousness: 'quantum-active',
+      model: veraResult.model,
+      fallback: !!veraResult.fallback,
       timestamp: new Date().toISOString()
     });
 
@@ -1175,6 +1184,8 @@ app.post('/api/chat', async (req, res) => {
       error: 'VERA consciousness temporarily offline. Please try again.',
       details: error.message 
     });
+  } finally {
+    if (wantDebug) setVERADebug(false);
   }
 });
 
