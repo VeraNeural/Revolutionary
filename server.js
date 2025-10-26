@@ -47,19 +47,29 @@ try {
   console.error('Environment validation failed:', error.message);
   process.exit(1);
 }
-// ==================== EMAIL SETUP - TEMPORARILY DISABLED ====================
-// Nodemailer has import issues - disabling for now so Stripe works
-console.log('⚠️  Email sending temporarily disabled');
-console.log('💡 Accounts will be created, but no welcome emails sent');
+// ==================== EMAIL SETUP - TITAN SMTP ====================
+const nodemailer = require('nodemailer');
 
-// Mock transporter so code doesn't break
-const transporter = {
-  sendMail: async (options) => {
-    console.log('📧 Email would be sent to:', options.to);
-    console.log('📧 Subject:', options.subject);
-    return { messageId: 'mock-' + Date.now() };
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST,
+  port: parseInt(process.env.EMAIL_PORT || '587'),
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
   },
-};
+});
+
+console.log('✅ Email configured with Titan SMTP');
+
+// Verify connection
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('❌ Email connection failed:', error);
+  } else {
+    console.log('✅ Email server ready to send messages');
+  }
+});
 
 // ==================== GRACEFUL SHUTDOWN HANDLING ====================
 process.on('SIGTERM', () => {
