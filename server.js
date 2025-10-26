@@ -125,15 +125,14 @@ app.post(
           );
           console.log('✅ Updated user:', customerEmail);
         } else {
-          const crypto = require('crypto');
-          const bcrypt = require('bcrypt');
-          const tempPassword = crypto.randomBytes(32).toString('hex');
-          const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+          const trialEndsAt = new Date();
+trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
           await db.query(
-            'INSERT INTO users (email, password_hash, subscription_status, stripe_customer_id, stripe_subscription_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())',
-            [customerEmail, hashedPassword, subscription.status, session.customer, subscriptionId]
-          );
+  'INSERT INTO users (email, name, stripe_customer_id, stripe_subscription_id, subscription_status, trial_ends_at, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())',
+  [customerEmail, customerEmail.split('@')[0], session.customer, subscriptionId, subscription.status, trialEndsAt]
+);
           console.log('✅ Created user:', customerEmail);
         }
       }
