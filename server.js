@@ -80,6 +80,152 @@ const PORT = process.env.PORT || 8080;
 app.use(performanceMonitor.middleware());
 app.use(logger.expressMiddleware());
 
+// ==================== STRIPE ENDPOINTS ====================
+// Create Checkout Session for Guest Signup
+app.post('/api/create-checkout', async (req, res) => {
+    try {
+        const { email, firstName, lastName, anonId, returnUrl } = req.body;
+
+        if (!email || !email.includes('@')) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Valid email required' 
+            });
+        }
+
+        console.log('📝 Creating checkout session for:', email);
+
+        // Create or find customer
+        let customer;
+        const existingCustomers = await stripe.customers.list({
+            email: email,
+            limit: 1
+        });
+
+        if (existingCustomers.data.length > 0) {
+            customer = existingCustomers.data[0];
+            console.log('✅ Found existing customer:', customer.id);
+        } else {
+            customer = await stripe.customers.create({
+                email: email,
+                name: firstName && lastName ? `${firstName} ${lastName}` : email.split('@')[0],
+                metadata: {
+                    source: 'VERA',
+                    signup_date: new Date().toISOString(),
+                    anon_id: anonId || ''
+                }
+            });
+            console.log('✅ Created new customer:', customer.id);
+        }
+
+        // Get base URL from environment or request
+        const baseUrl = process.env.BASE_URL || process.env.APP_URL || 
+                       `${req.protocol}://${req.get('host')}`;
+
+        // Create checkout session with 7-day trial
+        const session = await stripe.checkout.sessions.create({
+            customer: customer.id,
+            payment_method_types: ['card'],
+            line_items: [{
+                price: process.env.STRIPE_PRICE_ID,
+                quantity: 1,
+            }],
+            mode: 'subscription',
+            success_url: returnUrl ? `${returnUrl}?session_id={CHECKOUT_SESSION_ID}` : `${baseUrl}/chat.html?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: returnUrl || `${baseUrl}/chat.html`,
+            allow_promotion_codes: true,
+            billing_address_collection: 'auto',
+            subscription_data: {
+                trial_period_days: 7,
+                metadata: {
+                    source: 'VERA',
+                    user_email: email,
+                    anon_id: anonId || ''
+                }
+            },
+            metadata: {
+                customer_email: email,
+                first_name: firstName || '',
+                last_name: lastName || '',
+                anon_id: anonId || '',
+                source: 'VERA'
+            }
+        });
+
+        console.log('✅ Checkout session created:', session.id);
+
+        res.json({ 
+            success: true, 
+            sessionId: session.id,
+            url: session.url
+        });
+
+    } catch (error) {
+        console.error('❌ Checkout creation failed:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Unable to create checkout session. Please try again.'
+        });
+    }
+});
+
+// Verify subscription status
+app.get('/api/subscription-status', async (req, res) => {
+    try {
+        const { email } = req.query;
+
+        if (!email || !email.includes('@')) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Valid email required' 
+            });
+        }
+
+        // Find customer by email
+        const customers = await stripe.customers.list({
+            email: email,
+            limit: 1
+        });
+
+        if (customers.data.length === 0) {
+            return res.json({ 
+                success: true, 
+                hasSubscription: false,
+                message: 'No subscription found'
+            });
+        }
+
+        const customer = customers.data[0];
+
+        // Check for active subscriptions
+        const subscriptions = await stripe.subscriptions.list({
+            customer: customer.id,
+            status: 'active',
+            limit: 1
+        });
+
+        const hasActiveSubscription = subscriptions.data.length > 0;
+
+        res.json({ 
+            success: true, 
+            hasSubscription: hasActiveSubscription,
+            subscription: hasActiveSubscription ? {
+                id: subscriptions.data[0].id,
+                status: subscriptions.data[0].status,
+                current_period_end: subscriptions.data[0].current_period_end,
+                trial_end: subscriptions.data[0].trial_end
+            } : null
+        });
+
+    } catch (error) {
+        console.error('❌ Subscription check failed:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Unable to check subscription status'
+        });
+    }
+});
+
 // ==================== STRIPE WEBHOOK ENDPOINT ====================
 // CRITICAL: This MUST come BEFORE express.json() middleware for raw body access
 app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
