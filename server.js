@@ -47,29 +47,28 @@ try {
   console.error('Environment validation failed:', error.message);
   process.exit(1);
 }
-// ==================== EMAIL SETUP - TITAN SMTP ====================
-const nodemailer = require('nodemailer');
+// ==================== EMAIL SETUP - RESEND ====================
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
+console.log('✅ Email configured with Resend');
 
-console.log('✅ Email configured with Titan SMTP');
-
-// Verify connection
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ Email connection failed:', error);
-  } else {
-    console.log('✅ Email server ready to send messages');
+// Helper function to send emails
+async function sendEmail({ to, subject, html }) {
+  try {
+    const data = await resend.emails.send({
+      from: process.env.EMAIL_FROM,
+      to: to,
+      subject: subject,
+      html: html,
+    });
+    console.log('✅ Email sent to:', to);
+    return data;
+  } catch (error) {
+    console.error('❌ Email error:', error);
+    throw error;
   }
-});
+}
 
 // ==================== GRACEFUL SHUTDOWN HANDLING ====================
 process.on('SIGTERM', () => {
@@ -939,11 +938,11 @@ app.get('/create-account', async (req, res) => {
 
     // Send welcome email
     try {
-      await transporter.sendMail({
-        from: `"VERA" <${process.env.SMTP_FROM}>`,
-        to: customerEmail,
-        subject: 'Welcome to VERA - Your Journey Begins',
-        html: `
+      await sendEmail({
+  to: email,
+  subject: 'Sign in to VERA',
+  html: emailHtml
+});`
           <!DOCTYPE html>
           <html>
           <head>
@@ -1482,11 +1481,11 @@ app.post('/api/auth/login-link', async (req, res) => {
     const magicLink = `${baseUrl}/verify-magic-link?token=${token}`;
 
     // Send email with magic link
-    await transporter.sendMail({
-      from: `"VERA" <${process.env.SMTP_FROM}>`,
-      to: email,
-      subject: 'Sign in to VERA',
-      html: `
+    await sendEmail({
+  to: email,
+  subject: 'Sign in to VERA',
+  html: emailHtml
+}); `
         <p>Click here to sign in to your VERA account:</p>
         <a href="${magicLink}">Sign In</a>
       `,
@@ -1703,11 +1702,11 @@ app.post('/api/auth/recover', async (req, res) => {
     const recoveryLink = `${baseUrl}/verify-recovery?token=${token}`;
 
     // Send recovery email
-    await transporter.sendMail({
-      from: `"VERA" <${process.env.SMTP_FROM}>`,
-      to: email,
-      subject: 'VERA Account Recovery',
-      html: `
+    await sendEmail({
+  to: email,
+  subject: 'Sign in to VERA',
+  html: emailHtml
+}); `
         <!DOCTYPE html>
         <html>
         <head>
@@ -1840,11 +1839,11 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
     console.log('🔗 Magic link URL:', magicLink);
 
     // Send email
-    await transporter.sendMail({
-      from: `"VERA" <${process.env.SMTP_FROM}>`,
-      to: email,
-      subject: 'Sign in to VERA',
-      html: `
+    await sendEmail({
+  to: email,
+  subject: 'Sign in to VERA',
+  html: emailHtml
+});`
         <!DOCTYPE html>
         <html>
         <head>
