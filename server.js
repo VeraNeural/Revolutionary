@@ -1721,7 +1721,7 @@ app.post('/api/auth/recover', async (req, res) => {
             </div>
             <div class="content">
               <p>A request was made to recover your VERA account. Click the button below to continue:</p>
-              <a href="${recoveryLink}" class="button">Recover Account</a>
+              <a href="${magicLink}" class="button">
               <p style="margin-top: 30px; color: #666; font-size: 14px;">
                 This link expires in 15 minutes and can only be used once.<br>
                 If you didn't request this, you can safely ignore this email.
@@ -1857,7 +1857,7 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
             </div>
             <div class="content">
               <p>A request was made to recover your VERA account. Click the button below to continue:</p>
-              <a href="${recoveryLink}" class="button">Recover Account</a>
+              <a href="${magicLink}" class="button">
               <p style="margin-top: 30px; color: #666; font-size: 14px;">
                 This link expires in 15 minutes and can only be used once.<br>
                 If you didn't request this, you can safely ignore this email.
