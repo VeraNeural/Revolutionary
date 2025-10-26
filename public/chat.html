@@ -1771,7 +1771,12 @@
                 chatContainer.classList.add('active');
             }
             
-            chatContainer.insertBefore(messageDiv, typingIndicator);
+            // Only insert before typing indicator if it exists and is in the container
+if (typingIndicator && chatContainer.contains(typingIndicator)) {
+    chatContainer.insertBefore(messageDiv, typingIndicator);
+} else {
+    chatContainer.appendChild(messageDiv);
+}
             
             setTimeout(() => {
                 chatContainer.scrollTop = chatContainer.scrollHeight;
