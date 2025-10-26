@@ -1480,13 +1480,12 @@ app.post('/api/auth/login-link', async (req, res) => {
 
     // Send email with magic link
     await sendEmail({
-  to: email,
-  subject: 'Sign in to VERA',
-  html: emailHtml
-}); 
+      to: email,
+      subject: 'Sign in to VERA',
+      html: `
         <p>Click here to sign in to your VERA account:</p>
         <a href="${magicLink}">Sign In</a>
-      
+      `,
     });
 
     res.json({
@@ -1701,10 +1700,9 @@ app.post('/api/auth/recover', async (req, res) => {
 
     // Send recovery email
     await sendEmail({
-  to: email,
-  subject: 'Sign in to VERA',
-  html: emailHtml
-}); `
+      to: email,
+      subject: 'Sign in to VERA',
+      html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -1836,12 +1834,11 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
     // Developer aid: log magic link so you can copy it during local testing
     console.log('🔗 Magic link URL:', magicLink);
 
-    // Send email
+// Send recovery email
     await sendEmail({
-  to: email,
-  subject: 'Sign in to VERA',
-  html: emailHtml
-});`
+      to: email,
+      subject: 'Recover Your VERA Account',
+      html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -1856,13 +1853,13 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
         <body>
           <div class="container">
             <div class="header">
-              <h1>Sign in to VERA</h1>
+              <h1>Recover Your VERA Account</h1>
             </div>
             <div class="content">
-              <p>Click the button below to sign in to your VERA account:</p>
-              <a href="${magicLink}" class="button">Sign In to VERA</a>
+              <p>A request was made to recover your VERA account. Click the button below to continue:</p>
+              <a href="${recoveryLink}" class="button">Recover Account</a>
               <p style="margin-top: 30px; color: #666; font-size: 14px;">
-                This link expires in 15 minutes.<br>
+                This link expires in 15 minutes and can only be used once.<br>
                 If you didn't request this, you can safely ignore this email.
               </p>
             </div>
