@@ -1173,6 +1173,73 @@
             transform: none;
         }
 
+        /* Signup Modal */
+        .signup-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 2.5rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            z-index: 2000;
+            animation: modalSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            display: none;
+        }
+
+        .signup-modal h2 {
+            font-size: 1.8rem;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .signup-modal p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        .signup-modal input {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .signup-modal input:focus {
+            border-color: var(--orb-1);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(155, 137, 212, 0.15);
+        }
+
+        .signup-modal button {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--orb-1), var(--orb-3));
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .signup-modal button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(155, 137, 212, 0.4);
+        }
+
         /* Conversation History Modal */
         .history-modal {
             position: fixed;
@@ -1563,6 +1630,18 @@
             </div>
         </div>
 
+        <!-- Signup Modal -->
+        <div class="signup-modal" id="signupModal">
+            <h2>I'm not going anywhere</h2>
+            <p>I'll be right here.</p>
+            <form onsubmit="handleSignup(event)">
+                <input type="text" placeholder="First Name" required>
+                <input type="text" placeholder="Last Name" required>
+                <input type="email" placeholder="Email" required>
+                <button type="submit">Subscribe</button>
+            </form>
+        </div>
+
         <!-- Conversation History Modal -->
         <div class="history-modal" id="historyModal">
             <div class="history-content">
@@ -1592,6 +1671,9 @@
         let userName = 'friend';
         let anonId = '';
         let isSending = false;
+        
+        // Track guest messages
+        let guestMessageCount = parseInt(localStorage.getItem('veraGuestMessageCount') || '0');
         
         const messageInput = document.getElementById('messageInput');
         const chatContainer = document.getElementById('chatContainer');
@@ -1755,6 +1837,9 @@
             // Update status text animation
             updateStatusMessages();
 
+            // Check subscription status if returning from Stripe
+            await checkSubscriptionStatus();
+
             // Load history
             try {
                 await loadHistory();
@@ -1769,10 +1854,113 @@
         // CORE FUNCTIONS
         // ============================================
 
+        function showSignupModal() {
+            const modal = document.getElementById('signupModal');
+            modal.style.display = 'block';
+        }
+
+        async function handleSignup(event) {
+            event.preventDefault();
+            const form = event.target;
+            const firstName = form.querySelector('input[placeholder="First Name"]').value;
+            const lastName = form.querySelector('input[placeholder="Last Name"]').value;
+            const email = form.querySelector('input[placeholder="Email"]').value;
+
+            if (!firstName || !lastName || !email) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            try {
+                // Create checkout session
+                const response = await safeJsonFetch('/api/create-checkout', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        email,
+                        firstName,
+                        lastName,
+                        anonId,
+                        returnUrl: window.location.href
+                    })
+                });
+
+                if (response.url) {
+                    // Store user info for after successful subscription
+                    localStorage.setItem('vera_pending_signup', JSON.stringify({
+                        firstName,
+                        lastName,
+                        email,
+                        anonId
+                    }));
+
+                    // Redirect to Stripe
+                    window.location.href = response.url;
+                } else {
+                    throw new Error('No checkout URL received');
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                alert('Sorry, there was an error. Please try again.');
+            }
+        }
+
+        async function checkSubscriptionStatus() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('session_id');
+            
+            if (sessionId) {
+                try {
+                    // Verify subscription with backend
+                    const response = await safeJsonFetch('/api/verify-subscription', {
+                        method: 'POST',
+                        body: JSON.stringify({ sessionId })
+                    });
+
+                    if (response.success) {
+                        // Get stored user info
+                        const pendingSignup = JSON.parse(localStorage.getItem('vera_pending_signup') || '{}');
+                        
+                        // Update user state
+                        isSubscriber = true;
+                        userEmail = pendingSignup.email;
+                        userName = pendingSignup.firstName;
+                        
+                        // Clear guest status and counters
+                        localStorage.removeItem('veraIsGuest');
+                        localStorage.removeItem('veraGuestMessageCount');
+                        localStorage.removeItem('vera_pending_signup');
+                        
+                        // Close signup modal if open
+                        const modal = document.getElementById('signupModal');
+                        modal.style.display = 'none';
+                        
+                        // Add welcome back message
+                        addMessage('vera', `Welcome back, ${pendingSignup.firstName}! Your subscription is now active. Let's continue our conversation.`);
+                        
+                        // Clean up URL
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                } catch (error) {
+                    console.error('Subscription verification error:', error);
+                }
+            }
+        }
+
         async function sendMessage() {
             const message = messageInput.value.trim();
             
             if (!message || isSending) return;
+
+            // Check guest message count
+            if (localStorage.getItem('veraIsGuest') === 'true') {
+                guestMessageCount++;
+                localStorage.setItem('veraGuestMessageCount', guestMessageCount);
+                
+                if (guestMessageCount >= 5) {
+                    showSignupModal();
+                    return;
+                }
+            }
 
             isSending = true;
             const sendBtn = document.querySelector('.send-button');
