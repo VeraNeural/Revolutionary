@@ -2110,7 +2110,7 @@ app.get('/api/history', async (req, res) => {
   if (!userId && req.query && req.query.anonId) {
     const maybeAnon = String(req.query.anonId);
     // Accept only our generated anon_XXXXXXXX format (8 char base36)
-    if (/^anon_[a-z0-9]{8}$/i.test(maybeAnon)) {
+    if (/^anon_[a-z0-9_]+$/i.test(maybeAnon)) {
       userId = maybeAnon;
     }
   }
