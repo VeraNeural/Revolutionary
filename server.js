@@ -1528,7 +1528,7 @@ app.post('/api/chat', async (req, res) => {
     const duration = Date.now() - startTime;
     
     // Record metrics
-    monitor.recordResponse(duration);
+    monitor.recordMetric('requestDuration', duration);
     monitor.recordAICall({
       model: veraResult.model,
       state: veraResult.state,
