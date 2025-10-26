@@ -1343,7 +1343,10 @@ app.post('/api/auth/login-link', async (req, res) => {
 app.post('/api/verify-subscription', async (req, res) => {
   const { sessionId } = req.body;
 
+  console.log('🔍 Verifying subscription for session:', sessionId);
+
   if (!sessionId) {
+    console.warn('❌ No session ID provided');
     return res.status(400).json({
       success: false,
       error: 'Session ID is required',
@@ -1352,9 +1355,12 @@ app.post('/api/verify-subscription', async (req, res) => {
 
   try {
     // Retrieve the checkout session
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['subscription'], // Expand subscription details for more thorough checking
+    });
 
     if (!session) {
+      console.warn('❌ Session not found:', sessionId);
       return res.status(404).json({
         success: false,
         error: 'Session not found',
@@ -1371,16 +1377,60 @@ app.post('/api/verify-subscription', async (req, res) => {
       });
     }
 
-    // Get subscription details
-    const subscription = await stripe.subscriptions.retrieve(session.subscription);
+    // First verify payment status
+    if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') {
+      console.error('❌ Payment verification failed:', {
+        sessionId: session.id,
+        paymentStatus: session.payment_status,
+        customerEmail: session.customer_email,
+      });
+
+      return res.status(400).json({
+        success: false,
+        error: 'Payment verification failed',
+        details: {
+          payment_status: session.payment_status,
+          message: 'Payment was not successful',
+        },
+      });
+    }
+
+    // Get subscription details - should already be expanded from the session retrieve
+    const subscription =
+      session.subscription || (await stripe.subscriptions.retrieve(session.subscription));
+
+    // Verify subscription exists
+    if (!subscription) {
+      console.error('❌ No subscription found:', {
+        sessionId: session.id,
+        subscriptionId: session.subscription,
+      });
+
+      return res.status(400).json({
+        success: false,
+        error: 'No subscription found',
+        details: {
+          message: 'Unable to locate subscription details',
+        },
+      });
+    }
 
     // Verify subscription status
     if (!['active', 'trialing'].includes(subscription.status)) {
-      console.error('❌ Invalid subscription status:', subscription.status);
+      console.error('❌ Invalid subscription status:', {
+        sessionId: session.id,
+        subscriptionId: subscription.id,
+        status: subscription.status,
+        customerEmail: session.customer_email,
+      });
+
       return res.status(400).json({
         success: false,
         error: 'Invalid subscription status',
-        subscription_status: subscription.status,
+        details: {
+          subscription_status: subscription.status,
+          message: 'Subscription is not active or trialing',
+        },
       });
     }
 
@@ -1393,11 +1443,29 @@ app.post('/api/verify-subscription', async (req, res) => {
 
     // Update user record in database
     if (session.customer_email) {
-      await db.query(
-        'UPDATE users SET subscription_status = $1, stripe_subscription_id = $2 WHERE email = $3',
-        [subscription.status, subscription.id, session.customer_email]
-      );
+      try {
+        const updateResult = await db.query(
+          'UPDATE users SET subscription_status = $1, stripe_subscription_id = $2, updated_at = NOW() WHERE email = $3',
+          [subscription.status, subscription.id, session.customer_email]
+        );
+
+        if (updateResult.rowCount === 0) {
+          console.warn('⚠️ No user found to update:', session.customer_email);
+        } else {
+          console.log('✅ Updated subscription status for user:', session.customer_email);
+        }
+      } catch (dbError) {
+        console.error('❌ Database update failed:', dbError);
+        // Don't fail the request, but log the error
+      }
     }
+
+    // All verifications passed
+    console.log('✅ Subscription verified successfully:', {
+      sessionId: session.id,
+      status: subscription.status,
+      customerEmail: session.customer_email,
+    });
 
     return res.json({
       success: true,
