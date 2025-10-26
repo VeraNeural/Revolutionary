@@ -392,7 +392,7 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
 async function handleCheckoutCompleted(session) {
   console.log('💳 Checkout completed for session:', session.id);
 
-  const customerEmail = session.customer_email || session.customer_details?.email || session.metadata?.customer_email;
+  let customerEmail = session.customer_email || session.customer_details?.email || session.metadata?.customer_email;
   const customerId = session.customer;
   const subscriptionId = session.subscription;
 
