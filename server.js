@@ -1483,10 +1483,10 @@ app.post('/api/auth/login-link', async (req, res) => {
   to: email,
   subject: 'Sign in to VERA',
   html: emailHtml
-}); `
+}); 
         <p>Click here to sign in to your VERA account:</p>
         <a href="${magicLink}">Sign In</a>
-      `
+      
     });
 
     res.json({
