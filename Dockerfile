@@ -1,6 +1,6 @@
 # Railway Deployment for VERA
-# Node.js 18 Alpine for smaller image size
-FROM node:18-alpine
+# Node.js 20 Alpine for smaller image size
+FROM node:20-alpine
 
 # Set working directory
 WORKDIR /app
@@ -8,8 +8,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install --production
+# Install dependencies (skip prepare script to avoid husky)
+RUN npm install --production --ignore-scripts
 
 # Copy application code
 COPY . .
