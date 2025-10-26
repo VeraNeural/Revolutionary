@@ -77,6 +77,7 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 // ==================== STRIPE WEBHOOK ====================
+// CRITICAL: This MUST come BEFORE express.json() middleware for raw body access
 app.post(
   '/api/webhooks/stripe',
   express.raw({ type: 'application/json' }),
@@ -333,7 +334,7 @@ app.get('/api/subscription-status', async (req, res) => {
 
 // ==================== STRIPE WEBHOOK ENDPOINT ====================
 // CRITICAL: This MUST come BEFORE express.json() middleware for raw body access
-app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
