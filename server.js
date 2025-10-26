@@ -1169,6 +1169,38 @@ app.get('/admin/leads', async (req, res) => {
 });
 
 // ==================== AUTHENTICATION ENDPOINTS ====================
+app.get('/api/auth/validate', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    return res.json({ valid: false });
+  }
+
+  try {
+    // Check if token matches a user's active token
+    const userResult = await db.query(
+      'SELECT email, subscription_status FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()',
+      [token]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.json({ valid: false });
+    }
+
+    // Set session
+    req.session.userEmail = userResult.rows[0].email;
+    await req.session.save();
+
+    return res.json({
+      valid: true,
+      email: userResult.rows[0].email,
+      subscription: userResult.rows[0].subscription_status
+    });
+  } catch (error) {
+    console.error('❌ Token validation error:', error);
+    return res.json({ valid: false });
+  }
+});
+
 app.get('/api/auth/check', async (req, res) => {
   if (!req.session.userEmail) {
     return res.json({ authenticated: false });

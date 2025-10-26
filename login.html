@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VERA - Sign In</title>
+    <style>
+        :root {
+            --vera-deep-space: #0A0E27;
+            --vera-midnight: #151832;
+            --vera-purple: #9B59B6;
+            --vera-lavender: #B19CD9;
+            --vera-neural-blue: #64B5F6;
+            --text-primary: rgba(255, 255, 255, 0.98);
+            --text-soft: rgba(255, 255, 255, 0.88);
+            --text-muted: rgba(255, 255, 255, 0.6);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--vera-deep-space);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+            background: rgba(21, 24, 50, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(155, 89, 182, 0.2);
+        }
+
+        .vera-logo {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 200;
+            letter-spacing: 0.4em;
+            background: linear-gradient(135deg, var(--vera-lavender), var(--vera-neural-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 2rem;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            color: var(--text-soft);
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            padding: 0.8rem 1rem;
+            border-radius: 6px;
+            border: 1px solid rgba(155, 89, 182, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--vera-neural-blue);
+            box-shadow: 0 0 0 2px rgba(100, 181, 246, 0.2);
+        }
+
+        .submit-btn {
+            padding: 1rem;
+            border-radius: 6px;
+            border: none;
+            background: linear-gradient(135deg, var(--vera-purple), var(--vera-neural-blue));
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .success-message {
+            color: #51cf66;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .signup-link {
+            margin-top: 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .signup-link a {
+            color: var(--vera-neural-blue);
+            text-decoration: none;
+        }
+
+        .signup-link a:hover {
+            text-decoration: underline;
+        }
+
+        .back-home {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .back-home:hover {
+            color: var(--text-primary);
+        }
+
+        /* Loading animation */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-home">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+        </svg>
+        Back to Home
+    </a>
+
+    <div class="login-container">
+        <div class="vera-logo">VERA</div>
+        <form id="loginForm" class="login-form">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <button type="submit" class="submit-btn">
+                Send Magic Link
+            </button>
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
+        </form>
+        <div class="signup-link">
+            Don't have an account? <a href="/">Sign up now</a>
+        </div>
+    </div>
+
+    <script>
+        // Auto-login handling
+        async function checkAutoLogin() {
+            const token = localStorage.getItem('vera_token');
+            if (token) {
+                try {
+                    const response = await fetch('/api/auth/validate', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.valid) {
+                        // Store user info and redirect
+                        localStorage.setItem('veraUserEmail', data.email);
+                        window.location.href = '/chat.html';
+                        return;
+                    } else {
+                        // Clear invalid token
+                        localStorage.removeItem('vera_token');
+                    }
+                } catch (error) {
+                    console.error('Auto-login failed:', error);
+                }
+            }
+        }
+
+        // Check for auto-login on page load
+        checkAutoLogin();
+
+        // Form submission handling
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const errorMsg = document.getElementById('errorMessage');
+            const successMsg = document.getElementById('successMessage');
+            const email = document.getElementById('email').value;
+
+            // Reset messages
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+
+            // Disable submit button and show loading state
+            submitBtn.disabled = true;
+            submitBtn.classList.add('loading');
+            submitBtn.textContent = 'Sending...';
+
+            try {
+                const response = await fetch('/api/auth/login-link', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    successMsg.textContent = data.message;
+                    successMsg.style.display = 'block';
+                    // Clear form
+                    e.target.reset();
+                } else {
+                    errorMsg.textContent = data.error || 'Failed to send login link';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorMsg.textContent = 'An error occurred. Please try again.';
+                errorMsg.style.display = 'block';
+            } finally {
+                // Reset button state
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+                submitBtn.textContent = 'Send Magic Link';
+            }
+        });
+
+        // Handle URL parameters for error messages
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            const error = params.get('error');
+            const errorMsg = document.getElementById('errorMessage');
+
+            if (error) {
+                let message = '';
+                switch (error) {
+                    case 'invalid_token':
+                        message = 'Invalid or expired login link. Please request a new one.';
+                        break;
+                    case 'expired_token':
+                        message = 'Your login link has expired. Please request a new one.';
+                        break;
+                    case 'verification_failed':
+                        message = 'Login verification failed. Please try again.';
+                        break;
+                    default:
+                        message = 'An error occurred. Please try again.';
+                }
+                errorMsg.textContent = message;
+                errorMsg.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
