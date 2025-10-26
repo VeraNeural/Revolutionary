@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Generate Typing Sound</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+        .info {
+            background: #e8f0ff;
+            border: 1px solid #667eea;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .audio-player {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔊 Generate Subtle Typing Sound</h1>
+        
+        <div class="info">
+            <strong>Purpose:</strong> Generate a soft, non-intrusive typing/keystroke sound effect for VERA's chat interface. This sound plays briefly when VERA's typing indicator appears, adding subtle audio feedback.
+        </div>
+
+        <div class="controls">
+            <button onclick="generateTypingSound()">Generate Typing Sound</button>
+            <button onclick="copyToClipboard()">Copy Base64</button>
+            <button onclick="downloadAudio()">Download WAV</button>
+        </div>
+
+        <div class="audio-player">
+            <label>Preview:</label><br><br>
+            <audio id="audioPreview" controls style="width: 100%; max-width: 400px;"></audio>
+        </div>
+
+        <label for="output">Base64 Output (for embedding in HTML/JS):</label>
+        <textarea id="output" readonly placeholder="Click 'Generate Typing Sound' to create audio..."></textarea>
+    </div>
+
+    <script>
+        // Web Audio API approach to generate typing sound
+        function generateTypingSound() {
+            console.log('Generating subtle typing sound...');
+            
+            // Create audio context
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const sampleRate = audioContext.sampleRate;
+            
+            // Create a short burst of noise for typing effect
+            // Duration: 80ms (fast keystroke)
+            const duration = 0.08;
+            const buffer = audioContext.createBuffer(1, sampleRate * duration, sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            // Generate soft noise with envelope
+            for (let i = 0; i < buffer.length; i++) {
+                const t = i / sampleRate;
+                const envelope = Math.exp(-t / 0.04); // Quick decay
+                
+                // Soft pink/brown noise approximation
+                const noise = (Math.random() - 0.5) * 2;
+                
+                // Add a slight frequency characteristic (high-pass feel)
+                const filtered = noise * 0.5 + (Math.sin(2 * Math.PI * 150 * t) * 0.05);
+                
+                // Apply envelope (attack, decay)
+                data[i] = filtered * envelope * 0.25; // Quiet volume
+            }
+            
+            // Convert to WAV
+            const wav = audioBufferToWav(buffer);
+            
+            // Convert to base64
+            const blob = new Blob([wav], { type: 'audio/wav' });
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const base64 = e.target.result.split(',')[1];
+                document.getElementById('output').value = base64;
+                
+                // Also create object URL for preview
+                const objectUrl = URL.createObjectURL(blob);
+                const audio = document.getElementById('audioPreview');
+                audio.src = objectUrl;
+                
+                console.log('✅ Typing sound generated successfully!');
+                console.log('Size:', Math.round(base64.length / 1024), 'KB');
+            };
+            
+            reader.readAsDataURL(blob);
+        }
+        
+        // Convert AudioBuffer to WAV format
+        function audioBufferToWav(audioBuffer) {
+            const numberOfChannels = audioBuffer.numberOfChannels;
+            const sampleRate = audioBuffer.sampleRate;
+            const format = 1; // PCM
+            const bitDepth = 16;
+            
+            let recordedChannels = [];
+            for (let channel = 0; channel < numberOfChannels; channel++) {
+                recordedChannels.push(audioBuffer.getChannelData(channel));
+            }
+            
+            let interleaved;
+            if (numberOfChannels === 2) {
+                interleaved = interleave(recordedChannels[0], recordedChannels[1]);
+            } else {
+                interleaved = recordedChannels[0];
+            }
+            
+            const dataLength = interleaved.length * (bitDepth / 8);
+            const buffer = new ArrayBuffer(44 + dataLength);
+            const view = new DataView(buffer);
+            
+            // WAV file header
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+            
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + dataLength, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, format, true);
+            view.setUint16(22, numberOfChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * numberOfChannels * (bitDepth / 8), true);
+            view.setUint16(32, numberOfChannels * (bitDepth / 8), true);
+            view.setUint16(34, bitDepth, true);
+            writeString(36, 'data');
+            view.setUint32(40, dataLength, true);
+            
+            // Write audio data
+            const volume = 0.8;
+            let index = 44;
+            const length = interleaved.length;
+            const s = 32767;
+            
+            for (let i = 0; i < length; i++) {
+                view.setInt16(index, interleaved[i] < 0 ? interleaved[i] * s : interleaved[i] * s, true);
+                index += 2;
+            }
+            
+            return buffer;
+        }
+        
+        function interleave(leftChannel, rightChannel) {
+            const length = leftChannel.length + rightChannel.length;
+            const result = new Float32Array(length);
+            
+            let inputIndex = 0;
+            for (let i = 0; i < length;) {
+                result[i++] = leftChannel[inputIndex];
+                result[i++] = rightChannel[inputIndex];
+                inputIndex++;
+            }
+            return result;
+        }
+        
+        function copyToClipboard() {
+            const output = document.getElementById('output');
+            if (!output.value) {
+                alert('Please generate the typing sound first');
+                return;
+            }
+            
+            output.select();
+            document.execCommand('copy');
+            alert('Base64 copied to clipboard! ✅');
+        }
+        
+        function downloadAudio() {
+            const audio = document.getElementById('audioPreview');
+            if (!audio.src) {
+                alert('Please generate the typing sound first');
+                return;
+            }
+            
+            const a = document.createElement('a');
+            a.href = audio.src;
+            a.download = 'typing-sound.wav';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+        
+        // Auto-generate on load
+        window.addEventListener('load', () => {
+            console.log('Generating initial typing sound...');
+            setTimeout(generateTypingSound, 500);
+        });
+    </script>
+</body>
+</html>

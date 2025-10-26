@@ -365,6 +365,54 @@
             gap: 1rem;
         }
 
+        .sound-toggle {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: var(--quick-button-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sound-toggle:hover {
+            background: var(--quick-button-hover);
+            transform: scale(1.08);
+            border-color: var(--orb-1);
+        }
+
+        .sound-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .sound-toggle.disabled svg {
+            opacity: 0.4;
+        }
+
+        .sound-toggle.disabled:hover {
+            transform: none;
+        }
+
+        .sound-toggle svg {
+            width: 24px;
+            height: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .sound-toggle.disabled #volumeWaves {
+            display: none;
+        }
+
+        .sound-toggle.disabled #volumeOn {
+            opacity: 0.5;
+        }
+
         .theme-toggle {
             display: flex;
             align-items: center;
@@ -1475,6 +1523,16 @@
                 z-index: 101;
             }
 
+            .sound-toggle {
+                width: 36px;
+                height: 36px;
+            }
+
+            .sound-toggle svg {
+                width: 20px;
+                height: 20px;
+            }
+
             .vera-presence-indicator {
                 width: 40px;
                 height: 40px;
@@ -1707,6 +1765,13 @@
             </div>
             
             <div class="header-controls">
+                <button class="sound-toggle" id="soundToggle" onclick="toggleSound()" title="Toggle VERA typing sound">
+                    <svg id="soundIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <!-- Volume on icon -->
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" id="volumeOn"></polygon>
+                        <path d="M15.54 3.54a9 9 0 0 1 0 12.73M21 4a16 16 0 0 1 0 16" id="volumeWaves"></path>
+                    </svg>
+                </button>
                 <div class="theme-toggle">
                     <div class="theme-option theme-light active" onclick="setTheme('light')" title="Light"></div>
                     <div class="theme-option theme-dark" onclick="setTheme('dark')" title="Dark"></div>
@@ -1820,6 +1885,10 @@
         let anonId = '';
         let isSending = false;
         
+        // Sound settings
+        let soundEnabled = true;
+        let typingAudio = null;
+        
         // Track guest messages
         let guestMessageCount = parseInt(localStorage.getItem('veraGuestMessageCount') || '0');
         
@@ -1832,6 +1901,63 @@
         // ============================================
         // UTILITY FUNCTIONS
         // ============================================
+        
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        
+        // Initialize typing sound audio
+        function initializeTypingSound() {
+            // Base64 encoded typing sound (80ms soft keystroke)
+            const base64Audio = 'UklGRrQbAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YZAb' +
+                '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';
+            
+            try {
+                // Create audio element
+                const audio = new Audio();
+                audio.src = 'data:audio/wav;base64,' + base64Audio;
+                audio.volume = 0.15; // Very quiet (15% volume)
+                typingAudio = audio;
+                console.log('✅ Typing sound loaded');
+            } catch (error) {
+                console.error('Failed to load typing sound:', error);
+                typingAudio = null;
+            }
+        }
+        
+        // Play typing sound
+        function playTypingSound() {
+            if (!soundEnabled || !typingAudio) return;
+            
+            try {
+                // Clone and play to avoid cutting off previous instance
+                const audio = typingAudio.cloneNode();
+                audio.volume = 0.15;
+                audio.play().catch(err => {
+                    // Silently fail - some contexts don't allow autoplay
+                    console.debug('Audio play prevented:', err.message);
+                });
+            } catch (error) {
+                console.debug('Failed to play typing sound:', error);
+            }
+        }
+        
+        // Toggle sound on/off
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            localStorage.setItem('veraSoundEnabled', soundEnabled ? '1' : '0');
+            
+            const toggle = document.getElementById('soundToggle');
+            if (soundEnabled) {
+                toggle.classList.remove('disabled');
+                toggle.setAttribute('title', 'Sound on - Click to mute');
+            } else {
+                toggle.classList.add('disabled');
+                toggle.setAttribute('title', 'Sound muted - Click to unmute');
+            }
+            
+            console.log('🔊 Sound ' + (soundEnabled ? 'enabled' : 'disabled'));
+        }
         
         async function safeJsonFetch(url, options = {}) {
             try {
@@ -1939,6 +2065,16 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
         
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🌟 VERA initializing...');
+
+            // Initialize typing sound
+            initializeTypingSound();
+            
+            // Load sound preference
+            soundEnabled = localStorage.getItem('veraSoundEnabled') !== '0'; // Default to enabled
+            const toggle = document.getElementById('soundToggle');
+            if (!soundEnabled) {
+                toggle.classList.add('disabled');
+            }
 
             // Get anonymous ID
             anonId = getOrCreateAnonId();
@@ -2125,6 +2261,9 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
             adjustTextareaHeight();
 
             typingIndicator.classList.add('active');
+            
+            // Play typing sound when indicator appears
+            playTypingSound();
 
             try {
                 const data = await safeJsonFetch('/api/chat', {
