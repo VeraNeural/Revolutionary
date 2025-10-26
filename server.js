@@ -1193,7 +1193,7 @@ app.get('/api/auth/validate', async (req, res) => {
     return res.json({
       valid: true,
       email: userResult.rows[0].email,
-      subscription: userResult.rows[0].subscription_status
+      subscription: userResult.rows[0].subscription_status,
     });
   } catch (error) {
     console.error('❌ Token validation error:', error);
@@ -1336,6 +1336,48 @@ app.post('/api/auth/login-link', async (req, res) => {
   } catch (error) {
     console.error('❌ Login link error:', error);
     res.status(500).json({ error: 'Failed to send login link' });
+  }
+});
+
+// ==================== VERIFY SUBSCRIPTION ====================
+app.post('/api/verify-subscription', async (req, res) => {
+  const { sessionId } = req.body;
+
+  if (!sessionId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Session ID is required',
+    });
+  }
+
+  try {
+    // Retrieve the checkout session
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: 'Session not found',
+      });
+    }
+
+    // Get subscription details
+    const subscription = await stripe.subscriptions.retrieve(session.subscription);
+
+    return res.json({
+      success: true,
+      subscription: {
+        status: subscription.status,
+        current_period_end: subscription.current_period_end,
+        trial_end: subscription.trial_end,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Subscription verification failed:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to verify subscription',
+    });
   }
 });
 
