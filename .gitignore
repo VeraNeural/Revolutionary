@@ -55,3 +55,6 @@ coverage/
 netlify/
 netlify.toml
 vercel.json
+logs/
+logs/
+logs/

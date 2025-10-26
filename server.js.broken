@@ -1,0 +1,203 @@
+// ==================== VERA REVOLUTIONARY SYSTEM - COMPLETE SERVER ====================
+// Backend API for VERA - Your Nervous System Companion
+// This handles authentication, AI chat, Stripe payments, and more
+
+console.log('🚀 VERA server.js starting...');
+console.log('📍 Node version:', process.version);
+console.log('📍 Environment:', process.env.NODE_ENV || 'not set');
+
+// Load environment variables
+require('dotenv').config({ path: '.env.local' });
+
+console.log('✅ Environment variables loaded');
+console.log('📍 DATABASE_URL exists:', !!process.env.DATABASE_URL);
+console.log('📍 ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
+
+const express = require('express');
+const cors = require('cors');
+const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session);
+const path = require('path');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { getVERAResponse, setVERADebug } = require('./lib/vera-ai');
+const { handleDatabaseError } = require('./lib/database-helpers');
+const rateLimiter = require('./lib/rate-limiter');
+const db = require('./lib/database-manager');
+
+// ==================== EMAIL SETUP - TEMPORARILY DISABLED ====================
+// Nodemailer has import issues - disabling for now so Stripe works
+console.log("⚠️  Email sending temporarily disabled");
+console.log("💡 Accounts will be created, but no welcome emails sent");
+
+// Mock transporter so code doesn't break
+const transporter = {
+  sendMail: async (options) => {
+    console.log("📧 Email would be sent to:", options.to);
+    console.log("📧 Subject:", options.subject);
+    return { messageId: "mock-" + Date.now() };
+  }
+};
+
+// ==================== GRACEFUL SHUTDOWN HANDLING ====================
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, closing gracefully...');
+  await db.end();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT received, closing gracefully...');
+  await db.end();
+  process.exit(0);
+});
+
+// ==================== APP INITIALIZATION ====================
+const app = express();
+const PORT = process.env.PORT || 8080;
+
+// Initialize database and health check
+db.checkDatabaseHealth().then(healthy => {
+  if (!healthy && process.env.RAILWAY_ENVIRONMENT) {
+    console.error('❌ Critical: Database health check failed in production');
+    // In production, we might want to exit and let Railway restart the service
+    // process.exit(1);
+  }
+});
+
+// ==================== MIDDLEWARE ====================
+// Restrict CORS in production to APP_URL; allow all during local dev for convenience
+const allowedOrigin = process.env.NODE_ENV === 'production' ? (process.env.APP_URL || true) : true;
+app.use(cors({
+  origin: allowedOrigin,
+  credentials: true
+}));
+
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Prevent stale HTML after deploys: disable caching for HTML documents
+app.use((req, res, next) => {
+  if (req.path === '/' || req.path.endsWith('.html')) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  }
+  next();
+});
+
+// Session middleware with Railway PostgreSQL
+app.use(session({
+  store: new pgSession({
+    pool: db.pool, // Use our database manager's pool
+    tableName: 'session'
+  }),
+  secret: process.env.SESSION_SECRET || 'vera-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+  }
+}));
+
+// Serve static files
+app.use(express.static('public'));
+
+// ==================== DATABASE INITIALIZATION ====================
+async function initializeDatabase() {
+  try {
+    // Create users table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        subscription_status VARCHAR(50) DEFAULT 'inactive',
+        stripe_customer_id VARCHAR(255),
+        stripe_subscription_id VARCHAR(255),
+        trial_ends_at TIMESTAMP,
+        onboarding_completed BOOLEAN DEFAULT false,
+        reset_token VARCHAR(255),
+        reset_token_expires TIMESTAMP
+      )
+    `);
+
+    // Create conversations table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS conversations (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        title VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        message_count INTEGER DEFAULT 0,
+        last_message_preview TEXT
+      )
+    `);
+
+    // Create messages table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        role VARCHAR(50) NOT NULL,
+        content TEXT NOT NULL,
+        conversation_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create session table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS session (
+        sid VARCHAR NOT NULL COLLATE "default",
+        sess JSON NOT NULL,
+        expire TIMESTAMP(6) NOT NULL,
+        PRIMARY KEY (sid)
+      )
+    `);
+
+    // Create crisis_alerts table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS crisis_alerts (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        message_content TEXT NOT NULL,
+        detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create leads table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS leads (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        first_name VARCHAR(255),
+        last_name VARCHAR(255),
+        company VARCHAR(255),
+        phone VARCHAR(50),
+        use_case VARCHAR(100),
+        lead_source VARCHAR(255),
+        referrer TEXT,
+        utm_source VARCHAR(255),
+        utm_medium VARCHAR(255),
+        utm_campaign VARCHAR(255),
+        user_agent TEXT,
+        timezone VARCHAR(100),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        converted_at TIMESTAMP,
+        status VARCHAR(50) DEFAULT 'new'
+      )
+    `);
+
+    console.log('✅ Database initialized - VERA remembers everything');
+  } catch (error) {
+    console.error('❌ Database initialization error:', error);
+  }
+}
+
+initializeDatabase();
+
+[...REST OF THE FILE CONTINUES WITH db.query INSTEAD OF pool.query...]

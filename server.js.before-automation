@@ -2,14 +2,6 @@
 // Backend API for VERA - Your Nervous System Companion
 // This handles authentication, AI chat, Stripe payments, and more
 
-// ==================== LOAD ENVIRONMENT FIRST! ====================
-require('dotenv').config({ path: '.env.local' });
-
-console.log('✅ Environment variables loaded');
-console.log('🔍 DATABASE_PUBLIC_URL exists:', !!process.env.DATABASE_PUBLIC_URL);
-console.log('🔍 ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
-
-// ==================== NOW load modules that need env vars ====================
 const logger = require('./lib/logger');
 const sessionCleaner = require('./lib/session-cleaner');
 
@@ -17,6 +9,9 @@ logger.info('🚀 VERA server.js starting...', {
   nodeVersion: process.version,
   environment: process.env.NODE_ENV || 'not set'
 });
+
+// Load environment variables
+require('dotenv').config({ path: '.env.local' });
 
 console.log('✅ Environment variables loaded');
 console.log('📍 DATABASE_PUBLIC_URL exists:', !!process.env.DATABASE_PUBLIC_URL);
@@ -32,21 +27,7 @@ const db = require('./lib/database-manager');
 const { getVERAResponse, setVERADebug } = require('./lib/vera-ai');
 const { handleDatabaseError } = require('./lib/database-helpers');
 const rateLimiter = require('./lib/rate-limiter');
-// ==================== AUTOMATION INFRASTRUCTURE ====================
-const errorHandler = require('./middleware/error-handler');
-const performanceMonitor = require('./middleware/performance');
-const envValidator = require('./lib/env-validator');
 
-// Validate environment configuration (AFTER all modules loaded)
-try {
-  const envValidator = require('./lib/env-validator');
-  envValidator.validate();
-  logger.info('✅ Environment validation passed');
-} catch (error) {
-  logger.error('❌ Environment validation failed', { error: error.message });
-  console.error('Environment validation failed:', error.message);
-  process.exit(1);
-}
 // ==================== EMAIL SETUP - TEMPORARILY DISABLED ====================
 // Nodemailer has import issues - disabling for now so Stripe works
 console.log("⚠️  Email sending temporarily disabled");
@@ -75,10 +56,6 @@ process.on('SIGINT', () => {
 // ==================== APP INITIALIZATION ====================
 const app = express();
 const PORT = process.env.PORT || 8080;
-
-// ==================== PERFORMANCE & LOGGING MIDDLEWARE ====================
-app.use(performanceMonitor.middleware());
-app.use(logger.expressMiddleware());
 
 // ==================== STRIPE WEBHOOK ENDPOINT ====================
 // CRITICAL: This MUST come BEFORE express.json() middleware for raw body access
@@ -465,7 +442,8 @@ app.get('/', (req, res) => {
 });
 
 // ==================== HEALTH CHECK & MONITORING ====================
-const monitor = require('./lib/monitoring');  // ✅
+const SystemMonitor = require('./lib/monitoring');
+const monitor = new SystemMonitor(db.pool);
 
 // Basic health endpoint for quick checks
 app.get('/health', (req, res) => {
@@ -1929,16 +1907,11 @@ app.get('/api/test', (req, res) => {
 });
 
 // ==================== EXPORT FOR SERVERLESS ====================
-// ==================== ERROR HANDLER (Must be LAST middleware!) ====================
-app.use(errorHandler.middleware());
 module.exports = app;
 
 // ==================== START SERVER ====================
 if (require.main === module) {
   app.listen(PORT, '0.0.0.0', () => {
- // Start automated tasks
-    sessionCleaner.start();
-    logger.info('🧹 Session cleanup scheduler started'); 
   console.log('');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('🌟 VERA REVOLUTIONARY SYSTEM ONLINE 🌟');

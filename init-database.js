@@ -1,18 +1,13 @@
 // Initialize VERA database tables
 require('dotenv').config({ path: '.env.local' });
-const { Pool } = require('pg');
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
+const db = require('./lib/database-manager');
 
 async function initDatabase() {
   try {
     console.log('🔄 Connecting to database...');
     
     // Create users table
-    await pool.query(`
+    await db.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
@@ -31,7 +26,7 @@ async function initDatabase() {
     console.log('✅ Users table created');
 
     // Create messages table
-    await pool.query(`
+    await db.query(`
       CREATE TABLE IF NOT EXISTS messages (
         id SERIAL PRIMARY KEY,
         user_id VARCHAR(255) NOT NULL,
@@ -43,7 +38,7 @@ async function initDatabase() {
     console.log('✅ Messages table created');
 
     // Create crisis_alerts table
-    await pool.query(`
+    await db.query(`
       CREATE TABLE IF NOT EXISTS crisis_alerts (
         id SERIAL PRIMARY KEY,
         user_id VARCHAR(255) NOT NULL,
@@ -54,7 +49,7 @@ async function initDatabase() {
     console.log('✅ Crisis alerts table created');
 
     // Create session table
-    await pool.query(`
+    await db.query(`
       CREATE TABLE IF NOT EXISTS session (
         sid VARCHAR NOT NULL COLLATE "default",
         sess JSON NOT NULL,
@@ -68,7 +63,7 @@ async function initDatabase() {
     console.log('🎉 Database initialized successfully!');
     console.log('VERA is ready to remember everything.');
     
-    await pool.end();
+    await db.end();
     process.exit(0);
   } catch (error) {
     console.error('❌ Database initialization failed:', error);

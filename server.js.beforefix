@@ -2,21 +2,12 @@
 // Backend API for VERA - Your Nervous System Companion
 // This handles authentication, AI chat, Stripe payments, and more
 
-// ==================== LOAD ENVIRONMENT FIRST! ====================
+console.log('🚀 VERA server.js starting...');
+console.log('📍 Node version:', process.version);
+console.log('📍 Environment:', process.env.NODE_ENV || 'not set');
+
+// Load environment variables
 require('dotenv').config({ path: '.env.local' });
-
-console.log('✅ Environment variables loaded');
-console.log('🔍 DATABASE_PUBLIC_URL exists:', !!process.env.DATABASE_PUBLIC_URL);
-console.log('🔍 ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY);
-
-// ==================== NOW load modules that need env vars ====================
-const logger = require('./lib/logger');
-const sessionCleaner = require('./lib/session-cleaner');
-
-logger.info('🚀 VERA server.js starting...', {
-  nodeVersion: process.version,
-  environment: process.env.NODE_ENV || 'not set'
-});
 
 console.log('✅ Environment variables loaded');
 console.log('📍 DATABASE_PUBLIC_URL exists:', !!process.env.DATABASE_PUBLIC_URL);
@@ -32,21 +23,7 @@ const db = require('./lib/database-manager');
 const { getVERAResponse, setVERADebug } = require('./lib/vera-ai');
 const { handleDatabaseError } = require('./lib/database-helpers');
 const rateLimiter = require('./lib/rate-limiter');
-// ==================== AUTOMATION INFRASTRUCTURE ====================
-const errorHandler = require('./middleware/error-handler');
-const performanceMonitor = require('./middleware/performance');
-const envValidator = require('./lib/env-validator');
 
-// Validate environment configuration (AFTER all modules loaded)
-try {
-  const envValidator = require('./lib/env-validator');
-  envValidator.validate();
-  logger.info('✅ Environment validation passed');
-} catch (error) {
-  logger.error('❌ Environment validation failed', { error: error.message });
-  console.error('Environment validation failed:', error.message);
-  process.exit(1);
-}
 // ==================== EMAIL SETUP - TEMPORARILY DISABLED ====================
 // Nodemailer has import issues - disabling for now so Stripe works
 console.log("⚠️  Email sending temporarily disabled");
@@ -75,10 +52,6 @@ process.on('SIGINT', () => {
 // ==================== APP INITIALIZATION ====================
 const app = express();
 const PORT = process.env.PORT || 8080;
-
-// ==================== PERFORMANCE & LOGGING MIDDLEWARE ====================
-app.use(performanceMonitor.middleware());
-app.use(logger.expressMiddleware());
 
 // ==================== STRIPE WEBHOOK ENDPOINT ====================
 // CRITICAL: This MUST come BEFORE express.json() middleware for raw body access
@@ -465,7 +438,8 @@ app.get('/', (req, res) => {
 });
 
 // ==================== HEALTH CHECK & MONITORING ====================
-const monitor = require('./lib/monitoring');  // ✅
+const SystemMonitor = require('./lib/monitoring');
+const monitor = new SystemMonitor(db.pool);
 
 // Basic health endpoint for quick checks
 app.get('/health', (req, res) => {
@@ -536,7 +510,7 @@ app.get('/create-account', async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await db.query(
+    const existingUser = await pool.query(
       'SELECT * FROM users WHERE email = $1 OR stripe_customer_id = $2',
       [customerEmail, customerId]
     );
@@ -586,7 +560,7 @@ app.get('/create-account', async (req, res) => {
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
-    await db.query(
+    await pool.query(
       `INSERT INTO users (email, name, stripe_customer_id, stripe_subscription_id, subscription_status, trial_ends_at)
        VALUES ($1, $2, $3, $4, $5, $6)`,
       [customerEmail, customerEmail.split('@')[0], customerId, subscriptionId, 'active', trialEndsAt]
@@ -708,7 +682,7 @@ app.post('/api/save-lead', async (req, res) => {
     console.log('💾 Saving lead data for:', email);
     
     // Create leads table if it doesn't exist
-    await db.query(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS leads (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
@@ -731,7 +705,7 @@ app.post('/api/save-lead', async (req, res) => {
     `);
 
     // Insert or update lead data
-    const result = await db.query(`
+    const result = await pool.query(`
       INSERT INTO leads (
         email, first_name, last_name, company, phone, use_case,
         lead_source, referrer, utm_source, utm_medium, utm_campaign,
@@ -775,7 +749,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
     
     // CRITICAL: Check if user already exists to prevent duplicates (only if email provided)
     if (email) {
-      const existingUser = await db.query(
+      const existingUser = await pool.query(
         'SELECT stripe_customer_id, subscription_status FROM users WHERE email = $1',
         [email]
       );
@@ -1019,7 +993,7 @@ app.get('/api/auth/check', async (req, res) => {
       const subscription = await stripe.subscriptions.retrieve(user.stripe_subscription_id);
       if (subscription.status === 'active' || subscription.status === 'trialing') {
         // Update local status
-        await db.query(
+        await pool.query(
           'UPDATE users SET subscription_status = $1 WHERE email = $2',
           [subscription.status, req.session.userEmail]
         );
@@ -1062,7 +1036,7 @@ app.post('/api/auth/login-link', async (req, res) => {
 
   try {
     // Check if user exists and has subscription
-    const userResult = await db.query(
+    const userResult = await pool.query(
       'SELECT subscription_status, stripe_subscription_id FROM users WHERE email = $1',
       [email]
     );
@@ -1093,7 +1067,7 @@ app.post('/api/auth/login-link', async (req, res) => {
     const token = require('crypto').randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-    await db.query(
+    await pool.query(
       'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE email = $3',
       [token, expires, email]
     );
@@ -1153,7 +1127,7 @@ app.post('/api/auth/recover', async (req, res) => {
 
   try {
     // Check if user exists
-    const userResult = await db.query(
+    const userResult = await pool.query(
       'SELECT * FROM users WHERE email = $1',
       [email]
     );
@@ -1171,7 +1145,7 @@ app.post('/api/auth/recover', async (req, res) => {
     const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     // Store token in database
-    await db.query(
+    await pool.query(
       'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE email = $3',
       [token, expires, email]
     );
@@ -1254,7 +1228,7 @@ app.get('/verify-recovery', async (req, res) => {
 
   try {
     // Find user with this token that hasn't expired
-    const userResult = await db.query(
+    const userResult = await pool.query(
       'SELECT * FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()',
       [token]
     );
@@ -1266,7 +1240,7 @@ app.get('/verify-recovery', async (req, res) => {
     const user = userResult.rows[0];
 
     // Clear the token (one-time use only)
-    await db.query(
+    await pool.query(
       'UPDATE users SET reset_token = NULL, reset_token_expires = NULL WHERE email = $1',
       [user.email]
     );
@@ -1296,7 +1270,7 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
 
   try {
     // Check if user exists
-    const userResult = await db.query(
+    const userResult = await pool.query(
       'SELECT * FROM users WHERE email = $1',
       [email]
     );
@@ -1310,7 +1284,7 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
     const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     // Store token
-    await db.query(
+    await pool.query(
       'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE email = $3',
       [token, expires, email]
     );
@@ -1375,7 +1349,7 @@ app.get('/verify-magic-link', async (req, res) => {
 
   try {
     // Find user with this token
-    const userResult = await db.query(
+    const userResult = await pool.query(
       'SELECT * FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()',
       [token]
     );
@@ -1387,7 +1361,7 @@ app.get('/verify-magic-link', async (req, res) => {
     const user = userResult.rows[0];
 
     // Clear token
-    await db.query(
+    await pool.query(
       'UPDATE users SET reset_token = NULL, reset_token_expires = NULL WHERE email = $1',
       [user.email]
     );
@@ -1599,7 +1573,7 @@ app.get('/api/history', async (req, res) => {
   }
 
   try {
-    const result = await db.query(
+    const result = await pool.query(
       'SELECT role, content, created_at FROM messages WHERE user_id = $1 ORDER BY created_at ASC',
       [userId]
     );
@@ -1631,7 +1605,7 @@ app.get('/api/conversations', async (req, res) => {
   }
 
   try {
-    const result = await db.query(
+    const result = await pool.query(
       `SELECT id, title, created_at, updated_at, message_count, last_message_preview
        FROM conversations 
        WHERE user_id = $1 
@@ -1666,7 +1640,7 @@ app.get('/api/conversations/:id', async (req, res) => {
 
   try {
     // Verify conversation belongs to user
-    const convCheck = await db.query(
+    const convCheck = await pool.query(
       'SELECT id FROM conversations WHERE id = $1 AND user_id = $2',
       [conversationId, userId]
     );
@@ -1676,7 +1650,7 @@ app.get('/api/conversations/:id', async (req, res) => {
     }
 
     // Get messages
-    const result = await db.query(
+    const result = await pool.query(
       'SELECT role, content, created_at FROM messages WHERE conversation_id = $1 ORDER BY created_at ASC',
       [conversationId]
     );
@@ -1699,7 +1673,7 @@ app.post('/api/conversations', async (req, res) => {
   }
 
   try {
-    const result = await db.query(
+    const result = await pool.query(
       `INSERT INTO conversations (user_id, title, created_at, updated_at)
        VALUES ($1, $2, NOW(), NOW())
        RETURNING id, title, created_at, updated_at`,
@@ -1726,7 +1700,7 @@ app.patch('/api/conversations/:id', async (req, res) => {
 
   try {
     // Verify ownership
-    const convCheck = await db.query(
+    const convCheck = await pool.query(
       'SELECT id FROM conversations WHERE id = $1 AND user_id = $2',
       [conversationId, userId]
     );
@@ -1736,7 +1710,7 @@ app.patch('/api/conversations/:id', async (req, res) => {
     }
 
     // Update title
-    await db.query(
+    await pool.query(
       'UPDATE conversations SET title = $1, updated_at = NOW() WHERE id = $2',
       [title, conversationId]
     );
@@ -1768,7 +1742,7 @@ app.delete('/api/conversations/:id', async (req, res) => {
 
   try {
     // Verify ownership and delete (messages will cascade delete)
-    const result = await db.query(
+    const result = await pool.query(
       'DELETE FROM conversations WHERE id = $1 AND user_id = $2 RETURNING id',
       [conversationId, userId]
     );
@@ -1828,12 +1802,12 @@ app.post('/api/register', async (req, res) => {
     }
 
     // Ensure phone column exists without breaking existing schema
-    await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)");
 
     const fullName = `${firstName} ${lastName}`.trim();
 
     // Upsert user and mark as trialing with a 7-day trial window
-    await db.query(
+    await pool.query(
       `INSERT INTO users (email, name, phone, subscription_status, trial_ends_at)
        VALUES ($1, $2, $3, 'trialing', NOW() + INTERVAL '7 days')
        ON CONFLICT (email)
@@ -1929,16 +1903,11 @@ app.get('/api/test', (req, res) => {
 });
 
 // ==================== EXPORT FOR SERVERLESS ====================
-// ==================== ERROR HANDLER (Must be LAST middleware!) ====================
-app.use(errorHandler.middleware());
 module.exports = app;
 
 // ==================== START SERVER ====================
 if (require.main === module) {
   app.listen(PORT, '0.0.0.0', () => {
- // Start automated tasks
-    sessionCleaner.start();
-    logger.info('🧹 Session cleanup scheduler started'); 
   console.log('');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('🌟 VERA REVOLUTIONARY SYSTEM ONLINE 🌟');
