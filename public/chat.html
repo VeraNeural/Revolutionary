@@ -2150,16 +2150,15 @@
                 console.error('Auth refresh failed:', error);
             }
 
-            let emailForPortal = userEmail;
-            
-            if (!isAuthenticated && !emailForPortal) {
-                emailForPortal = window.prompt('Enter your email to manage your subscription:');
-                if (!emailForPortal || !emailForPortal.includes('@')) {
-                    alert('Valid email required to access billing portal');
-                    return;
-                }
-                emailForPortal = emailForPortal.trim();
-            }
+         // Get email from session
+const emailForPortal = userEmail;
+
+// If no email, user needs to log in first
+if (!emailForPortal || !emailForPortal.includes('@')) {
+    alert('Please log in to manage your subscription');
+    window.location.href = '/index.html';
+    return;
+}
 
             try {
                 const data = await safeJsonFetch('/api/portal', {
