@@ -1361,8 +1361,43 @@ app.post('/api/verify-subscription', async (req, res) => {
       });
     }
 
+    // Check if payment was successful
+    if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') {
+      console.error('❌ Payment unsuccessful:', session.payment_status);
+      return res.status(400).json({
+        success: false,
+        error: 'Payment unsuccessful',
+        payment_status: session.payment_status,
+      });
+    }
+
     // Get subscription details
     const subscription = await stripe.subscriptions.retrieve(session.subscription);
+
+    // Verify subscription status
+    if (!['active', 'trialing'].includes(subscription.status)) {
+      console.error('❌ Invalid subscription status:', subscription.status);
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid subscription status',
+        subscription_status: subscription.status,
+      });
+    }
+
+    // Set the success message based on subscription status
+    let welcomeMessage = 'Thank you for subscribing to VERA! You now have unlimited access.';
+    if (subscription.status === 'trialing') {
+      welcomeMessage =
+        'Welcome to your 7-day free trial with VERA! You have full access to all features.';
+    }
+
+    // Update user record in database
+    if (session.customer_email) {
+      await db.query(
+        'UPDATE users SET subscription_status = $1, stripe_subscription_id = $2 WHERE email = $3',
+        [subscription.status, subscription.id, session.customer_email]
+      );
+    }
 
     return res.json({
       success: true,
@@ -1371,6 +1406,7 @@ app.post('/api/verify-subscription', async (req, res) => {
         current_period_end: subscription.current_period_end,
         trial_end: subscription.trial_end,
       },
+      welcomeMessage,
     });
   } catch (error) {
     console.error('❌ Subscription verification failed:', error);
