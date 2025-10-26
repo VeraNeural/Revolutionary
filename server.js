@@ -1529,11 +1529,6 @@ app.post('/api/chat', async (req, res) => {
     
     // Record metrics
     monitor.recordMetric('requestDuration', duration);
-    monitor.recordAICall({
-      model: veraResult.model,
-      state: veraResult.state,
-      responseLength: veraResult.response?.length
-    });
     
     console.log('✅ VERA result:', { 
       responseLength: veraResult.response?.length, 
