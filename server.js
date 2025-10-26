@@ -2466,20 +2466,6 @@ app.get('/api/test', (req, res) => {
 app.use(errorHandler.middleware());
 module.exports = app;
 
-// ==================== TEMPORARY ADMIN ENDPOINT ====================
-app.post('/admin/create-julija', async (req, res) => {
-  try {
-    await db.query(
-      `INSERT INTO users (email, subscription_status, stripe_customer_id, stripe_subscription_id, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, NOW(), NOW())`,
-      ['julija@veraneural.com', 'active', 'cus_TJ2EYn3t6alors', 'sub_1SMY8LF8aJ0BDqA3jbrjG4sm']
-    );
-    res.json({ success: true, message: 'Julija account created!' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // ==================== START SERVER ====================
 if (require.main === module) {
   app.listen(PORT, '0.0.0.0', () => {
