@@ -699,6 +699,65 @@ async function initializeDatabase() {
       )
     `);
 
+    // Ensure users table has an updated_at column (schema may vary between environments)
+    try {
+      await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+    } catch (e) {
+      console.warn('⚠️ Could not ensure users.updated_at column exists:', e.message);
+    }
+
+    // Create subscription_history table (payment tracking)
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS subscription_history (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        stripe_subscription_id VARCHAR(255),
+        event_type VARCHAR(100) NOT NULL,
+        status VARCHAR(50),
+        amount INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create indexes used by the schema (non-critical but helpful)
+    try {
+      await db.query('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');
+      await db.query('CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON users(stripe_customer_id)');
+      await db.query('CREATE INDEX IF NOT EXISTS idx_users_stripe_subscription ON users(stripe_subscription_id)');
+      await db.query('CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id)');
+      await db.query('CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at)');
+      await db.query('CREATE INDEX IF NOT EXISTS idx_subscription_history_user ON subscription_history(user_id)');
+    } catch (e) {
+      console.warn('⚠️ Could not create some indexes:', e.message);
+    }
+
+    // Create or replace trigger function to keep updated_at in sync
+    try {
+      await db.query(`
+        CREATE OR REPLACE FUNCTION update_updated_at_column()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            NEW.updated_at = CURRENT_TIMESTAMP;
+            RETURN NEW;
+        END;
+        $$ language 'plpgsql';
+      `);
+
+      await db.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_trigger WHERE tgname = 'update_users_updated_at'
+          ) THEN
+            CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+            FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+          END IF;
+        END$$;
+      `);
+    } catch (e) {
+      console.warn('⚠️ Could not ensure updated_at trigger exists:', e.message);
+    }
+
     console.log('✅ Database initialized - VERA remembers everything');
   } catch (error) {
     console.error('❌ Database initialization error:', error);
