@@ -228,7 +228,6 @@ app.post('/api/create-checkout', async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       customer: customer.id,
       payment_method_types: ['card'],
-      customer_email: email,
       line_items: [
         {
           price: process.env.STRIPE_PRICE_ID,
@@ -396,6 +395,13 @@ async function handleCheckoutCompleted(session) {
   const customerEmail = session.customer_email || session.customer_details?.email;
   const customerId = session.customer;
   const subscriptionId = session.subscription;
+
+  // If email not in session, fetch it from the customer object
+  if (!customerEmail && session.customer) {
+    const customer = await stripe.customers.retrieve(session.customer);
+    customerEmail = customer.email;
+    console.log('✅ Retrieved email from customer:', customerEmail);
+  }
 
   if (!customerEmail) {
     console.error('❌ No email found in checkout session');
