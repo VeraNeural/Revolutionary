@@ -2053,16 +2053,30 @@ app.post('/api/chat', async (req, res) => {
       duration: duration + 'ms',
     });
 
-    // ✅ FIXED: Now save both messages in order (user first, then assistant) with conversation_id
-    await db.query(
-      'INSERT INTO messages (user_id, role, content, conversation_id) VALUES ($1, $2, $3, $4)',
-      [userId, 'user', message, currentConversationId]
-    );
+ // ✅ FIXED: Now save both messages in order (user first, then assistant) with conversation_id
+console.log('💾 Attempting to save user message:', { userId, message: message.substring(0, 50), conversationId: currentConversationId });
 
-    await db.query(
-      'INSERT INTO messages (user_id, role, content, conversation_id) VALUES ($1, $2, $3, $4)',
-      [userId, 'assistant', veraResult.response, currentConversationId]
-    );
+try {
+  await db.query(
+    'INSERT INTO messages (user_id, role, content, conversation_id) VALUES ($1, $2, $3, $4)',
+    [userId, 'user', message, currentConversationId]
+  );
+  console.log('✅ User message saved');
+} catch (saveError) {
+  console.error('❌ Failed to save user message:', saveError.message);
+}
+
+console.log('💾 Attempting to save assistant message:', { userId, response: veraResult.response.substring(0, 50), conversationId: currentConversationId });
+
+try {
+  await db.query(
+    'INSERT INTO messages (user_id, role, content, conversation_id) VALUES ($1, $2, $3, $4)',
+    [userId, 'assistant', veraResult.response, currentConversationId]
+  );
+  console.log('✅ Assistant message saved');
+} catch (saveError) {
+  console.error('❌ Failed to save assistant message:', saveError.message);
+}
 
     res.json({
       success: true,
