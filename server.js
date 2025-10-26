@@ -936,13 +936,12 @@ app.get('/create-account', async (req, res) => {
     req.session.userEmail = customerEmail;
     await req.session.save();
 
-    // Send welcome email
+// Send welcome email
     try {
       await sendEmail({
-  to: email,
-  subject: 'Sign in to VERA',
-  html: emailHtml
-});`
+        to: customerEmail,
+        subject: 'Welcome to VERA - Your 7-Day Trial Starts Now!',
+        html: `
           <!DOCTYPE html>
           <html>
           <head>
@@ -971,7 +970,7 @@ app.get('/create-account', async (req, res) => {
                   <li>🎯 Somatic tracking and awareness</li>
                 </ul>
                 <p>After your trial, you'll be charged $19/month. Cancel anytime.</p>
-                <a href="${process.env.APP_URL || 'http://localhost:8080'}/chat.html" class="button">Start Chatting with VERA</a>
+                <a href="${process.env.APP_URL || 'https://revolutionary-production.up.railway.app'}/chat.html" class="button">Start Chatting with VERA</a>
                 <p style="margin-top: 30px; color: #666; font-size: 14px;">
                   Questions? Reply to this email - we're here to help.<br>
                   - The VERA Team
@@ -995,7 +994,6 @@ app.get('/create-account', async (req, res) => {
     res.redirect('/?error=creation_failed');
   }
 });
-
 // ==================== CHECK IF USER EXISTS (FOR DUPLICATE PREVENTION) ====================
 app.post('/api/check-user', async (req, res) => {
   const { email } = req.body;
