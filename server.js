@@ -76,6 +76,93 @@ process.on('SIGINT', () => {
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// ==================== STRIPE WEBHOOK ====================
+app.post(
+  '/api/webhooks/stripe',
+  express.raw({ type: 'application/json' }),
+  async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      console.error('❌ STRIPE_WEBHOOK_SECRET not configured');
+      return res.status(500).json({ error: 'Webhook secret not configured' });
+    }
+
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+      console.log('✅ Webhook verified:', event.type);
+    } catch (err) {
+      console.error('❌ Webhook signature failed:', err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    try {
+      if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        const customerEmail = session.customer_email || session.customer_details?.email;
+        
+        if (!customerEmail) {
+          console.error('❌ No email in checkout session');
+          return res.json({ received: true });
+        }
+
+        const subscriptionId = session.subscription;
+        if (!subscriptionId) {
+          console.error('❌ No subscription ID');
+          return res.json({ received: true });
+        }
+
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const existingUser = await db.query('SELECT id FROM users WHERE email = $1', [customerEmail]);
+
+        if (existingUser.rows.length > 0) {
+          await db.query(
+            'UPDATE users SET subscription_status = $1, stripe_customer_id = $2, stripe_subscription_id = $3, updated_at = NOW() WHERE email = $4',
+            [subscription.status, session.customer, subscriptionId, customerEmail]
+          );
+          console.log('✅ Updated user:', customerEmail);
+        } else {
+          const crypto = require('crypto');
+          const bcrypt = require('bcrypt');
+          const tempPassword = crypto.randomBytes(32).toString('hex');
+          const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+          await db.query(
+            'INSERT INTO users (email, password_hash, subscription_status, stripe_customer_id, stripe_subscription_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())',
+            [customerEmail, hashedPassword, subscription.status, session.customer, subscriptionId]
+          );
+          console.log('✅ Created user:', customerEmail);
+        }
+      }
+
+      if (event.type === 'customer.subscription.updated') {
+        const subscription = event.data.object;
+        await db.query(
+          'UPDATE users SET subscription_status = $1, updated_at = NOW() WHERE stripe_subscription_id = $2',
+          [subscription.status, subscription.id]
+        );
+        console.log('✅ Subscription updated');
+      }
+
+      if (event.type === 'customer.subscription.deleted') {
+        const subscription = event.data.object;
+        await db.query(
+          'UPDATE users SET subscription_status = $1, updated_at = NOW() WHERE stripe_subscription_id = $2',
+          ['cancelled', subscription.id]
+        );
+        console.log('✅ Subscription cancelled');
+      }
+
+      res.json({ received: true });
+    } catch (err) {
+      console.error('❌ Webhook error:', err);
+      res.status(500).json({ error: 'Webhook failed' });
+    }
+  }
+);
+
 // ==================== MIDDLEWARE ====================
 // Body parsing middleware must come first
 app.use(express.json({ limit: '50mb' }));
