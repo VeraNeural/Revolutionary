@@ -2515,7 +2515,10 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
                 guestMessageCount++;
                 localStorage.setItem('veraGuestMessageCount', guestMessageCount);
                 
+                console.log(`📊 [GUEST COUNT] Incremented to: ${guestMessageCount}`);
+                
                 if (guestMessageCount >= 5) {
+                    console.log(`⚠️ [GUEST LIMIT] Reached 5 messages, showing signup modal`);
                     showSignupModal();
                     return;
                 }
@@ -2567,7 +2570,16 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
                     responseLength: data?.response?.length,
                     conversationId: data?.conversationId,
                     hasError: !!data?.error,
-                    errorMessage: data?.error
+                    errorMessage: data?.error,
+                    isGuestMessage4: data?.isGuestMessage4
+                });
+                
+                // 🎯 DEBUG: Log email collection flag
+                console.log('🎯 [EMAIL COLLECTION DEBUG - FRONTEND]', {
+                    receivedFlag: data?.isGuestMessage4,
+                    isTruthy: !!data?.isGuestMessage4,
+                    typeOf: typeof data?.isGuestMessage4,
+                    willShowModal: data?.isGuestMessage4 === true
                 });
 
                 if (data && data.success && data.response) {
@@ -2585,7 +2597,9 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
                     }, 100);
 
                     // Check if this is the 4th guest message and show email collection modal
+                    console.log('🎯 [MODAL CHECK] About to check isGuestMessage4:', data.isGuestMessage4);
                     if (data.isGuestMessage4) {
+                        console.log('✅ [MODAL TRIGGER] isGuestMessage4 is TRUE! Showing email collection modal...');
                         setTimeout(() => {
                             showEmailCollectionModal();
                         }, 1000); // Wait 1 second for shimmer effect to complete

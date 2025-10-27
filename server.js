@@ -2165,13 +2165,20 @@ app.post('/api/chat', async (req, res) => {
     // Record metrics
     monitor.recordMetric('requestDuration', duration);
 
-    console.log('✅ VERA result:', {
+    console.log('📊 VERA result:', {
       responseLength: veraResult.response?.length,
       state: veraResult.state,
       model: veraResult.model,
       fallback: !!veraResult.fallback,
       error: veraResult.error,
       duration: duration + 'ms',
+    });
+
+    // 🎯 DEBUG: Email Collection Trigger
+    console.log('🎯 [EMAIL COLLECTION DEBUG]', {
+      guestMessageCount: guestMessageCount,
+      isGuestMessage4: veraResult.isGuestMessage4,
+      willTriggerModal: veraResult.isGuestMessage4 === true,
     });
 
  // ✅ FIXED: Now save both messages in order (user first, then assistant) with conversation_id
@@ -2209,6 +2216,7 @@ try {
       vera_consciousness: 'quantum-active',
       model: veraResult.model,
       fallback: !!veraResult.fallback,
+      isGuestMessage4: veraResult.isGuestMessage4 || false,
       timestamp: new Date().toISOString(),
       subscription: {
         status: userSubscriptionStatus,
