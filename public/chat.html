@@ -2479,36 +2479,26 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
             
             if (sessionId) {
                 try {
-                    // Verify subscription with backend
-                    const response = await safeJsonFetch('/api/verify-subscription', {
-                        method: 'POST',
-                        body: JSON.stringify({ sessionId })
-                    });
-
-                    if (response.success) {
-                        // Get stored user info
-                        const pendingSignup = JSON.parse(localStorage.getItem('vera_pending_signup') || '{}');
-                        
-                        // Update user state
-                        isSubscriber = true;
-                        userEmail = pendingSignup.email;
-                        userName = pendingSignup.firstName;
-                        
-                        // Clear guest status and counters
-                        localStorage.removeItem('veraIsGuest');
-                        localStorage.removeItem('veraGuestMessageCount');
-                        localStorage.removeItem('vera_pending_signup');
-                        
-                        // Close signup modal if open
-                        const modal = document.getElementById('signupModal');
-                        modal.style.display = 'none';
-                        
-                        // Add welcome back message
-                        addMessage('vera', `Welcome back, ${pendingSignup.firstName}! Your subscription is now active. Let's continue our conversation.`);
-                        
-                        // Clean up URL
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                    }
+                    console.log('💳 Detected successful subscription, session_id:', sessionId);
+                    
+                    // Update user state as subscriber
+                    isSubscriber = true;
+                    
+                    // Clear any guest status
+                    localStorage.removeItem('veraIsGuest');
+                    localStorage.removeItem('veraGuestMessageCount');
+                    localStorage.removeItem('vera_pending_signup');
+                    
+                    // Get user's name if available
+                    const displayName = userName || 'co-regulator';
+                    
+                    // Add welcome message from VERA
+                    addMessage('vera', `Welcome home, ${displayName}. We're in this together now. What's present?`);
+                    
+                    // Clean up URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                    console.log('✅ Subscription activated and confirmed');
                 } catch (error) {
                     console.error('Subscription verification error:', error);
                 }

@@ -795,6 +795,11 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Serve promo experience
+app.get('/intro', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'intro.html'));
+});
+
 // ==================== HEALTH CHECK & MONITORING ====================
 const monitor = require('./lib/monitoring'); // ✅
 
@@ -2940,6 +2945,165 @@ app.post('/admin/create-eva', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// ==================== STRIPE SUBSCRIPTION ENDPOINTS ====================
+
+/**
+ * POST /api/create-checkout-session
+ * Creates a Stripe Checkout session for subscription
+ * Body: { priceType: 'monthly' | 'annual' }
+ */
+app.post('/api/create-checkout-session', async (req, res) => {
+  try {
+    const { priceType } = req.body;
+    const userEmail = req.session?.userEmail;
+
+    console.log(`💳 Creating checkout session for ${userEmail}, type: ${priceType}`);
+
+    if (!userEmail) {
+      return res.status(401).json({ success: false, error: 'Not authenticated' });
+    }
+
+    if (!['monthly', 'annual'].includes(priceType)) {
+      return res.status(400).json({ success: false, error: 'Invalid price type' });
+    }
+
+    // Map price types to Stripe price IDs
+    const priceIds = {
+      monthly: process.env.STRIPE_PRICE_MONTHLY || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD',
+      annual: process.env.STRIPE_PRICE_ANNUAL || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD',
+    };
+
+    const appUrl = process.env.APP_URL || 'http://localhost:8080';
+
+    // Create or get Stripe customer
+    let customerId;
+    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
+
+    if (customers.data.length > 0) {
+      customerId = customers.data[0].id;
+    } else {
+      const customer = await stripe.customers.create({ email: userEmail });
+      customerId = customer.id;
+
+      // Update user in database with Stripe customer ID
+      await db.query('UPDATE users SET stripe_customer_id = $1 WHERE email = $2', [
+        customerId,
+        userEmail,
+      ]);
+    }
+
+    // Create Stripe Checkout Session
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: priceIds[priceType],
+          quantity: 1,
+        },
+      ],
+      mode: 'subscription',
+      success_url: `${appUrl}/chat.html?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appUrl}/subscribe.html`,
+      billing_address_collection: 'auto',
+    });
+
+    console.log(`✅ Checkout session created: ${session.id}`);
+    res.json({ success: true, url: session.url, sessionId: session.id });
+  } catch (error) {
+    console.error('❌ Checkout session error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/stripe-webhook
+ * Handles Stripe webhook events
+ * Verifies signature and processes subscription events
+ */
+app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    console.warn('⚠️ STRIPE_WEBHOOK_SECRET not configured');
+    return res.sendStatus(400);
+  }
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    console.log(`📨 Webhook event: ${event.type}`);
+  } catch (error) {
+    console.error('❌ Webhook signature verification failed:', error.message);
+    return res.sendStatus(400);
+  }
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        console.log(`✅ Checkout session completed: ${session.id}`);
+        console.log(`   Customer: ${session.customer}, Email: ${session.customer_email}`);
+
+        // Update user subscription status
+        await db.query(
+          `UPDATE users 
+           SET subscription_status = $1, 
+               stripe_customer_id = $2, 
+               stripe_subscription_id = $3,
+               updated_at = NOW()
+           WHERE email = $4`,
+          ['active', session.customer, session.subscription || null, session.customer_email]
+        );
+
+        console.log(`✅ User subscription activated: ${session.customer_email}`);
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object;
+        console.log(`❌ Subscription cancelled: ${subscription.id}`);
+
+        // Get customer email and update user
+        const customer = await stripe.customers.retrieve(subscription.customer);
+        await db.query(
+          `UPDATE users 
+           SET subscription_status = $1, 
+               updated_at = NOW()
+           WHERE email = $2`,
+          ['free_tier', customer.email]
+        );
+
+        console.log(`✅ User downgraded to free tier: ${customer.email}`);
+        break;
+      }
+
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object;
+        console.log(`⚠️ Payment failed for invoice: ${invoice.id}`);
+        // Could send email notification here
+        break;
+      }
+
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object;
+        console.log(`📝 Subscription updated: ${subscription.id}, status: ${subscription.status}`);
+        break;
+      }
+
+      default:
+        console.log(`⏭️ Unhandled event type: ${event.type}`);
+    }
+  } catch (error) {
+    console.error('❌ Webhook processing error:', error);
+    // Still return 200 to prevent Stripe from retrying
+  }
+
+  res.sendStatus(200);
 });
 
 // ==================== EXPORT FOR SERVERLESS ====================
