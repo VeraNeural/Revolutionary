@@ -800,6 +800,11 @@ app.get('/intro', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'intro.html'));
 });
 
+// Serve chat interface
+app.get('/chat', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'chat.html'));
+});
+
 // ==================== HEALTH CHECK & MONITORING ====================
 const monitor = require('./lib/monitoring'); // ✅
 
