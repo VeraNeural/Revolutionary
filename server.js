@@ -2,6 +2,28 @@
 // Backend API for VERA - Your Nervous System Companion
 // This handles authentication, AI chat, Stripe payments, and more
 
+// ==================== INITIALIZE SENTRY FIRST (before any other code) ====================
+const Sentry = require('@sentry/node');
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV || 'development',
+  tracesSampleRate: 1.0,
+  integrations: [
+    new Sentry.Integrations.Http({ tracing: true }),
+    new Sentry.Integrations.Express({ app: true, request: true }),
+  ],
+  beforeSend(event, hint) {
+    // Don't send development errors to Sentry (optional)
+    if (process.env.NODE_ENV !== 'production') {
+      return null;
+    }
+    return event;
+  },
+});
+
+console.log('✅ Sentry initialized:', process.env.SENTRY_DSN ? 'Connected' : 'Disabled (no DSN)');
+
 // ==================== LOAD ENVIRONMENT FIRST! ====================
 require('dotenv').config({ path: '.env.local' });
 
@@ -84,6 +106,10 @@ process.on('SIGINT', () => {
 // ==================== APP INITIALIZATION ====================
 const app = express();
 const PORT = process.env.PORT || 8080;
+
+// ==================== SENTRY MIDDLEWARE (early in middleware chain) ====================
+app.use(Sentry.Handlers.requestHandler());
+app.use(Sentry.Handlers.tracingHandler());
 
 // ==================== STRIPE WEBHOOK ====================
 // CRITICAL: This MUST come BEFORE express.json() middleware for raw body access
@@ -1142,6 +1168,13 @@ app.post('/api/save-lead', async (req, res) => {
 // ==================== EMBEDDED STRIPE CHECKOUT ENDPOINT ====================
 app.post('/api/create-checkout-session', async (req, res) => {
   const { email, priceId, source } = req.body;
+  
+  // Set Sentry context for payment tracking
+  Sentry.captureScope(scope => {
+    scope.setContext('payment', { email, priceId, source });
+    scope.setTag('endpoint', 'create-checkout-session');
+  });
+
   const appUrl = process.env.APP_URL || 'http://localhost:8080';
   const successUrl = `${appUrl}/create-account?session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl = `${appUrl}/?cancelled=true`;
@@ -1895,7 +1928,14 @@ app.get('/verify-recovery', async (req, res) => {
 app.post('/api/auth/send-magic-link', async (req, res) => {
   const { email } = req.body;
 
+  // Set Sentry context for this request
+  Sentry.captureScope(scope => {
+    scope.setContext('auth', { email });
+    scope.setTag('endpoint', 'send-magic-link');
+  });
+
   if (!email) {
+    Sentry.captureMessage('Magic link request missing email', 'warning');
     return res.status(400).json({ error: 'Email required' });
   }
 
@@ -3222,6 +3262,8 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
 
 // ==================== EXPORT FOR SERVERLESS ====================
 // ==================== ERROR HANDLER (Must be LAST middleware!) ====================
+// Sentry error handler (must come after all other middleware and routes)
+app.use(Sentry.Handlers.errorHandler());
 app.use(errorHandler.middleware());
 module.exports = app;
 
