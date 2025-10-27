@@ -810,6 +810,16 @@ app.get('/subscribe', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'subscribe.html'));
 });
 
+// Serve community offer page
+app.get('/community', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'community.html'));
+});
+
+// Serve professional offer page
+app.get('/professional', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'professional.html'));
+});
+
 // ==================== HEALTH CHECK & MONITORING ====================
 const monitor = require('./lib/monitoring'); // ✅
 
@@ -1131,13 +1141,17 @@ app.post('/api/save-lead', async (req, res) => {
 
 // ==================== EMBEDDED STRIPE CHECKOUT ENDPOINT ====================
 app.post('/api/create-checkout-session', async (req, res) => {
-  const { email } = req.body;
+  const { email, priceId, source } = req.body;
   const appUrl = process.env.APP_URL || 'http://localhost:8080';
   const successUrl = `${appUrl}/create-account?session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl = `${appUrl}/?cancelled=true`;
 
   try {
     console.log('🔵 Creating checkout session for email:', email || 'no email provided');
+    if (priceId) {
+      console.log('🎁 Using community price ID:', priceId);
+      console.log('📊 Source:', source || 'unknown');
+    }
 
     // CRITICAL: Check if user already exists to prevent duplicates (only if email provided)
     if (email) {
@@ -1164,13 +1178,14 @@ app.post('/api/create-checkout-session', async (req, res) => {
         if (user.stripe_customer_id) {
           console.log('♻️ Reusing existing Stripe customer:', user.stripe_customer_id);
 
-          const priceId = process.env.STRIPE_PRICE_ID || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD';
+          // Use provided priceId or fallback to default
+          const selectedPriceId = priceId || process.env.STRIPE_PRICE_ID || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD';
 
           const session = await stripe.checkout.sessions.create({
             customer: user.stripe_customer_id, // REUSE existing customer
             line_items: [
               {
-                price: priceId,
+                price: selectedPriceId,
                 quantity: 1,
               },
             ],
@@ -1182,6 +1197,9 @@ app.post('/api/create-checkout-session', async (req, res) => {
             },
             automatic_tax: {
               enabled: true,
+            },
+            metadata: {
+              source: source || 'web',
             },
           });
 
@@ -1221,13 +1239,14 @@ app.post('/api/create-checkout-session', async (req, res) => {
         // Reuse existing customer for new subscription
         console.log('♻️ Reusing existing Stripe customer for new subscription');
 
-        const priceId = process.env.STRIPE_PRICE_ID || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD';
+        // Use provided priceId or fallback to default
+        const selectedPriceId = priceId || process.env.STRIPE_PRICE_ID || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD';
 
         const session = await stripe.checkout.sessions.create({
           customer: existingCustomer.id, // REUSE existing customer
           line_items: [
             {
-              price: priceId,
+              price: selectedPriceId,
               quantity: 1,
             },
           ],
@@ -1240,6 +1259,9 @@ app.post('/api/create-checkout-session', async (req, res) => {
           automatic_tax: {
             enabled: true,
           },
+          metadata: {
+            source: source || 'web',
+          },
         });
 
         console.log('✅ Reused Stripe customer checkout session:', session.id);
@@ -1250,14 +1272,14 @@ app.post('/api/create-checkout-session', async (req, res) => {
     // Create new checkout session for new customer
     console.log('🆕 Creating new customer checkout session');
 
-    // Use STRIPE_PRICE_ID from env, fallback to hardcoded for backwards compatibility
-    const priceId = process.env.STRIPE_PRICE_ID || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD';
-    console.log('💰 Using price ID:', priceId);
+    // Use provided priceId or fallback to default
+    const selectedPriceId = priceId || process.env.STRIPE_PRICE_ID || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD';
+    console.log('💰 Using price ID:', selectedPriceId);
 
     const sessionConfig = {
       line_items: [
         {
-          price: priceId,
+          price: selectedPriceId,
           quantity: 1,
         },
       ],
@@ -1269,6 +1291,9 @@ app.post('/api/create-checkout-session', async (req, res) => {
       },
       automatic_tax: {
         enabled: true,
+      },
+      metadata: {
+        source: source || 'web',
       },
     };
 
@@ -1286,6 +1311,49 @@ app.post('/api/create-checkout-session', async (req, res) => {
     console.error('❌ Error details:', error.message);
     console.error('❌ Error stack:', error.stack);
     res.status(500).json({ error: 'Failed to create checkout session', details: error.message });
+  }
+});
+
+// ==================== COMMUNITY PRICING LINK HANDLER ====================
+app.get('/community-pricing', async (req, res) => {
+  const { priceId, source } = req.query;
+  
+  if (!priceId) {
+    return res.redirect('/?error=missing_price');
+  }
+
+  try {
+    // Check if user is authenticated
+    if (req.session.userEmail) {
+      console.log('✅ Authenticated user visiting community pricing');
+      
+      // Check subscription status
+      const userResult = await db.query(
+        'SELECT subscription_status FROM users WHERE email = $1',
+        [req.session.userEmail]
+      );
+
+      if (userResult.rows.length > 0) {
+        const subscription = userResult.rows[0].subscription_status;
+        
+        if (subscription === 'active' || subscription === 'trialing') {
+          console.log('⚠️ User already has active subscription');
+          return res.redirect('/chat.html');
+        }
+      }
+      
+      // User is logged in but no active subscription - show checkout with community pricing
+      console.log('🎁 Showing community pricing checkout to returning user');
+      return res.redirect(`/checkout.html?priceId=${priceId}&source=${source || 'community'}`);
+    }
+
+    // User is NOT logged in - redirect to signup with community pricing params
+    console.log('🎁 Redirecting to signup with community pricing params');
+    res.redirect(`/chat.html?priceId=${priceId}&source=${source || 'community'}`);
+
+  } catch (error) {
+    console.error('❌ Community pricing error:', error);
+    res.redirect('/?error=pricing_error');
   }
 });
 

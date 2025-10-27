@@ -2270,6 +2270,21 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🌟 VERA initializing...');
 
+            // Capture community pricing parameters from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const communityPriceId = urlParams.get('priceId');
+            const communitySource = urlParams.get('source');
+            
+            if (communityPriceId) {
+                console.log('🎁 Community pricing detected:', communityPriceId);
+                sessionStorage.setItem('communityPriceId', communityPriceId);
+                if (communitySource) {
+                    sessionStorage.setItem('communitySource', communitySource);
+                }
+                // Clean URL to avoid passing params around
+                window.history.replaceState({}, document.title, '/chat.html');
+            }
+
             // Initialize typing sound
             initializeTypingSound();
             
@@ -2381,16 +2396,28 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
             }
 
             try {
+                // Get community pricing if available
+                const communityPriceId = sessionStorage.getItem('communityPriceId');
+                const communitySource = sessionStorage.getItem('communitySource');
+
                 // Create checkout session
-                const response = await safeJsonFetch('/api/create-checkout', {
+                const checkoutBody = {
+                    email,
+                    firstName,
+                    lastName,
+                    anonId,
+                    returnUrl: window.location.href
+                };
+
+                // Add community pricing if available
+                if (communityPriceId) {
+                    checkoutBody.priceId = communityPriceId;
+                    checkoutBody.source = communitySource || 'community';
+                }
+
+                const response = await safeJsonFetch('/api/create-checkout-session', {
                     method: 'POST',
-                    body: JSON.stringify({
-                        email,
-                        firstName,
-                        lastName,
-                        anonId,
-                        returnUrl: window.location.href
-                    })
+                    body: JSON.stringify(checkoutBody)
                 });
 
                 if (response.url) {
