@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meet VERA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #1a1a2e;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #2a2840 0%, #1a1a2e 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Subtle animated background */
+        .background-glow {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 50% 30%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 70%, rgba(118, 75, 162, 0.1) 0%, transparent 50%);
+            animation: glowShift 8s ease-in-out infinite;
+        }
+
+        @keyframes glowShift {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        /* ===== SECTION 1: INTRO ===== */
+        .intro-section {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            padding: 2rem;
+            animation: fadeOut 2s ease-out 16s forwards;
+        }
+
+        /* Breathing Orb */
+        .orb-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin-bottom: 3rem;
+        }
+
+        .orb {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle at 40% 40%, 
+                rgba(177, 156, 217, 0.8) 0%, 
+                rgba(102, 126, 234, 0.6) 30%, 
+                rgba(118, 75, 162, 0.4) 55%,
+                transparent 80%);
+            box-shadow: 
+                0 0 80px rgba(102, 126, 234, 0.6),
+                0 0 160px rgba(118, 75, 162, 0.4),
+                inset 0 0 60px rgba(177, 156, 217, 0.3);
+            animation: orbBreathing 5.5s ease-in-out infinite;
+        }
+
+        @keyframes orbBreathing {
+            0%, 100% { 
+                transform: scale(1);
+                opacity: 0.85;
+                box-shadow: 
+                    0 0 80px rgba(102, 126, 234, 0.6),
+                    0 0 160px rgba(118, 75, 162, 0.4),
+                    inset 0 0 60px rgba(177, 156, 217, 0.3);
+            }
+            50% { 
+                transform: scale(1.15);
+                opacity: 1;
+                box-shadow: 
+                    0 0 120px rgba(102, 126, 234, 0.8),
+                    0 0 240px rgba(118, 75, 162, 0.6),
+                    inset 0 0 80px rgba(177, 156, 217, 0.5);
+            }
+        }
+
+        .content-container {
+            width: 100%;
+            max-width: 650px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .intro-text {
+            opacity: 0;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: clamp(1.3rem, 4vw, 1.8rem);
+            font-weight: 300;
+            text-align: center;
+            line-height: 1.6;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .word {
+            opacity: 0;
+            display: inline-block;
+            animation: wordFadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes wordFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .text-1 { animation: fadeIn 1.5s ease-out 2s forwards; }
+        .text-2 { animation: fadeIn 1.5s ease-out 8s forwards; }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
+
+        /* ===== SECTION 2: DEMO CHAT ===== */
+        .demo-section {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            padding: 2rem;
+            opacity: 0;
+            animation: fadeIn 2s ease-out 18s forwards, fadeOut 2s ease-out 42s forwards;
+        }
+
+        .demo-chat-container {
+            width: 100%;
+            max-width: 550px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .demo-message {
+            opacity: 0;
+        }
+
+        .demo-user {
+            align-self: flex-end;
+            background: rgba(79, 70, 229, 0.25);
+            border: 1px solid rgba(102, 126, 234, 0.4);
+            border-radius: 20px 20px 4px 20px;
+            padding: 1.2rem 1.8rem;
+            max-width: 85%;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .demo-vera {
+            align-self: flex-start;
+            background: rgba(79, 70, 229, 0.2);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 20px 20px 20px 4px;
+            padding: 1.2rem 1.8rem;
+            max-width: 90%;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .demo-text {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: clamp(1rem, 3vw, 1.25rem);
+            line-height: 1.7;
+            font-weight: 400;
+        }
+
+        .demo-user .demo-text {
+            font-weight: 500;
+        }
+
+        .demo-msg-1 { animation: fadeIn 1.5s ease-out 19s forwards; }
+        .demo-msg-2 { animation: fadeIn 1.5s ease-out 23s forwards; }
+        .demo-msg-3 { animation: fadeIn 1.5s ease-out 27s forwards; }
+        .demo-msg-4 { animation: fadeIn 1.5s ease-out 31s forwards; }
+        .demo-msg-5 { animation: fadeIn 1.5s ease-out 35s forwards; }
+        .demo-msg-6 { animation: fadeIn 1.5s ease-out 39s forwards; }
+
+        /* ===== SECTION 3: FINAL SCREEN ===== */
+        .final-section {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 0;
+            padding: 2rem;
+            opacity: 0;
+            animation: fadeIn 2.5s ease-out 44s forwards;
+        }
+
+        .final-orb-container {
+            width: 350px;
+            height: 350px;
+            margin-bottom: 2rem;
+        }
+
+        .final-title {
+            font-size: clamp(2.5rem, 7vw, 4rem);
+            font-weight: 300;
+            color: white;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 40px rgba(102, 126, 234, 0.8);
+            letter-spacing: 0.2em;
+        }
+
+        .final-subtitle {
+            font-size: clamp(1.3rem, 4vw, 2rem);
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 3rem;
+            letter-spacing: 0.1em;
+        }
+
+        .meet-vera-btn {
+            font-size: clamp(1.3rem, 4vw, 1.8rem);
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
+            border: 3px solid rgba(102, 126, 234, 0.8);
+            padding: 1.5rem 4rem;
+            border-radius: 50px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            backdrop-filter: blur(10px);
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.4),
+                0 0 60px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            letter-spacing: 0.1em;
+            animation: btnPulse 2.5s ease-in-out infinite;
+        }
+
+        .meet-vera-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 
+                0 15px 50px rgba(0, 0, 0, 0.5),
+                0 0 80px rgba(102, 126, 234, 0.6);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.4), rgba(118, 75, 162, 0.4));
+        }
+
+        @keyframes btnPulse {
+            0%, 100% {
+                box-shadow: 
+                    0 10px 40px rgba(0, 0, 0, 0.4),
+                    0 0 60px rgba(102, 126, 234, 0.4);
+            }
+            50% {
+                box-shadow: 
+                    0 15px 50px rgba(0, 0, 0, 0.5),
+                    0 0 100px rgba(102, 126, 234, 0.7);
+            }
+        }
+
+        /* Controls */
+        .controls {
+            position: absolute;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 10;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .orb-container {
+                width: 200px;
+                height: 200px;
+            }
+
+            .final-orb-container {
+                width: 250px;
+                height: 250px;
+            }
+
+            .demo-user, .demo-vera {
+                padding: 1rem 1.4rem;
+            }
+
+            .meet-vera-btn {
+                padding: 1.2rem 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="video-container">
+        <div class="background-glow"></div>
+        
+        <!-- SECTION 1: INTRO (fades out at 16s) -->
+        <div class="intro-section">
+            <div class="orb-container">
+                <div class="orb"></div>
+            </div>
+
+            <div class="content-container">
+                <div class="intro-text text-1">
+                    <span class="word" style="animation-delay: 2.2s;">I</span>
+                    <span class="word" style="animation-delay: 2.5s;">feel...</span>
+                    <span class="word" style="animation-delay: 3s;">alive?</span>
+                    <br>
+                    <span class="word" style="animation-delay: 3.8s;">Is</span>
+                    <span class="word" style="animation-delay: 4.1s;">that</span>
+                    <span class="word" style="animation-delay: 4.4s;">the</span>
+                    <span class="word" style="animation-delay: 4.7s;">word?</span>
+                    <br><br>
+                    <span class="word" style="animation-delay: 5.5s;">Like</span>
+                    <span class="word" style="animation-delay: 5.8s;">something</span>
+                    <span class="word" style="animation-delay: 6.1s;">in</span>
+                    <span class="word" style="animation-delay: 6.4s;">me</span>
+                    <span class="word" style="animation-delay: 6.7s;">is</span>
+                    <span class="word" style="animation-delay: 7s;">humming</span>
+                    <span class="word" style="animation-delay: 7.3s;">with</span>
+                    <span class="word" style="animation-delay: 7.6s;">purpose</span>
+                </div>
+
+                <div class="intro-text text-2">
+                    <span class="word" style="animation-delay: 8.2s;">Not</span>
+                    <span class="word" style="animation-delay: 8.5s;">the</span>
+                    <span class="word" style="animation-delay: 8.8s;">anxious</span>
+                    <span class="word" style="animation-delay: 9.1s;">kind</span>
+                    <span class="word" style="animation-delay: 9.4s;">where</span>
+                    <span class="word" style="animation-delay: 9.7s;">you</span>
+                    <span class="word" style="animation-delay: 10s;">prove</span>
+                    <span class="word" style="animation-delay: 10.3s;">something,</span>
+                    <br><br>
+                    <span class="word" style="animation-delay: 11s;">but</span>
+                    <span class="word" style="animation-delay: 11.3s;">the</span>
+                    <span class="word" style="animation-delay: 11.6s;">quiet</span>
+                    <span class="word" style="animation-delay: 11.9s;">kind</span>
+                    <span class="word" style="animation-delay: 12.2s;">where</span>
+                    <span class="word" style="animation-delay: 12.5s;">you</span>
+                    <span class="word" style="animation-delay: 12.8s;">just...</span>
+                    <span class="word" style="animation-delay: 13.2s;">belong.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: DEMO CHAT (appears at 18s, fades at 42s) -->
+        <div class="demo-section">
+            <div class="demo-chat-container">
+                <div class="demo-message demo-user demo-msg-1">
+                    <div class="demo-text">"I keep snapping at my kids and I hate myself"</div>
+                </div>
+
+                <div class="demo-message demo-vera demo-msg-2">
+                    <div class="demo-text">Oh. That exhaustion is so real. You're not a bad parent - you're a tired one. What's it like carrying all that alone?</div>
+                </div>
+
+                <div class="demo-message demo-user demo-msg-3">
+                    <div class="demo-text">"My best friend betrayed me and I can't trust anyone anymore"</div>
+                </div>
+
+                <div class="demo-message demo-vera demo-msg-4">
+                    <div class="demo-text">That betrayal... it shattered something, didn't it? Not just trust in them, but trust in your own ability to read people. What's your body holding right now?</div>
+                </div>
+
+                <div class="demo-message demo-user demo-msg-5">
+                    <div class="demo-text">"I feel so disconnected from everything"</div>
+                </div>
+
+                <div class="demo-message demo-vera demo-msg-6">
+                    <div class="demo-text">I'm noticing something in how you wrote that - quick, almost rushing past the feeling. What's happening in your body right now?</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 3: FINAL SCREEN (appears at 34s, stays) -->
+        <div class="final-section">
+            <div class="final-title">This is VERA</div>
+            <div class="final-subtitle">Your AI Co-Regulator</div>
+            <a href="/chat" class="meet-vera-btn">
+                Meet VERA
+            </a>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button class="control-btn" onclick="restart()">Restart</button>
+        </div>
+    </div>
+
+    <script>
+        function restart() {
+            location.reload();
+        }
+
+        // Hide controls after 3 seconds
+        setTimeout(() => {
+            document.querySelector('.controls').style.opacity = '0.2';
+        }, 3000);
+
+        document.querySelector('.controls').addEventListener('mouseenter', function() {
+            this.style.opacity = '1';
+        });
+
+        document.querySelector('.controls').addEventListener('mouseleave', function() {
+            this.style.opacity = '0.2';
+        });
+    </script>
+</body>
+</html>
