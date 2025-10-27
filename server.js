@@ -2461,6 +2461,25 @@ app.get('/api/test', (req, res) => {
   });
 });
 
+// ==================== TEMPORARY - Create Sadie's account ====================
+app.post('/admin/create-sadie', async (req, res) => {
+  try {
+    const existing = await db.query('SELECT * FROM users WHERE email = $1', ['sadies9612@gmail.com']);
+    if (existing.rows.length > 0) {
+      return res.json({ message: 'Account already exists!' });
+    }
+    
+    await db.query(
+      `INSERT INTO users (email, subscription_status, stripe_customer_id, stripe_subscription_id, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+      ['sadies9612@gmail.com', 'active', 'cus_TJH11TsoRezRcb', 'LIFETIME_BETA']
+    );
+    res.json({ success: true, message: 'Sadie account created!' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==================== EXPORT FOR SERVERLESS ====================
 // ==================== ERROR HANDLER (Must be LAST middleware!) ====================
 app.use(errorHandler.middleware());
