@@ -3587,72 +3587,177 @@ app.post('/admin/create-eva', async (req, res) => {
  * Body: { priceType: 'monthly' | 'annual' }
  */
 app.post('/api/create-checkout-session', async (req, res) => {
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('💳 CHECKOUT SESSION CREATION ATTEMPT');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
   try {
     const { priceType } = req.body;
     const userEmail = req.session?.userEmail;
 
-    console.log(`💳 Creating checkout session for ${userEmail}, type: ${priceType}`);
+    console.log('� Request Details:');
+    console.log('   User Email:', userEmail);
+    console.log('   Price Type:', priceType);
+    console.log('   Request Body:', JSON.stringify(req.body));
+    console.log('   Session Email:', req.session?.userEmail);
 
+    // Validate authentication
     if (!userEmail) {
+      console.error('❌ ERROR: Not authenticated - no userEmail in session');
+      console.log('   Session keys:', Object.keys(req.session || {}));
       return res.status(401).json({ success: false, error: 'Not authenticated' });
     }
 
+    // Validate price type
     if (!['monthly', 'annual'].includes(priceType)) {
+      console.error(`❌ ERROR: Invalid price type: ${priceType}`);
+      console.log('   Expected: monthly or annual');
       return res.status(400).json({ success: false, error: 'Invalid price type' });
     }
 
-    // Map price types to Stripe price IDs (from Stripe dashboard)
+    // Map price types to Stripe price IDs
     const priceIds = {
       monthly: process.env.STRIPE_PRICE_MONTHLY || 'price_1SMtjQF8aJ0BDqA3wHuGgeiD',
       annual: process.env.STRIPE_PRICE_ANNUAL || 'price_1SMtk0F8aJ0BDqA3llwpMIEf',
     };
 
-    console.log(`📊 Using price IDs: monthly=${priceIds.monthly}, annual=${priceIds.annual}`);
+    console.log('� Configuration Check:');
+    console.log('   STRIPE_PRICE_MONTHLY env:', !!process.env.STRIPE_PRICE_MONTHLY);
+    console.log('   STRIPE_PRICE_ANNUAL env:', !!process.env.STRIPE_PRICE_ANNUAL);
+    console.log('   Using price IDs:', {
+      monthly: priceIds.monthly,
+      annual: priceIds.annual,
+      selected: priceIds[priceType]
+    });
 
     const appUrl = process.env.APP_URL || 'http://localhost:8080';
+    console.log('   APP_URL:', appUrl);
+
+    // Check Stripe configuration
+    if (!stripe) {
+      console.error('❌ ERROR: Stripe client not initialized');
+      throw new Error('Stripe client not initialized');
+    }
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('❌ ERROR: STRIPE_SECRET_KEY not configured');
+      throw new Error('STRIPE_SECRET_KEY not configured');
+    }
+
+    console.log('📲 Step 1: Finding or creating Stripe customer...');
 
     // Create or get Stripe customer
     let customerId;
-    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
+    try {
+      console.log(`   Searching for existing customer with email: ${userEmail}`);
+      const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
+      console.log(`   Found ${customers.data.length} customer(s)`);
 
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-    } else {
-      const customer = await stripe.customers.create({ email: userEmail });
-      customerId = customer.id;
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id;
+        console.log(`   ✅ Using existing customer: ${customerId}`);
+      } else {
+        console.log('   Creating new Stripe customer...');
+        const customer = await stripe.customers.create({ email: userEmail });
+        customerId = customer.id;
+        console.log(`   ✅ Created new customer: ${customerId}`);
 
-      // Update user in database with Stripe customer ID
-      await db.query('UPDATE users SET stripe_customer_id = $1 WHERE email = $2', [
-        customerId,
-        userEmail,
-      ]);
+        // Update user in database with Stripe customer ID
+        try {
+          console.log(`   Updating database with stripe_customer_id: ${customerId}`);
+          await db.query('UPDATE users SET stripe_customer_id = $1 WHERE email = $2', [
+            customerId,
+            userEmail,
+          ]);
+          console.log('   ✅ Database updated');
+        } catch (dbError) {
+          console.warn('   ⚠️ Failed to update database with stripe_customer_id:', dbError.message);
+          // Continue - this is not critical to checkout session creation
+        }
+      }
+    } catch (stripeError) {
+      console.error('❌ ERROR creating/finding Stripe customer:');
+      console.error('   Message:', stripeError.message);
+      console.error('   Code:', stripeError.code);
+      console.error('   Status:', stripeError.status);
+      console.error('   Full Error:', JSON.stringify(stripeError, Object.getOwnPropertyNames(stripeError), 2));
+      throw stripeError;
     }
 
     // Create Stripe Checkout Session
-    console.log(`💳 Creating session with price: ${priceIds[priceType]} (${priceType})`);
-    
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceIds[priceType],
-          quantity: 1,
-        },
-      ],
-      mode: 'subscription',
-      success_url: `${appUrl}/chat.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/subscribe.html`,
-      billing_address_collection: 'auto',
-    });
-
-    console.log(`✅ Checkout session created: ${session.id}`);
+    console.log('💳 Step 2: Creating Stripe checkout session...');
+    console.log(`   Customer: ${customerId}`);
     console.log(`   Price: ${priceIds[priceType]}`);
-    console.log(`   URL: ${session.url}`);
-    res.json({ success: true, url: session.url, sessionId: session.id });
+    console.log(`   Type: ${priceType}`);
+    console.log(`   Success URL: ${appUrl}/chat.html?session_id={CHECKOUT_SESSION_ID}`);
+    console.log(`   Cancel URL: ${appUrl}/subscribe.html`);
+
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price: priceIds[priceType],
+            quantity: 1,
+          },
+        ],
+        mode: 'subscription',
+        success_url: `${appUrl}/chat.html?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${appUrl}/subscribe.html`,
+        billing_address_collection: 'auto',
+      });
+
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('✅ CHECKOUT SESSION CREATED SUCCESSFULLY');
+      console.log('   Session ID:', session.id);
+      console.log('   URL:', session.url);
+      console.log('   Customer:', session.customer);
+      console.log('   Amount Total:', session.amount_total);
+      console.log('   Currency:', session.currency);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      res.json({ success: true, url: session.url, sessionId: session.id });
+    } catch (stripeError) {
+      console.error('❌ ERROR creating checkout session:');
+      console.error('   Message:', stripeError.message);
+      console.error('   Code:', stripeError.code);
+      console.error('   Status:', stripeError.status);
+      console.error('   Param:', stripeError.param);
+      console.error('   Full Error:', JSON.stringify(stripeError, Object.getOwnPropertyNames(stripeError), 2));
+      throw stripeError;
+    }
   } catch (error) {
-    console.error('❌ Checkout session error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error('❌ CHECKOUT SESSION CREATION FAILED');
+    console.error('Error Message:', error.message);
+    console.error('Error Name:', error.name);
+    console.error('Error Code:', error.code);
+    console.error('Error Status:', error.statusCode || error.status);
+    
+    if (error.response) {
+      console.error('Response Status:', error.response.status);
+      console.error('Response Data:', JSON.stringify(error.response.data, null, 2));
+    }
+    
+    console.error('Full Error Object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
+    // Log to Sentry if available
+    if (Sentry) {
+      Sentry.captureException(error, {
+        tags: { component: 'checkout', action: 'create-session' },
+        extra: { priceType: req.body.priceType, userEmail: req.session?.userEmail },
+      });
+    }
+
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      code: error.code,
+      details: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    });
   }
 });
 
