@@ -3009,11 +3009,13 @@ app.post('/api/create-checkout-session', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid price type' });
     }
 
-    // Map price types to Stripe price IDs
+    // Map price types to Stripe price IDs (from Stripe dashboard)
     const priceIds = {
-      monthly: process.env.STRIPE_PRICE_MONTHLY || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD',
-      annual: process.env.STRIPE_PRICE_ANNUAL || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD',
+      monthly: process.env.STRIPE_PRICE_MONTHLY || 'price_1SMtjQF8aJ0BDqA3wHuGgeiD',
+      annual: process.env.STRIPE_PRICE_ANNUAL || 'price_1SMtk0F8aJ0BDqA3llwpMIEf',
     };
+
+    console.log(`📊 Using price IDs: monthly=${priceIds.monthly}, annual=${priceIds.annual}`);
 
     const appUrl = process.env.APP_URL || 'http://localhost:8080';
 
@@ -3035,6 +3037,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
     }
 
     // Create Stripe Checkout Session
+    console.log(`💳 Creating session with price: ${priceIds[priceType]} (${priceType})`);
+    
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
@@ -3051,6 +3055,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
     });
 
     console.log(`✅ Checkout session created: ${session.id}`);
+    console.log(`   Price: ${priceIds[priceType]}`);
+    console.log(`   URL: ${session.url}`);
     res.json({ success: true, url: session.url, sessionId: session.id });
   } catch (error) {
     console.error('❌ Checkout session error:', error);
