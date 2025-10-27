@@ -69,6 +69,19 @@ CREATE TABLE IF NOT EXISTS subscription_history (
 
 CREATE INDEX idx_subscription_history_user ON subscription_history(user_id);
 
+-- ==================== GUEST EMAILS TABLE ====================
+CREATE TABLE IF NOT EXISTS guest_emails (
+  id SERIAL PRIMARY KEY,
+  anon_id VARCHAR(255) UNIQUE NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  user_name VARCHAR(255),
+  collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_guest_emails_anon_id ON guest_emails(anon_id);
+CREATE INDEX idx_guest_emails_email ON guest_emails(email);
+
 -- ==================== UPDATE TRIGGER ====================
 -- Automatically update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()

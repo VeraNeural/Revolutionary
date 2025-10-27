@@ -1931,7 +1931,8 @@ app.post('/api/chat', async (req, res) => {
     anonId,
     debug,
     attachments = [],
-    conversationId, // Optional: specify which conversation to add to
+    conversationId,
+    guestMessageCount,
   } = req.body;
 
   const userId =
@@ -2048,7 +2049,8 @@ app.post('/api/chat', async (req, res) => {
       message,
       userName || 'friend',
       db.pool,
-      attachments
+      attachments,
+      guestMessageCount
     );
     const duration = Date.now() - startTime;
 
@@ -2110,6 +2112,62 @@ try {
     });
   } finally {
     if (wantDebug) setVERADebug(false);
+  }
+});
+
+// ==================== GUEST EMAIL COLLECTION ====================
+app.post('/api/guest-email', async (req, res) => {
+  try {
+    const { email, anonId, userName } = req.body;
+
+    // Validate email format
+    if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid email format'
+      });
+    }
+
+    // Validate anonId format
+    if (!anonId || !anonId.match(/^anon_[a-z0-9_]+$/i)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid session'
+      });
+    }
+
+    // Check if email already collected for this anonId
+    const checkResult = await db.query(
+      'SELECT id FROM guest_emails WHERE anon_id = $1',
+      [anonId]
+    );
+
+    if (checkResult.rows.length > 0) {
+      // Email already collected for this guest
+      return res.json({
+        success: true,
+        message: 'Email already on file'
+      });
+    }
+
+    // Insert guest email
+    await db.query(
+      'INSERT INTO guest_emails (anon_id, email, user_name, collected_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
+      [anonId, email, userName || null]
+    );
+
+    console.log('✅ Guest email collected:', { anonId, email, userName });
+
+    res.json({
+      success: true,
+      message: 'Email saved successfully'
+    });
+  } catch (error) {
+    console.error('❌ Guest email collection error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save email'
+    });
   }
 });
 
