@@ -1685,6 +1685,140 @@
             color: var(--text-primary);
         }
 
+        /* Date grouping styles */
+        .history-date-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .history-date-header {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-soft);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Enhanced item content */
+        .history-item-content {
+            flex: 1;
+        }
+
+        .history-item-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .history-item-preview {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            margin-bottom: 0.5rem;
+        }
+
+        .history-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-soft);
+        }
+
+        /* Item with flex layout */
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            background: var(--message-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .history-item:hover {
+            background: var(--quick-button-hover);
+            transform: translateX(4px);
+            border-color: var(--orb-1);
+        }
+
+        /* Action buttons */
+        .history-item-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .history-item-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .history-item-btn:hover {
+            background: var(--quick-button-hover);
+            border-color: var(--orb-1);
+            transform: scale(1.1);
+        }
+
+        .history-item-btn.load-btn {
+            color: var(--orb-1);
+        }
+
+        .history-item-btn.delete-btn {
+            color: #ff4444;
+        }
+
+        /* Footer with delete all button */
+        .history-footer {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+        }
+
+        .history-delete-all-btn {
+            padding: 0.6rem 1.5rem;
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            border-radius: 8px;
+            color: #ff4444;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .history-delete-all-btn:hover {
+            background: rgba(255, 68, 68, 0.2);
+            border-color: #ff4444;
+            transform: translateY(-2px);
+        }
+
         /* Mobile */
         @media (max-width: 768px) {
             .chat-header {
@@ -2914,12 +3048,14 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
             `;
 
             try {
+                console.log('📂 Loading conversation history...');
                 const params = new URLSearchParams();
                 if (anonId) params.append('anonId', anonId);
 
                 const data = await safeJsonFetch(`/api/conversations?${params}`);
 
                 if (!data || !data.conversations || data.conversations.length === 0) {
+                    console.log('📂 No conversations found');
                     historyList.innerHTML = `
                         <div class="history-empty">
                             <h3>No conversations yet</h3>
@@ -2929,46 +3065,66 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
                     return;
                 }
 
-                historyList.innerHTML = data.conversations
-                    .map(conv => {
+                console.log(`📂 Found ${data.conversations.length} conversations`);
+
+                // Group conversations by date
+                const grouped = groupConversationsByDate(data.conversations);
+                
+                let html = '';
+                
+                // Render each date group
+                for (const [dateLabel, conversations] of Object.entries(grouped)) {
+                    html += `
+                        <div class="history-date-group">
+                            <div class="history-date-header">${dateLabel}</div>
+                    `;
+                    
+                    conversations.forEach(conv => {
                         const date = new Date(conv.updated_at);
-                        const dateStr = date.toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric',
-                            year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-                        });
                         const timeStr = date.toLocaleTimeString('en-US', { 
                             hour: 'numeric', 
                             minute: '2-digit' 
                         });
 
-                        return `
+                        html += `
                             <div class="history-item" data-id="${conv.id}">
-                                <div class="history-item-header">
+                                <div class="history-item-content">
                                     <div class="history-item-title">${escapeHtml(conv.title || 'Untitled Conversation')}</div>
-                                    <div class="history-item-date">${dateStr} ${timeStr}</div>
-                                </div>
-                                ${conv.last_message_preview ? `
-                                    <div class="history-item-preview">${escapeHtml(conv.last_message_preview)}</div>
-                                ` : ''}
-                                <div class="history-item-meta">
-                                    <span>${conv.message_count || 0} messages</span>
+                                    ${conv.last_message_preview ? `
+                                        <div class="history-item-preview">${escapeHtml(conv.last_message_preview)}</div>
+                                    ` : ''}
+                                    <div class="history-item-meta">
+                                        <span>${timeStr}</span> • <span>${conv.message_count || 0} messages</span>
+                                    </div>
                                 </div>
                                 <div class="history-item-actions">
-                                    <button class="history-item-btn" onclick="loadConversation(${conv.id}); event.stopPropagation();">
-                                        Load
+                                    <button class="history-item-btn load-btn" onclick="loadConversation(${conv.id}); event.stopPropagation();" title="Load conversation">
+                                        📖
                                     </button>
-                                    <button class="history-item-btn delete" onclick="deleteConversation(${conv.id}); event.stopPropagation();">
-                                        Delete
+                                    <button class="history-item-btn delete-btn" onclick="deleteConversation(${conv.id}); event.stopPropagation();" title="Delete conversation">
+                                        🗑️
                                     </button>
                                 </div>
                             </div>
                         `;
-                    })
-                    .join('');
+                    });
+                    
+                    html += `</div>`;
+                }
+                
+                // Add delete all button at the bottom
+                html += `
+                    <div class="history-footer">
+                        <button class="history-delete-all-btn" onclick="deleteAllConversations()">
+                            Delete All Conversations
+                        </button>
+                    </div>
+                `;
+                
+                historyList.innerHTML = html;
 
             } catch (error) {
-                console.error('Failed to load conversations:', error);
+                console.error('❌ Failed to load conversations:', error);
                 historyList.innerHTML = `
                     <div class="history-empty">
                         <h3>Unable to load conversations</h3>
@@ -2976,6 +3132,47 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
                     </div>
                 `;
             }
+        }
+
+        function groupConversationsByDate(conversations) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+
+            const groups = {
+                'Today': [],
+                'Yesterday': [],
+                'This Week': [],
+                'Older': []
+            };
+
+            conversations.forEach(conv => {
+                const convDate = new Date(conv.updated_at);
+                const convDateOnly = new Date(convDate.getFullYear(), convDate.getMonth(), convDate.getDate());
+
+                if (convDateOnly.getTime() === today.getTime()) {
+                    groups['Today'].push(conv);
+                } else if (convDateOnly.getTime() === yesterday.getTime()) {
+                    groups['Yesterday'].push(conv);
+                } else if (convDateOnly.getTime() > weekAgo.getTime()) {
+                    groups['This Week'].push(conv);
+                } else {
+                    groups['Older'].push(conv);
+                }
+            });
+
+            // Filter out empty groups
+            const result = {};
+            Object.entries(groups).forEach(([key, value]) => {
+                if (value.length > 0) {
+                    result[key] = value;
+                }
+            });
+
+            return result;
         }
 
         async function loadConversation(id) {
@@ -3020,10 +3217,12 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
 
         async function deleteConversation(id) {
             if (!confirm('Delete this conversation? This cannot be undone.')) {
+                console.log('🗑️ Delete cancelled by user');
                 return;
             }
 
             try {
+                console.log('🗑️ Deleting conversation:', id);
                 const params = new URLSearchParams();
                 if (anonId) params.append('anonId', anonId);
 
@@ -3031,8 +3230,11 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
                     method: 'DELETE'
                 });
 
+                console.log('✅ Conversation deleted:', id);
+
                 // If we're currently viewing this conversation, clear it
                 if (currentConversationId === id) {
+                    console.log('📝 Currently viewing deleted conversation, clearing chat');
                     chatContainer.innerHTML = '';
                     welcomeContainer.style.display = 'flex';
                     chatContainer.classList.remove('active');
@@ -3041,11 +3243,65 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
 
                 // Reload list
                 await loadConversations();
-
-                console.log('🗑️ Deleted conversation:', id);
             } catch (error) {
-                console.error('Failed to delete conversation:', error);
-                alert('Failed to delete conversation');
+                console.error('❌ Failed to delete conversation:', error);
+                alert('Failed to delete conversation. Please try again.');
+            }
+        }
+
+        async function deleteAllConversations() {
+            const count = document.querySelectorAll('.history-item').length;
+            
+            if (!confirm(`Delete ALL ${count} conversations? This cannot be undone and will permanently remove all your conversation history.`)) {
+                console.log('🗑️ Delete all cancelled by user');
+                return;
+            }
+            
+            if (!confirm('Are you ABSOLUTELY sure? This action cannot be reversed.')) {
+                console.log('🗑️ Delete all cancelled by user (second confirmation)');
+                return;
+            }
+
+            try {
+                console.log('🗑️ Deleting all conversations...');
+                
+                // Get all conversation IDs
+                const historyItems = document.querySelectorAll('.history-item');
+                const conversionIds = Array.from(historyItems).map(item => parseInt(item.dataset.id));
+                
+                console.log(`🗑️ Deleting ${conversionIds.length} conversations...`);
+
+                // Delete each conversation
+                for (const id of conversionIds) {
+                    try {
+                        const params = new URLSearchParams();
+                        if (anonId) params.append('anonId', anonId);
+
+                        await safeJsonFetch(`/api/conversations/${id}?${params}`, {
+                            method: 'DELETE'
+                        });
+                        
+                        console.log(`✅ Deleted conversation ${id}`);
+                    } catch (err) {
+                        console.warn(`⚠️ Failed to delete conversation ${id}:`, err);
+                    }
+                }
+
+                console.log(`✅ All conversations deleted`);
+
+                // Clear current chat
+                chatContainer.innerHTML = '';
+                welcomeContainer.style.display = 'flex';
+                chatContainer.classList.remove('active');
+                currentConversationId = null;
+
+                // Reload history list
+                await loadConversations();
+                
+                alert('All conversations have been deleted.');
+            } catch (error) {
+                console.error('❌ Failed to delete all conversations:', error);
+                alert('Failed to delete all conversations. Please try again.');
             }
         }
 
@@ -3059,39 +3315,28 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
             const dropdown = document.getElementById('hamburgerDropdown');
             dropdown.classList.remove('active');
 
-            // Check authentication FIRST
             try {
-                const authData = await safeJsonFetch('/api/auth/check');
-                if (authData && authData.authenticated && authData.email) {
-                    isAuthenticated = true;
-                    userEmail = authData.email;
-                    userName = userEmail.split('@')[0];
-                }
-            } catch (error) {
-                console.error('Auth refresh failed:', error);
-            }
-
-            // Redirect to login if not authenticated
-            if (!isAuthenticated || !userEmail || !userEmail.includes('@')) {
-                console.log('User not authenticated, redirecting to login');
-                window.location.href = '/login.html?redirect=manage';
-                return;
-            }
-
-            // Proceed to create portal session
-            try {
-                const data = await safeJsonFetch('/api/portal', {
+                console.log('🔧 Opening Stripe portal...');
+                
+                const response = await fetch('/api/create-portal-session', { 
                     method: 'POST',
-                    body: JSON.stringify({ email: userEmail })
+                    headers: { 'Content-Type': 'application/json' }
                 });
 
-                if (data && data.success && data.url) {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.url) {
+                    console.log('✅ Portal URL received, redirecting...');
                     window.location.href = data.url;
                 } else {
-                    throw new Error(data?.error || 'Unable to open portal');
+                    throw new Error(data.error || 'No portal URL returned');
                 }
             } catch (error) {
-                console.error('Portal error:', error);
+                console.error('❌ Portal error:', error);
                 alert('Unable to open subscription portal. Please try again.');
             }
         }
@@ -3099,14 +3344,32 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
         function logout() {
             if (!confirm('Are you sure you want to log out?')) return;
 
+            console.log('🚪 Logout initiated');
+            
             fetch('/api/auth/logout', { method: 'POST' })
-                .then(() => {
+                .then(response => {
+                    console.log('✅ Logout endpoint called successfully');
+                    
+                    // Clear all storage
+                    console.log('🧹 Clearing localStorage...');
+                    localStorage.clear();
+                    
+                    console.log('🧹 Clearing sessionStorage...');
                     sessionStorage.clear();
+                    
+                    // Redirect to home
+                    console.log('🔄 Redirecting to homepage');
                     window.location.href = '/';
                 })
                 .catch(err => {
-                    console.error('Logout error:', err);
+                    console.error('❌ Logout error:', err);
+                    
+                    // Still clear local data and redirect even if endpoint fails
+                    console.log('🧹 Clearing localStorage and sessionStorage...');
+                    localStorage.clear();
                     sessionStorage.clear();
+                    
+                    console.log('🔄 Redirecting to homepage');
                     window.location.href = '/';
                 });
         }
