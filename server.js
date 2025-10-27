@@ -219,6 +219,13 @@ app.post('/api/create-checkout', async (req, res) => {
       customer = await stripe.customers.create({
         email: email,
         name: firstName && lastName ? `${firstName} ${lastName}` : email.split('@')[0],
+        address: {
+          line1: '123 Main St',
+          city: 'San Francisco',
+          state: 'CA',
+          postal_code: '94102',
+          country: 'US',
+        },
         metadata: {
           source: 'VERA',
           signup_date: new Date().toISOString(),
@@ -2461,10 +2468,10 @@ app.get('/api/test', (req, res) => {
   });
 });
 
-// ==================== TEMPORARY - Create Sadie's account ====================
-app.post('/admin/create-sadie', async (req, res) => {
+// ==================== TEMPORARY - Create Eva's account ====================
+app.post('/admin/create-eva', async (req, res) => {
   try {
-    const existing = await db.query('SELECT * FROM users WHERE email = $1', ['sadies9612@gmail.com']);
+    const existing = await db.query('SELECT * FROM users WHERE email = $1', ['your-email@gmail.com']);
     if (existing.rows.length > 0) {
       return res.json({ message: 'Account already exists!' });
     }
@@ -2472,9 +2479,9 @@ app.post('/admin/create-sadie', async (req, res) => {
     await db.query(
       `INSERT INTO users (email, subscription_status, stripe_customer_id, stripe_subscription_id, created_at, updated_at)
        VALUES ($1, $2, $3, $4, NOW(), NOW())`,
-      ['sadies9612@gmail.com', 'active', 'cus_TJH11TsoRezRcb', 'LIFETIME_BETA']
+      ['your-email@gmail.com', 'active', 'FOUNDER_ACCOUNT', 'LIFETIME_FOUNDER']
     );
-    res.json({ success: true, message: 'Sadie account created!' });
+    res.json({ success: true, message: 'Eva account created!' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
