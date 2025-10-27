@@ -2471,7 +2471,7 @@ app.get('/api/test', (req, res) => {
 // ==================== TEMPORARY - Create Eva's account ====================
 app.post('/admin/create-eva', async (req, res) => {
   try {
-    const existing = await db.query('SELECT * FROM users WHERE email = $1', ['your-email@gmail.com']);
+    const existing = await db.query('SELECT * FROM users WHERE email = $1', ['support@veraneural.com']);
     if (existing.rows.length > 0) {
       return res.json({ message: 'Account already exists!' });
     }
