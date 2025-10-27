@@ -2268,8 +2268,8 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
       
       try {
         const newUserResult = await db.query(
-          `INSERT INTO users (email, subscription_status, created_at, trial_starts_at, trial_ends_at)
-           VALUES ($1, 'trial', NOW(), NOW(), NOW() + INTERVAL '7 days')
+          `INSERT INTO users (email, subscription_status, created_at, trial_ends_at)
+           VALUES ($1, 'trial', NOW(), NOW() + INTERVAL '7 days')
            RETURNING id, email, subscription_status, created_at, trial_ends_at`,
           [normalizedEmail]
         );
