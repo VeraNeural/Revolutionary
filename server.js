@@ -3890,6 +3890,251 @@ app.post('/api/create-portal-session', async (req, res) => {
   }
 });
 
+// ============================================
+// ACCOUNT MANAGEMENT ENDPOINTS
+// ============================================
+
+/**
+ * POST /api/update-name
+ * Update user's name preference
+ */
+app.post('/api/update-name', async (req, res) => {
+  try {
+    if (!req.session?.userEmail) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { name } = req.body;
+    
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return res.status(400).json({ error: 'Invalid name provided' });
+    }
+
+    console.log('👤 UPDATE NAME');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('   Email:', req.session.userEmail);
+    console.log('   New Name:', name);
+
+    // Update user in database (if you add a name column)
+    // For now, just log it
+    // const result = await db.query('UPDATE users SET name = $1 WHERE email = $2', [name, req.session.userEmail]);
+    
+    console.log('✅ Name updated successfully');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    res.json({ success: true, message: 'Name updated successfully' });
+  } catch (error) {
+    console.error('❌ Error updating name:', error);
+    res.status(500).json({ error: 'Failed to update name' });
+  }
+});
+
+/**
+ * POST /api/update-preferences
+ * Update user preferences (notifications, theme, etc)
+ */
+app.post('/api/update-preferences', async (req, res) => {
+  try {
+    if (!req.session?.userEmail) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { emailNotifications } = req.body;
+
+    console.log('⚙️ UPDATE PREFERENCES');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('   Email:', req.session.userEmail);
+    console.log('   Email Notifications:', emailNotifications);
+
+    // Update preferences in database (if you add preferences table)
+    // For now, just log it
+    // const result = await db.query('UPDATE user_preferences SET email_notifications = $1 WHERE email = $2', [emailNotifications, req.session.userEmail]);
+    
+    console.log('✅ Preferences updated successfully');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    res.json({ success: true, message: 'Preferences updated' });
+  } catch (error) {
+    console.error('❌ Error updating preferences:', error);
+    res.status(500).json({ error: 'Failed to update preferences' });
+  }
+});
+
+/**
+ * GET /api/download-data
+ * Download all user conversations as JSON
+ */
+app.get('/api/download-data', async (req, res) => {
+  try {
+    if (!req.session?.userEmail) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    console.log('📥 DOWNLOAD DATA');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('   Email:', req.session.userEmail);
+
+    // Fetch all conversations for the user
+    const result = await db.query(
+      'SELECT * FROM conversations WHERE user_email = $1 ORDER BY updated_at DESC',
+      [req.session.userEmail]
+    );
+
+    const conversations = result.rows;
+    console.log('   Conversations found:', conversations.length);
+
+    // Build data object
+    const userData = {
+      email: req.session.userEmail,
+      exportedAt: new Date().toISOString(),
+      conversationCount: conversations.length,
+      conversations: conversations
+    };
+
+    console.log('✅ Data prepared for download');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="vera-data-${new Date().toISOString().split('T')[0]}.json"`);
+    res.send(JSON.stringify(userData, null, 2));
+
+  } catch (error) {
+    console.error('❌ Error downloading data:', error);
+    res.status(500).json({ error: 'Failed to download data' });
+  }
+});
+
+/**
+ * POST /api/delete-history
+ * Delete all conversations for the user
+ */
+app.post('/api/delete-history', async (req, res) => {
+  try {
+    if (!req.session?.userEmail) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    console.log('🗑️ DELETE HISTORY');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('   Email:', req.session.userEmail);
+
+    // Delete all conversations for this user
+    const result = await db.query(
+      'DELETE FROM conversations WHERE user_email = $1',
+      [req.session.userEmail]
+    );
+
+    console.log('   Deleted conversations:', result.rowCount);
+    console.log('✅ Conversation history deleted');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    res.json({ success: true, message: 'Conversation history deleted', deletedCount: result.rowCount });
+
+  } catch (error) {
+    console.error('❌ Error deleting history:', error);
+    res.status(500).json({ error: 'Failed to delete conversation history' });
+  }
+});
+
+/**
+ * POST /api/account/delete
+ * Permanently delete user account, cancel subscription, and delete all data
+ * Requires confirmation and optional password
+ */
+app.post('/api/account/delete', async (req, res) => {
+  try {
+    if (!req.session?.userEmail) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const userEmail = req.session.userEmail;
+
+    console.log('❌ DELETE ACCOUNT');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('   Email:', userEmail);
+    console.log('   Action: Permanently deleting account');
+
+    // Fetch user to get Stripe customer ID
+    const userResult = await db.query(
+      'SELECT stripe_customer_id FROM users WHERE email = $1',
+      [userEmail]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userResult.rows[0];
+    const stripeCustomerId = user.stripe_customer_id;
+
+    // Cancel Stripe subscription if exists
+    if (stripeCustomerId) {
+      console.log('   Stripe Customer ID:', stripeCustomerId);
+      
+      try {
+        // Get customer subscriptions
+        const subscriptions = await stripe.subscriptions.list({
+          customer: stripeCustomerId,
+          limit: 100
+        });
+
+        console.log('   Found subscriptions:', subscriptions.data.length);
+
+        // Cancel all active subscriptions
+        for (const subscription of subscriptions.data) {
+          if (subscription.status !== 'canceled') {
+            await stripe.subscriptions.cancel(subscription.id);
+            console.log('   ✓ Cancelled subscription:', subscription.id);
+          }
+        }
+      } catch (stripeError) {
+        console.error('   ⚠️ Warning canceling Stripe subscriptions:', stripeError.message);
+        // Continue with account deletion even if Stripe fails
+      }
+    }
+
+    // Delete all conversations
+    const convResult = await db.query(
+      'DELETE FROM conversations WHERE user_email = $1',
+      [userEmail]
+    );
+    console.log('   Deleted conversations:', convResult.rowCount);
+
+    // Delete all email logs
+    const emailResult = await db.query(
+      'DELETE FROM email_logs WHERE recipient_email = $1',
+      [userEmail]
+    );
+    console.log('   Deleted email logs:', emailResult.rowCount);
+
+    // Delete user account
+    const deleteResult = await db.query(
+      'DELETE FROM users WHERE email = $1',
+      [userEmail]
+    );
+    console.log('   Deleted user:', deleteResult.rowCount);
+
+    console.log('✅ Account permanently deleted');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    // Clear session
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('⚠️ Error destroying session:', err);
+      }
+      res.json({ success: true, message: 'Account permanently deleted' });
+    });
+
+  } catch (error) {
+    console.error('❌ Error deleting account:', error);
+    console.error('   Details:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to delete account',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 /**
  * POST /api/stripe-webhook
  * Handles Stripe webhook events

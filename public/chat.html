@@ -2047,7 +2047,7 @@
                     <span class="menu-line"></span>
                 </button>
 
- <!-- Hamburger Dropdown -->
+                <!-- Hamburger Dropdown -->
                 <div class="hamburger-dropdown" id="hamburgerDropdown">
                     <div class="dropdown-item" onclick="startNewChat()">
                         <span>New Chat</span>
@@ -2061,12 +2061,13 @@
                     <div class="dropdown-item" onclick="manageSubscription()">
                         <span>Manage Subscription</span>
                     </div>
+                    <div class="dropdown-item" onclick="goToSettings()">
+                        <span>⚙️ Settings</span>
+                    </div>
                     <div class="dropdown-item" onclick="logout()">
                         <span>Logout</span>
                     </div>
-                </div>
-
-                <div class="vera-presence-indicator"></div>
+                </div>                <div class="vera-presence-indicator"></div>
                 <div class="vera-title">
                     <h1>VERA</h1>
                     <span class="status-text" id="statusText">I'm here with you</span>
@@ -3372,6 +3373,11 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
                     console.log('🔄 Redirecting to homepage');
                     window.location.href = '/';
                 });
+        }
+
+        function goToSettings() {
+            console.log('⚙️ Navigating to Settings');
+            window.location.href = '/settings.html';
         }
 
         // ============================================
