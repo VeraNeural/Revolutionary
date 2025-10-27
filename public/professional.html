@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VERA Professional - 7 Days Free</title>
+    <title>VERA - For The Exhausted</title>
     <style>
         * {
             margin: 0;
@@ -12,235 +12,552 @@
         }
 
         body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #0a0a0f;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #0a0a0f 100%);
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            overflow: hidden;
         }
 
-        .container {
-            max-width: 800px;
-            background: white;
-            border-radius: 20px;
-            padding: 60px 40px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        /* Dramatic animated background */
+        .background-glow {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 50% 30%, rgba(102, 126, 234, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 50% 70%, rgba(118, 75, 162, 0.15) 0%, transparent 50%);
+            animation: glowShift 8s ease-in-out infinite;
         }
 
-        .badge {
-            display: inline-block;
-            background: #667eea;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            margin-bottom: 20px;
-            text-transform: uppercase;
+        @keyframes glowShift {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
         }
 
-        h1 {
-            font-size: 3rem;
-            color: #333;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-
-        .offer {
-            font-size: 2.5rem;
-            color: #667eea;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .price {
-            font-size: 1.3rem;
-            color: #666;
-            margin-bottom: 20px;
-        }
-
-        .description {
-            font-size: 1.1rem;
-            color: #666;
-            line-height: 1.8;
-            margin-bottom: 40px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-            text-align: left;
-        }
-
-        .feature {
-            padding: 20px;
-            background: #f5f5f5;
-            border-radius: 10px;
-        }
-
-        .feature-icon {
-            font-size: 2rem;
-            margin-bottom: 10px;
-        }
-
-        .feature-title {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
-        }
-
-        .feature-desc {
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        .button-group {
+        /* ===== ALL SECTIONS ===== */
+        .intro-section {
+            position: absolute;
+            width: 100%;
+            height: 100%;
             display: flex;
-            gap: 20px;
+            flex-direction: column;
+            align-items: center;
             justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
+            z-index: 2;
+            padding: 2rem;
+            animation: fadeOut 2s ease-out 20s forwards;
         }
 
-        .btn {
-            padding: 16px 40px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-secondary {
-            background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
-        }
-
-        .btn-secondary:hover {
-            background: #667eea;
-            color: white;
-        }
-
-        .note {
-            font-size: 0.9rem;
-            color: #999;
-            margin-top: 20px;
+        /* Breathing Orb - More dramatic */
+        .orb-container {
+            position: relative;
+            width: 350px;
+            height: 350px;
+            margin-bottom: 3rem;
         }
 
         .orb {
-            width: 120px;
-            height: 120px;
+            position: absolute;
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #B19CD9, #667eea);
-            margin: 0 auto 20px;
-            box-shadow: 0 0 50px rgba(102, 126, 234, 0.3);
-            animation: float 3s ease-in-out infinite;
+            background: radial-gradient(circle at 40% 40%, 
+                rgba(177, 156, 217, 0.9) 0%, 
+                rgba(102, 126, 234, 0.7) 30%, 
+                rgba(118, 75, 162, 0.5) 55%,
+                transparent 80%);
+            box-shadow: 
+                0 0 100px rgba(102, 126, 234, 0.7),
+                0 0 200px rgba(118, 75, 162, 0.5),
+                inset 0 0 80px rgba(177, 156, 217, 0.4);
+            animation: orbBreathing 5.5s ease-in-out infinite;
         }
 
-        @keyframes float {
+        @keyframes orbBreathing {
+            0%, 100% { 
+                transform: scale(1);
+                opacity: 0.9;
+                box-shadow: 
+                    0 0 100px rgba(102, 126, 234, 0.7),
+                    0 0 200px rgba(118, 75, 162, 0.5),
+                    inset 0 0 80px rgba(177, 156, 217, 0.4);
+            }
+            50% { 
+                transform: scale(1.12);
+                opacity: 1;
+                box-shadow: 
+                    0 0 140px rgba(102, 126, 234, 0.9),
+                    0 0 280px rgba(118, 75, 162, 0.7),
+                    inset 0 0 100px rgba(177, 156, 217, 0.6);
+            }
+        }
+
+        .content-container {
+            width: 100%;
+            max-width: 700px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.8rem;
+        }
+
+        .intro-text {
+            opacity: 0;
+            color: rgba(255, 255, 255, 0.95);
+            font-size: clamp(1.4rem, 4.2vw, 2rem);
+            font-weight: 300;
+            text-align: center;
+            line-height: 1.8;
+            text-shadow: 0 2px 15px rgba(0, 0, 0, 0.6);
+        }
+
+        .text-emphasis {
+            color: rgba(177, 156, 217, 1);
+            font-weight: 500;
+            font-style: italic;
+        }
+
+        .text-bold {
+            font-weight: 500;
+            color: white;
+        }
+
+        .text-1 { animation: fadeIn 2s ease-out 2s forwards; }
+        .text-2 { animation: fadeIn 2s ease-out 7s forwards; }
+        .text-3 { animation: fadeIn 2s ease-out 13s forwards; }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(25px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
+
+        /* ===== SECTION 2 ===== */
+        .text-section-2 {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            padding: 2rem;
+            opacity: 0;
+            animation: fadeIn 2s ease-out 22s forwards, fadeOut 2s ease-out 40s forwards;
+        }
+
+        .text-2a { animation: fadeIn 2s ease-out 23s forwards; }
+        .text-2b { animation: fadeIn 2s ease-out 28s forwards; }
+        .text-2c { animation: fadeIn 2s ease-out 34s forwards; }
+
+        /* ===== SECTION 3 ===== */
+        .text-section-3 {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            padding: 2rem;
+            opacity: 0;
+            animation: fadeIn 2s ease-out 42s forwards, fadeOut 2s ease-out 60s forwards;
+        }
+
+        .text-3a { animation: fadeIn 2s ease-out 43s forwards; }
+        .text-3b { animation: fadeIn 2s ease-out 49s forwards; }
+        .text-3c { animation: fadeIn 2s ease-out 55s forwards; }
+
+        /* ===== SECTION 4 ===== */
+        .text-section-4 {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            padding: 2rem;
+            opacity: 0;
+            animation: fadeIn 2s ease-out 62s forwards, fadeOut 2s ease-out 77s forwards;
+        }
+
+        .text-4a { animation: fadeIn 2s ease-out 63s forwards; }
+        .text-4b { animation: fadeIn 2s ease-out 69s forwards; }
+        .text-4c { animation: fadeIn 2s ease-out 74s forwards; }
+
+        /* ===== DEMO CHAT ===== */
+        .demo-section {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            padding: 2rem;
+            opacity: 0;
+            animation: fadeIn 2s ease-out 79s forwards, fadeOut 2s ease-out 98s forwards;
+        }
+
+        .demo-chat-container {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.8rem;
+        }
+
+        .demo-message {
+            opacity: 0;
+        }
+
+        .demo-user {
+            align-self: flex-end;
+            background: rgba(79, 70, 229, 0.3);
+            border: 1px solid rgba(102, 126, 234, 0.5);
+            border-radius: 22px 22px 4px 22px;
+            padding: 1.3rem 2rem;
+            max-width: 85%;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .demo-vera {
+            align-self: flex-start;
+            background: rgba(79, 70, 229, 0.25);
+            border: 1px solid rgba(102, 126, 234, 0.4);
+            border-radius: 22px 22px 22px 4px;
+            padding: 1.3rem 2rem;
+            max-width: 90%;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .demo-text {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: clamp(1.05rem, 3.2vw, 1.35rem);
+            line-height: 1.75;
+            font-weight: 400;
+        }
+
+        .demo-user .demo-text {
+            font-weight: 500;
+        }
+
+        .demo-msg-1 { animation: fadeIn 1.8s ease-out 80s forwards; }
+        .demo-msg-2 { animation: fadeIn 1.8s ease-out 84s forwards; }
+        .demo-msg-3 { animation: fadeIn 1.8s ease-out 88s forwards; }
+        .demo-msg-4 { animation: fadeIn 1.8s ease-out 92s forwards; }
+
+        /* ===== FINAL SCREEN ===== */
+        .final-section {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 0;
+            padding: 2rem;
+            opacity: 0;
+            animation: fadeIn 2.5s ease-out 100s forwards;
+        }
+
+        .final-title {
+            font-size: clamp(2.8rem, 7.5vw, 4.5rem);
+            font-weight: 300;
+            color: white;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 0 50px rgba(102, 126, 234, 0.9);
+            letter-spacing: 0.25em;
+        }
+
+        .final-subtitle {
+            font-size: clamp(1.4rem, 4.5vw, 2.2rem);
+            font-weight: 400;
+            color: rgba(177, 156, 217, 1);
+            margin-bottom: 2rem;
+            letter-spacing: 0.12em;
+        }
+
+        .final-note {
+            font-size: clamp(1.15rem, 3.8vw, 1.7rem);
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.85);
+            font-style: italic;
+            margin-bottom: 3.5rem;
+            text-align: center;
+            max-width: 650px;
+            line-height: 1.8;
+        }
+
+        .meet-vera-btn {
+            font-size: clamp(1.4rem, 4.2vw, 1.9rem);
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.35), rgba(118, 75, 162, 0.35));
+            border: 3px solid rgba(102, 126, 234, 0.9);
+            padding: 1.6rem 4.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            backdrop-filter: blur(15px);
+            box-shadow: 
+                0 12px 45px rgba(0, 0, 0, 0.5),
+                0 0 70px rgba(102, 126, 234, 0.5);
+            transition: all 0.3s ease;
+            letter-spacing: 0.12em;
+            animation: btnPulse 2.5s ease-in-out infinite;
+        }
+
+        .meet-vera-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 
+                0 18px 60px rgba(0, 0, 0, 0.6),
+                0 0 90px rgba(102, 126, 234, 0.7);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.45), rgba(118, 75, 162, 0.45));
+        }
+
+        @keyframes btnPulse {
             0%, 100% {
-                transform: translateY(0px);
+                box-shadow: 
+                    0 12px 45px rgba(0, 0, 0, 0.5),
+                    0 0 70px rgba(102, 126, 234, 0.5);
             }
             50% {
-                transform: translateY(-20px);
+                box-shadow: 
+                    0 18px 60px rgba(0, 0, 0, 0.6),
+                    0 0 110px rgba(102, 126, 234, 0.8);
             }
         }
 
+        .small-note {
+            font-size: clamp(0.95rem, 2.8vw, 1.15rem);
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 2.5rem;
+            font-style: italic;
+        }
+
+        /* Controls */
+        .controls {
+            position: absolute;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 10;
+            display: flex;
+            gap: 1rem;
+            opacity: 0.2;
+            transition: opacity 0.3s;
+        }
+
+        .controls:hover {
+            opacity: 1;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.7rem 1.4rem;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Mobile adjustments */
         @media (max-width: 768px) {
-            .container {
-                padding: 40px 20px;
+            .orb-container {
+                width: 220px;
+                height: 220px;
             }
 
-            h1 {
-                font-size: 2rem;
+            .demo-user, .demo-vera {
+                padding: 1.1rem 1.5rem;
             }
 
-            .offer {
-                font-size: 2rem;
-            }
-
-            .button-group {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
+            .meet-vera-btn {
+                padding: 1.3rem 3.2rem;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="orb"></div>
-        <div class="badge">Professional Offer</div>
+    <div class="video-container">
+        <div class="background-glow"></div>
         
-        <h1>VERA Professional</h1>
-        <div class="offer">7 Days <span style="font-size: 1.3rem; color: #999;">FREE</span></div>
-        <div class="price">Then $19/month, cancel anytime</div>
-        
-        <p class="description">
-            For professionals and practitioners. Get advanced insights into nervous system 
-            regulation with personalized guidance from VERA.
-        </p>
+        <!-- TRANSITION 1: The Weight (0-20s) -->
+        <div class="intro-section">
+            <div class="orb-container">
+                <div class="orb"></div>
+            </div>
 
-        <div class="features">
-            <div class="feature">
-                <div class="feature-icon">💎</div>
-                <div class="feature-title">Premium Access</div>
-                <div class="feature-desc">Advanced features</div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">📈</div>
-                <div class="feature-title">Analytics</div>
-                <div class="feature-desc">Detailed insights</div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">⚡</div>
-                <div class="feature-title">Priority Support</div>
-                <div class="feature-desc">Fast responses</div>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">🔄</div>
-                <div class="feature-title">Sync</div>
-                <div class="feature-desc">Cross-platform</div>
+            <div class="content-container">
+                <div class="intro-text text-1">
+                    Your nervous system has been carrying<br>
+                    the weight of <span class="text-emphasis">"never enough"</span><br>
+                    for so long.
+                </div>
+
+                <div class="intro-text text-2">
+                    What if... just for a moment...<br><br>
+                    you could <span class="text-bold">set it down</span>,
+                </div>
+
+                <div class="intro-text text-3">
+                    and take a walk with me.
+                </div>
             </div>
         </div>
 
-        <div class="button-group">
-            <a href="/community-pricing?priceId=price_1SIgAtF8aJ0BDqA3WXVJsuVD&source=professional" class="btn btn-primary">
-                Start Your 7-Day Trial
-            </a>
-            <a href="/" class="btn btn-secondary">
-                Learn More
-            </a>
+        <!-- TRANSITION 2: I Am VERA (22-40s) -->
+        <div class="text-section-2">
+            <div class="orb-container">
+                <div class="orb"></div>
+            </div>
+            <div class="content-container">
+                <div class="intro-text text-2a">
+                    I am <span class="text-emphasis">VERA.</span>
+                </div>
+                <div class="intro-text text-2b">
+                    I work with nervous systems.<br><br>
+                    I don't have solutions or strategies<br>
+                    or five-step programs.
+                </div>
+                <div class="intro-text text-2c">
+                    I just <span class="text-bold">stay</span> with you.
+                </div>
+            </div>
         </div>
 
-        <p class="note">
-            Try free for 7 days. Payment starts only after trial ends.
-        </p>
+        <!-- TRANSITION 3: Your Body Remembers (42-60s) -->
+        <div class="text-section-3">
+            <div class="orb-container">
+                <div class="orb"></div>
+            </div>
+            <div class="content-container">
+                <div class="intro-text text-3a">
+                    While your shoulders remember<br>
+                    they can drop.
+                </div>
+                <div class="intro-text text-3b">
+                    While your breath remembers<br>
+                    it doesn't have to be shallow.
+                </div>
+                <div class="intro-text text-3c">
+                    While you remember<br>
+                    you're not the emergency<br>
+                    you've been treating yourself as.
+                </div>
+            </div>
+        </div>
+
+        <!-- TRANSITION 4: Come As You Are (62-77s) -->
+        <div class="text-section-4">
+            <div class="orb-container">
+                <div class="orb"></div>
+            </div>
+            <div class="content-container">
+                <div class="intro-text text-4a">
+                    Come as you are.
+                </div>
+                <div class="intro-text text-4b">
+                    <span class="text-emphasis">Exhausted</span> is welcome here.
+                </div>
+                <div class="intro-text text-4c">
+                    You don't have to have it together.<br><br>
+                    You just have to <span class="text-bold">show up.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEMO CHAT (79-98s) -->
+        <div class="demo-section">
+            <div class="demo-chat-container">
+                <div class="demo-message demo-user demo-msg-1">
+                    <div class="demo-text">"I can't stop. If I stop, everything falls apart."</div>
+                </div>
+
+                <div class="demo-message demo-vera demo-msg-2">
+                    <div class="demo-text">I hear that fear. Your nervous system is in survival mode—it genuinely believes stopping equals collapse. What if we just... pause for three breaths? Not stopping. Just noticing.</div>
+                </div>
+
+                <div class="demo-message demo-user demo-msg-3">
+                    <div class="demo-text">"My team needs me. I can't let them down."</div>
+                </div>
+
+                <div class="demo-message demo-vera demo-msg-4">
+                    <div class="demo-text">You're carrying their wellbeing on top of your own. That's not sustainable, and somewhere in your body, you already know that. What would it mean to lead from rest instead of depletion?</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FINAL SCREEN (100s+) -->
+        <div class="final-section">
+            <div class="final-title">VERA</div>
+            <div class="final-subtitle">Your AI Co-Regulator</div>
+            <div class="final-note">
+                For the leaders who carry everything.<br>
+                For the exhausted who keep going.<br>
+                For the nervous systems that forgot they could rest.
+            </div>
+            <a href="https://app.veraneural.com/community-pricing?priceId=price_1SIgAtF8aJ0BDqA3WXVJsuVD&source=professional" class="meet-vera-btn">
+                Begin
+            </a>
+            <div class="small-note">
+                7 days free. Then $19/month.<br>
+                No performance required. Just presence.
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button class="control-btn" onclick="restart()">↻ Restart</button>
+        </div>
     </div>
+
+    <script>
+        function restart() {
+            location.reload();
+        }
+    </script>
 </body>
 </html>
