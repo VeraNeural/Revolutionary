@@ -2044,13 +2044,106 @@ app.post('/api/chat', async (req, res) => {
     if (wantDebug) setVERADebug(true);
     console.log('🧠 Calling getVERAResponse...');
     const startTime = Date.now();
+
+    // ==================== SUBSCRIPTION & TRIAL CHECK ====================
+    // Only check subscription for authenticated users (with email in session)
+    let userSubscriptionStatus = 'guest'; // Default to guest
+    let trialDayCount = null;
+    let subscriptionError = null;
+
+    if (req.session.userEmail) {
+      try {
+        const userResult = await db.query(
+          `SELECT id, subscription_status, trial_starts_at, trial_ends_at, last_free_message_date 
+           FROM users WHERE email = $1`,
+          [req.session.userEmail]
+        );
+
+        if (userResult.rows.length > 0) {
+          const user = userResult.rows[0];
+          userSubscriptionStatus = user.subscription_status || 'inactive';
+
+          // Calculate trial day count if on trial
+          if (userSubscriptionStatus === 'trial' && user.trial_starts_at) {
+            const trialStartDate = new Date(user.trial_starts_at);
+            const today = new Date();
+            const daysPassed = Math.floor((today - trialStartDate) / (1000 * 60 * 60 * 24));
+            trialDayCount = Math.min(daysPassed + 1, 7); // Day 1-7, cap at 7
+          }
+
+          // Check trial expiration
+          if (userSubscriptionStatus === 'trial' && user.trial_ends_at) {
+            const trialEndDate = new Date(user.trial_ends_at);
+            if (new Date() > trialEndDate) {
+              // Trial expired - update status to free_tier
+              await db.query(
+                `UPDATE users SET subscription_status = $1 WHERE email = $2`,
+                ['free_tier', req.session.userEmail]
+              );
+              userSubscriptionStatus = 'free_tier';
+              trialDayCount = null; // No longer on trial
+              console.log('⏰ Trial expired for user:', req.session.userEmail);
+            }
+          }
+
+          // Check free tier message limit (1 message per day)
+          if (userSubscriptionStatus === 'free_tier') {
+            if (user.last_free_message_date) {
+              const lastMessageDate = new Date(user.last_free_message_date);
+              const today = new Date();
+              const isDifferentDay = lastMessageDate.toDateString() !== today.toDateString();
+
+              if (!isDifferentDay) {
+                // They already sent a message today
+                subscriptionError = {
+                  status: 429,
+                  error: 'Daily message limit reached',
+                  message: 'You\'ve used your daily message on the free tier. Upgrade to VERA to continue unlimited conversations.',
+                  upgradeUrl: '/pricing'
+                };
+              }
+            }
+
+            // If allowed, update last_free_message_date
+            if (!subscriptionError) {
+              await db.query(
+                `UPDATE users SET last_free_message_date = NOW() WHERE email = $1`,
+                [req.session.userEmail]
+              );
+            }
+          }
+
+          console.log('👤 Subscription check:', {
+            email: req.session.userEmail,
+            status: userSubscriptionStatus,
+            trialDay: trialDayCount,
+            hasError: !!subscriptionError
+          });
+        }
+      } catch (subError) {
+        console.error('⚠️ Subscription check error:', subError.message);
+        // Don't block message on subscription check failure - just log it
+      }
+    }
+
+    // If subscription error, return it
+    if (subscriptionError) {
+      return res.status(subscriptionError.status).json({
+        success: false,
+        error: subscriptionError.error,
+        message: subscriptionError.message,
+        upgradeUrl: subscriptionError.upgradeUrl
+      });
+    }
+
     const veraResult = await getVERAResponse(
       userId,
       message,
       userName || 'friend',
       db.pool,
       attachments,
-      guestMessageCount
+      guestMessageCount,
+      { trialDayCount, userSubscriptionStatus }
     );
     const duration = Date.now() - startTime;
 
@@ -2102,6 +2195,11 @@ try {
       model: veraResult.model,
       fallback: !!veraResult.fallback,
       timestamp: new Date().toISOString(),
+      subscription: {
+        status: userSubscriptionStatus,
+        trialDay: trialDayCount,
+        isOnTrial: userSubscriptionStatus === 'trial' && trialDayCount !== null,
+      }
     });
   } catch (error) {
     console.error('❌ Chat error:', error);

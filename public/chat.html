@@ -183,6 +183,78 @@
             position: relative;
         }
 
+        /* Trial Banner */
+        .trial-banner {
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(90deg, rgba(155, 137, 212, 0.1) 0%, rgba(123, 158, 240, 0.1) 100%);
+            border-bottom: 1px solid rgba(155, 137, 212, 0.2);
+            z-index: 99;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .trial-banner.hidden {
+            display: none;
+        }
+
+        .trial-banner.critical {
+            background: linear-gradient(90deg, rgba(255, 107, 107, 0.15) 0%, rgba(255, 171, 87, 0.15) 100%);
+            border-bottom: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .trial-banner-text {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            font-weight: 500;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .trial-banner.critical .trial-banner-text {
+            color: #d84444;
+        }
+
+        .trial-progress {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .trial-progress-bar {
+            width: 120px;
+            height: 6px;
+            background: rgba(155, 137, 212, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .trial-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #9B8FD4 0%, #7B9EF0 100%);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .trial-progress-bar.critical .trial-progress-fill {
+            background: linear-gradient(90deg, #ff6b6b 0%, #ffab57 100%);
+        }
+
+        .trial-days {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            min-width: 45px;
+            text-align: right;
+        }
+
+        .trial-days.critical {
+            color: #d84444;
+        }
+
         .vera-identity {
             display: flex;
             align-items: center;
@@ -1883,6 +1955,19 @@
             </div>
         </header>
 
+        <!-- Trial Banner -->
+        <div class="trial-banner hidden" id="trialBanner">
+            <div class="trial-banner-text" id="trialBannerText">
+                Trial: Day <span id="trialDayNum">1</span> of 7
+            </div>
+            <div class="trial-progress">
+                <div class="trial-progress-bar" id="trialProgressBar">
+                    <div class="trial-progress-fill" id="trialProgressFill" style="width: 14%"></div>
+                </div>
+                <div class="trial-days" id="trialDaysRemaining">7 left</div>
+            </div>
+        </div>
+
         <!-- Welcome Container -->
         <div class="welcome-container" id="welcomeContainer">
             <div class="vera-orb-large"></div>
@@ -2516,6 +2601,11 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
                         }, 1000); // Wait 1 second for shimmer effect to complete
                     }
 
+                    // Update trial banner if user is on trial
+                    if (data.subscription && data.subscription.isOnTrial && data.subscription.trialDay) {
+                        updateTrialBanner(data.subscription.trialDay);
+                    }
+
                     console.log('✅ [MOBILE DEBUG] Message saved successfully, veraMsg added to DOM');
                 } else {
                     throw new Error(data?.error || 'No response from VERA');
@@ -2544,6 +2634,50 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
             adjustTextareaHeight();
             messageInput.focus();
             setTimeout(() => sendMessage(), 100);
+        }
+
+        // Trial Banner Management
+        function updateTrialBanner(trialDay) {
+            const banner = document.getElementById('trialBanner');
+            const bannerText = document.getElementById('trialBannerText');
+            const dayNum = document.getElementById('trialDayNum');
+            const daysRemaining = document.getElementById('trialDaysRemaining');
+            const progressFill = document.getElementById('trialProgressFill');
+            const progressBar = document.getElementById('trialProgressBar');
+
+            // Show banner
+            banner.classList.remove('hidden');
+
+            // Update day count
+            dayNum.textContent = trialDay;
+            const remaining = 7 - trialDay;
+            daysRemaining.textContent = `${remaining} left`;
+
+            // Calculate progress (percentage)
+            const progressPercent = (trialDay / 7) * 100;
+            progressFill.style.width = progressPercent + '%';
+
+            // Update styling for Day 5+ (critical)
+            if (trialDay >= 5) {
+                banner.classList.add('critical');
+                progressBar.classList.add('critical');
+                daysRemaining.classList.add('critical');
+                
+                if (trialDay === 5) {
+                    bannerText.innerHTML = `<strong>⏰ 2 days left in your trial</strong>`;
+                } else if (trialDay === 6) {
+                    bannerText.innerHTML = `<strong>⏰ Last day of trial!</strong>`;
+                } else if (trialDay === 7) {
+                    bannerText.innerHTML = `<strong>✨ Your trial ends today</strong>`;
+                }
+            } else {
+                banner.classList.remove('critical');
+                progressBar.classList.remove('critical');
+                daysRemaining.classList.remove('critical');
+                bannerText.innerHTML = `Trial: Day <span id="trialDayNum">${trialDay}</span> of 7`;
+            }
+
+            console.log(`📅 Trial banner updated: Day ${trialDay}/7`);
         }
 
         async function loadHistory() {

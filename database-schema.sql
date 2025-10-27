@@ -10,7 +10,9 @@ CREATE TABLE IF NOT EXISTS users (
   stripe_customer_id VARCHAR(255) UNIQUE,
   stripe_subscription_id VARCHAR(255),
   subscription_status VARCHAR(50) DEFAULT 'inactive',
+  trial_starts_at TIMESTAMP,
   trial_ends_at TIMESTAMP,
+  last_free_message_date TIMESTAMP,
   reset_token VARCHAR(255),
   reset_token_expires TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -20,6 +22,8 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_stripe_customer ON users(stripe_customer_id);
 CREATE INDEX idx_users_stripe_subscription ON users(stripe_subscription_id);
+CREATE INDEX idx_users_subscription_status ON users(subscription_status);
+CREATE INDEX idx_users_trial_ends ON users(trial_ends_at);
 
 -- ==================== MESSAGES TABLE ====================
 CREATE TABLE IF NOT EXISTS messages (
