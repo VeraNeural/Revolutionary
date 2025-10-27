@@ -790,6 +790,7 @@
             background: linear-gradient(135deg, var(--vera-lavender), var(--vera-neural-blue));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             margin-bottom: 2rem;
             opacity: 0;
             animation: fadeInUp 1s 2.1s forwards;
@@ -1316,15 +1317,15 @@
         <p class="demo-subtitle">Experience a real conversation with your nervous system companion</p>
         
         <div class="demo-chat-container">
-            <!-- Message 1: User -->
-            <div class="demo-message demo-message-user demo-fade-in" style="animation-delay: 0.3s;">
+            <!-- Message 1: User (delay: 0.5s) -->
+            <div class="demo-message demo-message-user demo-fade-in" style="animation-delay: 0.5s;">
                 <div class="demo-message-bubble demo-user-bubble">
                     I feel anxious and disconnected
                 </div>
             </div>
             
-            <!-- Message 2: VERA -->
-            <div class="demo-message demo-message-vera demo-fade-in" style="animation-delay: 0.8s;">
+            <!-- Message 2: VERA (delay: 3.5s - 3s after message 1) -->
+            <div class="demo-message demo-message-vera demo-fade-in" style="animation-delay: 3.5s;">
                 <div class="demo-vera-avatar">
                     <div class="demo-avatar-core"></div>
                 </div>
@@ -1333,15 +1334,15 @@
                 </div>
             </div>
             
-            <!-- Message 3: User -->
-            <div class="demo-message demo-message-user demo-fade-in" style="animation-delay: 1.3s;">
+            <!-- Message 3: User (delay: 7s - 3.5s after message 2) -->
+            <div class="demo-message demo-message-user demo-fade-in" style="animation-delay: 7s;">
                 <div class="demo-message-bubble demo-user-bubble">
                     My chest feels tight...
                 </div>
             </div>
             
-            <!-- Message 4: VERA -->
-            <div class="demo-message demo-message-vera demo-fade-in" style="animation-delay: 1.8s;">
+            <!-- Message 4: VERA (delay: 10.5s - 3.5s after message 3) -->
+            <div class="demo-message demo-message-vera demo-fade-in" style="animation-delay: 10.5s;">
                 <div class="demo-vera-avatar">
                     <div class="demo-avatar-core"></div>
                 </div>
@@ -1351,8 +1352,8 @@
             </div>
         </div>
         
-        <!-- CTA Button -->
-        <div class="demo-cta-wrapper demo-fade-in" style="animation-delay: 2.5s;">
+        <!-- CTA Button (delay: 14.5s - 4s pause after final message) -->
+        <div class="demo-cta-wrapper demo-fade-in" style="animation-delay: 14.5s;">
             <button class="demo-cta-button" onclick="navigateToChat();">
                 Experience VERA Yourself 
                 <span class="demo-arrow">→</span>
