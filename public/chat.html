@@ -2559,6 +2559,13 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
                 };
 
                 console.log('📤 [MOBILE DEBUG] Sending API request to /api/chat:', requestBody);
+                console.log('📊 [FRONTEND SENDING] guestMessageCount:', {
+                  value: requestBody.guestMessageCount,
+                  type: typeof requestBody.guestMessageCount,
+                  isGuest: localStorage.getItem('veraIsGuest'),
+                  localStorageValue: localStorage.getItem('veraGuestMessageCount'),
+                  localVar: guestMessageCount
+                });
 
                 const data = await safeJsonFetch('/api/chat', {
                     method: 'POST',

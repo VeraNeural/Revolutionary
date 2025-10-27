@@ -1960,6 +1960,15 @@ app.post('/api/chat', async (req, res) => {
     attachments: attachments.length,
     conversationId: conversationId || 'current',
   });
+  
+  // 🎯 DEBUG: Log what we received from frontend
+  console.log('📥 [REQUEST BODY] guestMessageCount from frontend:', {
+    received: guestMessageCount,
+    type: typeof guestMessageCount,
+    isNull: guestMessageCount === null,
+    isUndefined: guestMessageCount === undefined,
+    message: message?.substring(0, 40)
+  });
 
   if (!message) {
     return res.status(400).json({ error: 'Message required' });
@@ -2165,6 +2174,12 @@ app.post('/api/chat', async (req, res) => {
     // Record metrics
     monitor.recordMetric('requestDuration', duration);
 
+    // 🎯 DEBUG: Log what we're passing to vera-ai and what we get back
+    console.log('🔄 [VERA FLOW] Sending guestMessageCount:', {
+      sent: guestMessageCount,
+      type: typeof guestMessageCount
+    });
+    
     console.log('📊 VERA result:', {
       responseLength: veraResult.response?.length,
       state: veraResult.state,
@@ -2175,10 +2190,11 @@ app.post('/api/chat', async (req, res) => {
     });
 
     // 🎯 DEBUG: Email Collection Trigger
-    console.log('🎯 [EMAIL COLLECTION DEBUG]', {
+    console.log('🎯 [EMAIL COLLECTION DEBUG - SERVER RESPONSE]', {
       guestMessageCount: guestMessageCount,
-      isGuestMessage4: veraResult.isGuestMessage4,
+      veraResult_isGuestMessage4: veraResult.isGuestMessage4,
       willTriggerModal: veraResult.isGuestMessage4 === true,
+      typeOf: typeof veraResult.isGuestMessage4
     });
 
  // ✅ FIXED: Now save both messages in order (user first, then assistant) with conversation_id
@@ -2206,7 +2222,8 @@ try {
   console.error('❌ Failed to save assistant message:', saveError.message);
 }
 
-    res.json({
+    // 🔍 DEBUG: Log the exact response object before sending
+    const responseObject = {
       success: true,
       response: veraResult.response,
       conversationId: currentConversationId,
@@ -2223,7 +2240,12 @@ try {
         trialDay: trialDayCount,
         isOnTrial: userSubscriptionStatus === 'trial' && trialDayCount !== null,
       }
-    });
+    };
+    
+    console.log('📤 [SENDING TO FRONTEND] isGuestMessage4:', responseObject.isGuestMessage4);
+    console.log('📤 [FULL RESPONSE]', JSON.stringify(responseObject, null, 2).substring(0, 500));
+    
+    res.json(responseObject);
   } catch (error) {
     console.error('❌ Chat error:', error);
     res.status(500).json({
