@@ -1790,10 +1790,27 @@ app.get('/api/auth/check', async (req, res) => {
 });
 
 app.post('/api/auth/logout', (req, res) => {
+  console.log('🚪 LOGOUT REQUEST');
+  console.log('   User Email:', req.session?.userEmail);
+  console.log('   Session ID:', req.sessionID);
+  
   req.session.destroy((err) => {
     if (err) {
+      console.error('❌ Session destroy error:', err);
       return res.status(500).json({ error: 'Logout failed' });
     }
+    
+    console.log('✅ Session destroyed successfully');
+    
+    // Clear session cookie
+    res.clearCookie('connect.sid');
+    console.log('✅ Session cookie cleared');
+    
+    // Clear any other auth-related cookies
+    res.clearCookie('auth_token');
+    res.clearCookie('remember_me');
+    
+    console.log('✅ LOGOUT COMPLETE - User session cleared');
     res.json({ success: true });
   });
 });
