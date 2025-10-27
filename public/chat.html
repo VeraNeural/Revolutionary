@@ -2004,10 +2004,15 @@
         }
 
         function getOrCreateAnonId() {
-            let id = sessionStorage.getItem('vera_anon_id');
+            // Use localStorage instead of sessionStorage - on mobile, sessionStorage is cleared
+            // when app goes to background or tab closes, causing message save failures
+            let id = localStorage.getItem('vera_anon_id');
             if (!id) {
                 id = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                sessionStorage.setItem('vera_anon_id', id);
+                localStorage.setItem('vera_anon_id', id);
+                console.log('🆔 Generated new anonId for guest:', id);
+            } else {
+                console.log('🆔 Loaded existing anonId:', id);
             }
             return id;
         }
@@ -2120,6 +2125,22 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
                 const menuToggle = document.getElementById('menuToggle');
                 if (!dropdown.contains(e.target) && !menuToggle.contains(e.target)) {
                     dropdown.classList.remove('active');
+                }
+            });
+
+            // 📱 MOBILE FIX: Detect app background/foreground
+            // On mobile, these events help us detect connection issues and unsaved messages
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    console.log('📱 [MOBILE] App entering background - current anonId:', anonId);
+                } else {
+                    console.log('📱 [MOBILE] App returning to foreground - verifying anonId:', anonId);
+                    // Verify anonId is still set (sessionStorage clears on some mobile browsers)
+                    const currentAnonId = getOrCreateAnonId();
+                    if (currentAnonId !== anonId) {
+                        console.warn('⚠️ [MOBILE] anonId changed! Old:', anonId, 'New:', currentAnonId);
+                        anonId = currentAnonId;
+                    }
                 }
             });
 
@@ -2265,21 +2286,44 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
             // Play typing sound when indicator appears
             playTypingSound();
 
+            // 📱 MOBILE DEBUG: Log all identifiers
+            console.log('📱 [MOBILE DEBUG] sendMessage called with:', {
+                messageLength: message.length,
+                userEmail: userEmail,
+                anonId: anonId,
+                isAuthenticated: isAuthenticated,
+                currentConversationId: currentConversationId,
+                timestamp: new Date().toISOString()
+            });
+
             try {
+                const requestBody = { 
+                    message, 
+                    email: userEmail, 
+                    userName, 
+                    anonId,
+                    conversationId: currentConversationId
+                };
+
+                console.log('📤 [MOBILE DEBUG] Sending API request to /api/chat:', requestBody);
+
                 const data = await safeJsonFetch('/api/chat', {
                     method: 'POST',
-                    body: JSON.stringify({ 
-                        message, 
-                        email: userEmail, 
-                        userName, 
-                        anonId,
-                        conversationId: currentConversationId
-                    })
+                    body: JSON.stringify(requestBody)
+                });
+
+                console.log('📥 [MOBILE DEBUG] API response received:', {
+                    success: data?.success,
+                    responseLength: data?.response?.length,
+                    conversationId: data?.conversationId,
+                    hasError: !!data?.error,
+                    errorMessage: data?.error
                 });
 
                 if (data && data.success && data.response) {
                     // Update current conversation ID if server created a new one
                     if (data.conversationId) {
+                        console.log('✅ [MOBILE DEBUG] Updated conversationId:', data.conversationId);
                         currentConversationId = data.conversationId;
                     }
 
@@ -2289,11 +2333,18 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
                     setTimeout(() => {
                         veraMsg.querySelector('.message-bubble').classList.add('shimmer');
                     }, 100);
+
+                    console.log('✅ [MOBILE DEBUG] Message saved successfully, veraMsg added to DOM');
                 } else {
                     throw new Error(data?.error || 'No response from VERA');
                 }
             } catch (error) {
-                console.error('Chat error:', error);
+                console.error('❌ [MOBILE DEBUG] Chat error:', error);
+                console.error('❌ [MOBILE DEBUG] Error details:', {
+                    errorName: error.name,
+                    errorMessage: error.message,
+                    errorStack: error.stack
+                });
                 addMessage('vera', "I'm having trouble connecting right now. Please try again in a moment.");
             } finally {
                 typingIndicator.classList.remove('active');
@@ -2301,6 +2352,7 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
                 messageInput.disabled = false;
                 messageInput.focus();
                 isSending = false;
+                console.log('✅ [MOBILE DEBUG] sendMessage completed, UI reset');
             }
         }
 
@@ -2313,14 +2365,29 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
         }
 
         async function loadHistory() {
-            if (!userEmail && !anonId) return;
+            if (!userEmail && !anonId) {
+                console.warn('❌ [MOBILE DEBUG] Cannot load history - no userEmail or anonId');
+                return;
+            }
 
             try {
                 const url = userEmail 
                     ? '/api/history' 
                     : `/api/history?anonId=${encodeURIComponent(anonId)}`;
                 
+                console.log('📖 [MOBILE DEBUG] Loading history from:', url, {
+                    userEmail: userEmail,
+                    anonId: anonId
+                });
+                
                 const data = await safeJsonFetch(url, { method: 'GET' });
+
+                console.log('📖 [MOBILE DEBUG] History loaded:', {
+                    messageCount: data?.messages?.length,
+                    hasMessages: Array.isArray(data?.messages),
+                    firstMessageRole: data?.messages?.[0]?.role,
+                    lastMessageRole: data?.messages?.[data.messages.length - 1]?.role
+                });
 
                 if (data && Array.isArray(data.messages) && data.messages.length > 0) {
                     welcomeContainer.style.display = 'none';
@@ -2332,10 +2399,16 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
                         }
                     });
                     
-                    console.log(`✅ Loaded ${data.messages.length} messages from history`);
+                    console.log(`✅ [MOBILE DEBUG] Loaded ${data.messages.length} messages from history`);
+                } else {
+                    console.log('📖 [MOBILE DEBUG] No history found - showing welcome screen');
                 }
             } catch (error) {
-                console.error('Error loading history:', error);
+                console.error('❌ [MOBILE DEBUG] Error loading history:', error);
+                console.error('❌ [MOBILE DEBUG] History error details:', {
+                    errorName: error.name,
+                    errorMessage: error.message
+                });
             }
         }
 
