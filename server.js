@@ -300,6 +300,83 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
+// ==================== DATABASE MIGRATIONS ====================
+// Run migrations automatically on startup (production only)
+async function runDatabaseMigrations() {
+  const DATABASE_URL = process.env.DATABASE_URL;
+  
+  // Only run migrations if DATABASE_URL is set (production environment)
+  if (!DATABASE_URL) {
+    console.log('⏭️  Skipping migrations (DATABASE_URL not set - development mode)');
+    return;
+  }
+
+  console.log('🔄 Running database migrations...');
+
+  try {
+    const { runMigrations } = require('./run-migrations');
+    
+    // Create a temporary pool for migrations
+    const { Pool } = require('pg');
+    const pool = new Pool({
+      connectionString: DATABASE_URL,
+      statement_timeout: 30000,
+    });
+
+    let successCount = 0;
+    let skipCount = 0;
+
+    try {
+      const client = await pool.connect();
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Read and parse migrations file
+      const migrationsFile = path.join(__dirname, 'DATABASE_MIGRATIONS.sql');
+      const migrationContent = fs.readFileSync(migrationsFile, 'utf8');
+      
+      // Split by semicolon (simple but effective)
+      const statements = migrationContent
+        .split(';')
+        .map(stmt => stmt.trim())
+        .filter(stmt => stmt.length > 0);
+
+      console.log(`  📋 Parsed ${statements.length} migration statements`);
+
+      // Execute each statement
+      for (const statement of statements) {
+        try {
+          await client.query(statement);
+          successCount++;
+        } catch (error) {
+          // Silently skip "already exists" errors
+          if (error.code === '42P07' || error.code === '42P15' || error.message.includes('already exists')) {
+            skipCount++;
+          } else {
+            // Log actual errors but don't fail startup
+            console.warn(`  ⚠️  Migration warning: ${error.message.substring(0, 100)}`);
+          }
+        }
+      }
+
+      client.release();
+      console.log(`✅ Migrations complete: ${successCount} executed, ${skipCount} skipped`);
+    } catch (error) {
+      console.warn(`⚠️  Migration error (non-blocking): ${error.message.substring(0, 100)}`);
+    } finally {
+      await pool.end();
+    }
+  } catch (error) {
+    console.warn(`⚠️  Could not run migrations: ${error.message.substring(0, 100)}`);
+    // Don't fail startup - migrations are optional
+  }
+}
+
+// Run migrations before starting server
+runDatabaseMigrations().catch(err => {
+  console.warn(`⚠️  Migration startup error (non-blocking): ${err.message}`);
+});
+
 // ==================== APP INITIALIZATION ====================
 const app = express();
 const PORT = process.env.PORT || 8080;
