@@ -2311,9 +2311,22 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
                     userName = userEmail ? userEmail.split('@')[0] : 'friend';
                     isSubscriber = authData.isSubscriber || false;
                     console.log('✅ Authenticated as:', userName);
+                    
+                    // Clear guest flag for authenticated users
+                    localStorage.removeItem('veraIsGuest');
+                    localStorage.removeItem('veraGuestMessageCount');
+                } else {
+                    // User is NOT authenticated - mark as guest
+                    localStorage.setItem('veraIsGuest', 'true');
+                    guestMessageCount = parseInt(localStorage.getItem('veraGuestMessageCount') || '0');
+                    console.log('👤 Guest mode enabled - message count tracking started:', guestMessageCount);
                 }
             } catch (error) {
                 console.error('Auth check failed:', error);
+                // On auth check failure, assume guest mode
+                localStorage.setItem('veraIsGuest', 'true');
+                guestMessageCount = parseInt(localStorage.getItem('veraGuestMessageCount') || '0');
+                console.log('👤 Guest mode enabled (auth check failed) - message count tracking started:', guestMessageCount);
             }
 
             // Event listeners
