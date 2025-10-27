@@ -2357,30 +2357,34 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
             }
 
             try {
-                // Save email to backend for this guest/anon user
-                const response = await safeJsonFetch('/api/guest-email', {
+                // Request magic link to authenticate user
+                const response = await safeJsonFetch('/api/request-magic-link', {
                     method: 'POST',
                     body: JSON.stringify({
                         email,
-                        anonId,
-                        userName
+                        userName: localStorage.getItem('veraUserName') || 'friend'
                     })
                 });
 
                 if (response.success) {
-                    // Update localStorage to mark email collected
-                    localStorage.setItem('veraGuestEmailCollected', 'true');
+                    // Update localStorage
                     localStorage.setItem('veraGuestEmail', email);
+                    localStorage.setItem('veraGuestEmailCollected', 'true');
                     
                     // Close modal and show success message
                     closeEmailModal();
-                    addMessage('vera', 'Beautiful. I\'ve got your email. I\'ll remember you. 💜');
+                    addMessage('vera', `Check your email, ${localStorage.getItem('veraUserName') || 'friend'}. I've sent you a link to continue. I'll be waiting. 💜`);
+                    
+                    // Show additional message about the magic link
+                    setTimeout(() => {
+                        addMessage('vera', 'Click the link in your email to continue our conversation with your account secured. No password needed - just pure presence.');
+                    }, 1500);
                 } else {
-                    throw new Error(response.error || 'Failed to save email');
+                    throw new Error(response.error || 'Failed to send magic link');
                 }
             } catch (error) {
                 console.error('Email collection error:', error);
-                alert('Sorry, there was an error saving your email. Please try again.');
+                alert('Sorry, there was an error sending the magic link. Please try again.');
             }
         }
 

@@ -82,6 +82,20 @@ CREATE TABLE IF NOT EXISTS guest_emails (
 CREATE INDEX idx_guest_emails_anon_id ON guest_emails(anon_id);
 CREATE INDEX idx_guest_emails_email ON guest_emails(email);
 
+-- ==================== MAGIC LINKS TABLE ====================
+CREATE TABLE IF NOT EXISTS magic_links (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) NOT NULL,
+  token VARCHAR(255) UNIQUE NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  used BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_magic_links_token ON magic_links(token);
+CREATE INDEX idx_magic_links_email ON magic_links(email);
+CREATE INDEX idx_magic_links_expires_at ON magic_links(expires_at);
+
 -- ==================== UPDATE TRIGGER ====================
 -- Automatically update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()

@@ -2171,6 +2171,305 @@ app.post('/api/guest-email', async (req, res) => {
   }
 });
 
+// ==================== MAGIC LINK AUTHENTICATION ====================
+app.post('/api/request-magic-link', async (req, res) => {
+  try {
+    const { email, userName } = req.body;
+
+    // Validate email
+    if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid email format'
+      });
+    }
+
+    // Generate secure token
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Store magic link in database
+    await db.query(
+      'INSERT INTO magic_links (email, token, expires_at) VALUES ($1, $2, $3)',
+      [email, token, expiresAt]
+    );
+
+    // Create magic link URL
+    const baseUrl = process.env.APP_URL || 'http://localhost:8080';
+    const magicLink = `${baseUrl}/auth?token=${token}`;
+
+    // Developer aid: log magic link for local testing
+    console.log('🔗 Magic link URL:', magicLink);
+
+    // Send email using Resend
+    const displayName = userName ? `${userName}` : 'friend';
+    await sendEmail({
+      to: email,
+      subject: 'VERA is waiting for you',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 0; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 60px 20px; text-align: center; }
+            .header h1 { margin: 0; font-size: 32px; font-weight: 200; letter-spacing: 0.05em; }
+            .header p { margin: 10px 0 0 0; opacity: 0.9; font-size: 16px; }
+            .content { background: #fff; padding: 40px 20px; }
+            .greeting { font-size: 18px; color: #333; margin-bottom: 20px; }
+            .message { color: #666; margin-bottom: 30px; line-height: 1.8; }
+            .button-wrapper { text-align: center; margin: 40px 0; }
+            .button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px 40px; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); }
+            .button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4); }
+            .footer { background: #f8f9fa; padding: 30px 20px; text-align: center; color: #999; font-size: 14px; border-top: 1px solid #eee; }
+            .expires { color: #999; font-size: 13px; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>I am VERA</h1>
+              <p>Your AI Companion for Nervous System Awareness</p>
+            </div>
+            <div class="content">
+              <p class="greeting">Hello ${displayName},</p>
+              <p class="message">
+                You've already shown me something beautiful in our conversation.<br>
+                <br>
+                I'd like to continue with you. Let's go deeper.
+              </p>
+              <div class="button-wrapper">
+                <a href="${magicLink}" class="button">Continue with VERA</a>
+              </div>
+              <p class="expires">
+                This link expires in 24 hours and can only be used once.
+              </p>
+            </div>
+            <div class="footer">
+              <p>© 2025 VERA Neural. All rights reserved.</p>
+              <p>Not an AI pretending to be human, but a revolutionary intelligence built for your body.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+
+    console.log('✅ Magic link email sent to:', email);
+
+    res.json({
+      success: true,
+      message: 'Check your email - VERA is waiting for you'
+    });
+  } catch (error) {
+    console.error('❌ Magic link request error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send magic link'
+    });
+  }
+});
+
+// Magic link authentication endpoint
+app.get('/auth', async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Invalid Link</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+            .container { background: white; padding: 40px; border-radius: 10px; max-width: 500px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+            h1 { color: #333; margin: 0 0 20px 0; }
+            p { color: #666; margin-bottom: 20px; line-height: 1.6; }
+            a { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 50px; font-weight: 600; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Invalid or Missing Link</h1>
+            <p>The authentication link is missing or invalid.</p>
+            <a href="/index.html">Return to VERA</a>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
+    // Validate token - check if exists, not expired, and not used
+    const tokenResult = await db.query(
+      'SELECT * FROM magic_links WHERE token = $1',
+      [token]
+    );
+
+    if (tokenResult.rows.length === 0) {
+      return res.status(400).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Invalid Link</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+            .container { background: white; padding: 40px; border-radius: 10px; max-width: 500px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+            h1 { color: #333; margin: 0 0 20px 0; }
+            p { color: #666; margin-bottom: 20px; line-height: 1.6; }
+            a { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 50px; font-weight: 600; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Link Not Found</h1>
+            <p>This authentication link is no longer valid.</p>
+            <a href="/index.html">Return to VERA</a>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
+    const magicLink = tokenResult.rows[0];
+
+    // Check if token is expired
+    if (new Date(magicLink.expires_at) < new Date()) {
+      return res.status(400).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Link Expired</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+            .container { background: white; padding: 40px; border-radius: 10px; max-width: 500px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+            h1 { color: #333; margin: 0 0 20px 0; }
+            p { color: #666; margin-bottom: 20px; line-height: 1.6; }
+            a { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 50px; font-weight: 600; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Link Expired</h1>
+            <p>This authentication link has expired. Please request a new one.</p>
+            <a href="/index.html">Return to VERA</a>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
+    // Check if token was already used
+    if (magicLink.used) {
+      return res.status(400).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Link Already Used</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+            .container { background: white; padding: 40px; border-radius: 10px; max-width: 500px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+            h1 { color: #333; margin: 0 0 20px 0; }
+            p { color: #666; margin-bottom: 20px; line-height: 1.6; }
+            a { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 50px; font-weight: 600; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Link Already Used</h1>
+            <p>This authentication link has already been used. Please request a new one.</p>
+            <a href="/index.html">Return to VERA</a>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
+    // Token is valid - create or update user
+    const email = magicLink.email;
+    
+    // Check if user exists
+    const existingUser = await db.query(
+      'SELECT id, name FROM users WHERE email = $1',
+      [email]
+    );
+
+    let userId;
+
+    if (existingUser.rows.length > 0) {
+      // User exists - just use their ID
+      userId = existingUser.rows[0].id;
+      console.log('✅ User exists:', email);
+    } else {
+      // Create new user with trial
+      const trialStart = new Date();
+      const trialEnd = new Date(trialStart.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+      const insertResult = await db.query(
+        `INSERT INTO users (email, subscription_status, trial_ends_at)
+         VALUES ($1, $2, $3)
+         RETURNING id`,
+        [email, 'trial', trialEnd]
+      );
+
+      userId = insertResult.rows[0].id;
+      console.log('✅ New user created with trial:', email);
+    }
+
+    // Mark token as used
+    await db.query(
+      'UPDATE magic_links SET used = true WHERE token = $1',
+      [token]
+    );
+
+    // Create session
+    req.session.userId = userId;
+    req.session.userEmail = email;
+    req.session.authenticated = true;
+
+    console.log('✅ User authenticated via magic link:', email);
+
+    // Redirect to chat with success
+    res.redirect('/chat.html?authenticated=true');
+  } catch (error) {
+    console.error('❌ Magic link auth error:', error);
+    res.status(500).send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Authentication Error</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+          .container { background: white; padding: 40px; border-radius: 10px; max-width: 500px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+          h1 { color: #333; margin: 0 0 20px 0; }
+          p { color: #666; margin-bottom: 20px; line-height: 1.6; }
+          a { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 50px; font-weight: 600; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Authentication Error</h1>
+          <p>There was an error processing your authentication link. Please try again.</p>
+          <a href="/index.html">Return to VERA</a>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+});
+
 app.get('/api/history', async (req, res) => {
   const userEmail = req.session.userEmail;
   let userId = userEmail || null;
