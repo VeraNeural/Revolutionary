@@ -107,9 +107,17 @@ async function sendEmail({ to, subject, html, emailType = 'transactional' }) {
       throw new Error('RESEND_API_KEY not configured');
     }
 
+    // Validate Resend client is initialized
+    if (!resend) {
+      throw new Error('Resend client not initialized');
+    }
+
+    // Determine email sender (use verified domain or Resend test domain)
+    const emailFrom = process.env.EMAIL_FROM || 'VERA <onboarding@resend.dev>';
+
     // Send via Resend
     const data = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'vera@revolutionary-production.up.railway.app',
+      from: emailFrom,
       to: to,
       subject: subject,
       html: html,
@@ -147,8 +155,12 @@ async function sendEmail({ to, subject, html, emailType = 'transactional' }) {
 
     console.error('❌ Email send failed', {
       to,
+      from: process.env.EMAIL_FROM || 'VERA <onboarding@resend.dev>',
       type: emailType,
       error: errorMsg,
+      errorCode: error.code,
+      errorName: error.name,
+      resendError: error.response?.data || error,
       logId,
       timestamp: new Date().toISOString(),
     });
