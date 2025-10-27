@@ -805,6 +805,11 @@ app.get('/chat', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'chat.html'));
 });
 
+// Serve subscription page
+app.get('/subscribe', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'subscribe.html'));
+});
+
 // ==================== HEALTH CHECK & MONITORING ====================
 const monitor = require('./lib/monitoring'); // ✅
 
