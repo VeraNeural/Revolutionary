@@ -75,149 +75,65 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 console.log('✅ Email configured with Resend');
 
-// ==================== ENHANCED EMAIL SYSTEM WITH DELIVERY TRACKING ====================
+// ==================== MINIMAL EMAIL SYSTEM - BATTLE TESTED ====================
 async function sendEmail({ to, subject, html, emailType = 'transactional' }) {
-  let logId = null;
-  
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('📧 EMAIL SEND ATTEMPT STARTED');
+  console.log('To:', to);
+  console.log('From:', process.env.EMAIL_FROM || 'VERA <onboarding@resend.dev>');
+  console.log('Subject:', subject);
+  console.log('Type:', emailType);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+  // Validate inputs
+  if (!to) {
+    console.error('❌ ERROR: No recipient email provided');
+    throw new Error('Recipient email is required');
+  }
+
+  if (!process.env.RESEND_API_KEY) {
+    console.error('❌ ERROR: RESEND_API_KEY not found in environment');
+    throw new Error('RESEND_API_KEY not configured');
+  }
+
+  if (!resend) {
+    console.error('❌ ERROR: Resend client not initialized');
+    throw new Error('Resend client not initialized');
+  }
+
   try {
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(to)) {
-      throw new Error(`Invalid email format: ${to}`);
-    }
-
-    // Log email send attempt
-    try {
-      const logResult = await db.query(
-        `INSERT INTO email_logs 
-         (email_address, subject, email_type, status, attempt_count, last_attempted) 
-         VALUES ($1, $2, $3, $4, 1, NOW()) 
-         RETURNING id`,
-        [to, subject, emailType, 'pending']
-      ).catch(() => null); // Silently fail if table doesn't exist yet
-      
-      logId = logResult?.rows[0]?.id;
-    } catch (logError) {
-      // Email_logs table may not exist yet, continue without logging
-      console.warn('⚠️ Email log insert failed (table may not exist):', logError.message);
-    }
-
-    // Validate Resend API key
-    if (!process.env.RESEND_API_KEY) {
-      throw new Error('RESEND_API_KEY not configured');
-    }
-
-    // Validate Resend client is initialized
-    if (!resend) {
-      throw new Error('Resend client not initialized');
-    }
-
-    // Determine email sender (use verified domain or Resend test domain)
-    const emailFrom = process.env.EMAIL_FROM || 'VERA <onboarding@resend.dev>';
-
-    // Detailed pre-send logging
-    console.log('📧 sendEmail attempting to send:', {
-      to,
-      from: emailFrom,
-      subject,
-      emailType,
-      hasHtml: !!html,
-      htmlLength: html?.length,
-      timestamp: new Date().toISOString()
+    console.log('📤 Calling Resend API...');
+    
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'VERA <onboarding@resend.dev>',
+      to: to,
+      subject: subject,
+      html: html
     });
-
-    console.log('🔧 Resend configuration:', {
-      apiKeySet: !!process.env.RESEND_API_KEY,
-      apiKeyPrefix: process.env.RESEND_API_KEY?.substring(0, 10) + '...',
-      fromEmail: emailFrom,
-      resendClientExists: !!resend
-    });
-
-    // Send via Resend
-    let data;
-    try {
-      console.log('📤 Calling Resend API now...');
-      
-      data = await resend.emails.send({
-        from: emailFrom,
-        to: to,
-        subject: subject,
-        html: html,
-      });
-      
-      console.log('✅ Resend API SUCCESS:', {
-        id: data.id,
-        response: JSON.stringify(data, null, 2)
-      });
-      
-    } catch (resendError) {
-      console.error('❌ RESEND API ERROR - COMPLETE DETAILS:', {
-        message: resendError.message,
-        name: resendError.name,
-        code: resendError.code,
-        statusCode: resendError.statusCode,
-        cause: resendError.cause,
-        response: resendError.response,
-        responseData: resendError.response?.data,
-        stack: resendError.stack,
-        fullError: JSON.stringify(resendError, Object.getOwnPropertyNames(resendError), 2)
-      });
-      
-      throw resendError;
-    }
-
-    // Log success
-    if (logId) {
-      await db.query(
-        `UPDATE email_logs SET status = $1, resend_id = $2, sent_at = NOW(), updated_at = NOW() WHERE id = $3`,
-        ['sent', data.id, logId]
-      ).catch(() => null); // Silently fail
-    }
-
-    console.log('✅ Email sent successfully', {
-      to,
-      type: emailType,
-      resendId: data.id,
-      logId,
-      timestamp: new Date().toISOString(),
-    });
-
-    return { success: true, id: data.id, logId };
+    
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('✅ EMAIL SENT SUCCESSFULLY');
+    console.log('Resend ID:', result.id);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
+    return { success: true, id: result.id };
+    
   } catch (error) {
-    const errorMsg = error.message || JSON.stringify(error);
-
-    // Log failure
-    if (logId) {
-      await db.query(
-        `UPDATE email_logs 
-         SET status = $1, error_message = $2, last_attempted = NOW(), updated_at = NOW()
-         WHERE id = $3`,
-        ['failed', errorMsg.substring(0, 1000), logId]
-      ).catch(() => null); // Silently fail
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error('❌ EMAIL SEND FAILED');
+    console.error('Error Message:', error.message);
+    console.error('Error Name:', error.name);
+    console.error('Error Code:', error.code);
+    console.error('Status Code:', error.statusCode);
+    
+    if (error.response) {
+      console.error('Response Status:', error.response.status);
+      console.error('Response Data:', JSON.stringify(error.response.data, null, 2));
     }
-
-    console.error('❌ sendEmail FUNCTION FAILED - FULL CONTEXT:', {
-      to,
-      from: process.env.EMAIL_FROM,
-      subject,
-      emailType,
-      errorMessage: error.message,
-      errorName: error.name,
-      errorConstructor: error.constructor?.name,
-      errorCode: error.code,
-      errorStack: error.stack,
-      timestamp: new Date().toISOString(),
-      fullErrorJSON: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
-    });
-
-    // Log to Sentry
-    if (Sentry) {
-      Sentry.captureException(error, {
-        tags: { component: 'email-delivery', type: emailType },
-        extra: { to, subject },
-      });
-    }
-
+    
+    console.error('Full Error Object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
     throw error;
   }
 }
