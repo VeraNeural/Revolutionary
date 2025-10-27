@@ -3762,6 +3762,118 @@ app.post('/api/create-checkout-session', async (req, res) => {
 });
 
 /**
+ * POST /api/create-portal-session
+ * Creates a Stripe billing portal session for subscription management
+ * Allows users to update payment method, view invoices, cancel subscription
+ */
+app.post('/api/create-portal-session', async (req, res) => {
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🔧 PORTAL SESSION CREATION ATTEMPT');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
+  try {
+    const userEmail = req.session?.userEmail;
+    
+    console.log('📋 Request Details:');
+    console.log('   User Email:', userEmail);
+    console.log('   Session ID:', req.sessionID);
+
+    // Validate authentication
+    if (!userEmail) {
+      console.error('❌ ERROR: Not authenticated - no userEmail in session');
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Check Stripe configuration
+    if (!stripe) {
+      console.error('❌ ERROR: Stripe client not initialized');
+      throw new Error('Stripe client not initialized');
+    }
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('❌ ERROR: STRIPE_SECRET_KEY not configured');
+      throw new Error('STRIPE_SECRET_KEY not configured');
+    }
+
+    console.log('📲 Step 1: Fetching user Stripe customer ID...');
+
+    // Get user's Stripe customer ID from database
+    try {
+      const userResult = await db.query(
+        'SELECT stripe_customer_id FROM users WHERE email = $1',
+        [userEmail]
+      );
+
+      if (!userResult.rows[0]) {
+        console.error('❌ ERROR: User not found:', userEmail);
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const stripeCustomerId = userResult.rows[0].stripe_customer_id;
+
+      if (!stripeCustomerId) {
+        console.warn('⚠️ WARNING: User has no Stripe customer ID');
+        return res.status(400).json({ error: 'No subscription found. Please subscribe first.' });
+      }
+
+      console.log(`   ✅ Customer ID: ${stripeCustomerId}`);
+
+      console.log('🔗 Step 2: Creating Stripe portal session...');
+      const appUrl = process.env.APP_URL || 'https://app.veraneural.com';
+      console.log(`   Return URL: ${appUrl}/chat.html`);
+
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: stripeCustomerId,
+        return_url: `${appUrl}/chat.html`,
+      });
+
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('✅ PORTAL SESSION CREATED SUCCESSFULLY');
+      console.log('   Portal URL:', portalSession.url);
+      console.log('   Session ID:', portalSession.id);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      res.json({ url: portalSession.url });
+
+    } catch (dbError) {
+      console.error('❌ ERROR querying database:');
+      console.error('   Message:', dbError.message);
+      console.error('   Code:', dbError.code);
+      throw dbError;
+    }
+
+  } catch (error) {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error('❌ PORTAL SESSION CREATION FAILED');
+    console.error('Error Message:', error.message);
+    console.error('Error Name:', error.name);
+    console.error('Error Code:', error.code);
+    console.error('Error Status:', error.statusCode || error.status);
+    
+    if (error.response) {
+      console.error('Response Status:', error.response.status);
+      console.error('Response Data:', JSON.stringify(error.response.data, null, 2));
+    }
+    
+    console.error('Full Error Object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
+    // Log to Sentry if available
+    if (Sentry) {
+      Sentry.captureException(error, {
+        tags: { component: 'billing', action: 'portal-session' },
+        extra: { userEmail: req.session?.userEmail },
+      });
+    }
+
+    res.status(500).json({ 
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    });
+  }
+});
+
+/**
  * POST /api/stripe-webhook
  * Handles Stripe webhook events
  * Verifies signature and processes subscription events
