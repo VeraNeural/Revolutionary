@@ -115,13 +115,56 @@ async function sendEmail({ to, subject, html, emailType = 'transactional' }) {
     // Determine email sender (use verified domain or Resend test domain)
     const emailFrom = process.env.EMAIL_FROM || 'VERA <onboarding@resend.dev>';
 
-    // Send via Resend
-    const data = await resend.emails.send({
+    // Detailed pre-send logging
+    console.log('📧 sendEmail attempting to send:', {
+      to,
       from: emailFrom,
-      to: to,
-      subject: subject,
-      html: html,
+      subject,
+      emailType,
+      hasHtml: !!html,
+      htmlLength: html?.length,
+      timestamp: new Date().toISOString()
     });
+
+    console.log('🔧 Resend configuration:', {
+      apiKeySet: !!process.env.RESEND_API_KEY,
+      apiKeyPrefix: process.env.RESEND_API_KEY?.substring(0, 10) + '...',
+      fromEmail: emailFrom,
+      resendClientExists: !!resend
+    });
+
+    // Send via Resend
+    let data;
+    try {
+      console.log('📤 Calling Resend API now...');
+      
+      data = await resend.emails.send({
+        from: emailFrom,
+        to: to,
+        subject: subject,
+        html: html,
+      });
+      
+      console.log('✅ Resend API SUCCESS:', {
+        id: data.id,
+        response: JSON.stringify(data, null, 2)
+      });
+      
+    } catch (resendError) {
+      console.error('❌ RESEND API ERROR - COMPLETE DETAILS:', {
+        message: resendError.message,
+        name: resendError.name,
+        code: resendError.code,
+        statusCode: resendError.statusCode,
+        cause: resendError.cause,
+        response: resendError.response,
+        responseData: resendError.response?.data,
+        stack: resendError.stack,
+        fullError: JSON.stringify(resendError, Object.getOwnPropertyNames(resendError), 2)
+      });
+      
+      throw resendError;
+    }
 
     // Log success
     if (logId) {
@@ -153,16 +196,18 @@ async function sendEmail({ to, subject, html, emailType = 'transactional' }) {
       ).catch(() => null); // Silently fail
     }
 
-    console.error('❌ Email send failed', {
+    console.error('❌ sendEmail FUNCTION FAILED - FULL CONTEXT:', {
       to,
-      from: process.env.EMAIL_FROM || 'VERA <onboarding@resend.dev>',
-      type: emailType,
-      error: errorMsg,
-      errorCode: error.code,
+      from: process.env.EMAIL_FROM,
+      subject,
+      emailType,
+      errorMessage: error.message,
       errorName: error.name,
-      resendError: error.response?.data || error,
-      logId,
+      errorConstructor: error.constructor?.name,
+      errorCode: error.code,
+      errorStack: error.stack,
       timestamp: new Date().toISOString(),
+      fullErrorJSON: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
     });
 
     // Log to Sentry
@@ -2298,23 +2343,54 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
       [normalizedEmail]
     );
     
+    let user;
+    
     if (userResult.rows.length === 0) {
-      console.warn(`⚠️ No user found for ${normalizedEmail}`);
+      // NEW USER - Create account automatically
+      console.log(`🆕 New user detected: ${normalizedEmail}`);
+      console.log('📝 Creating new user account...');
       
-      // Log audit
-      await db.query(
-        `INSERT INTO login_audit_log (email, action, ip_address, success, error_message)
-         VALUES ($1, 'token_requested_user_not_found', $2, false, 'User does not exist')`,[normalizedEmail, clientIp]
-      ).catch(() => null);
+      try {
+        const newUserResult = await db.query(
+          `INSERT INTO users (email, subscription_status, created_at, trial_starts_at, trial_ends_at)
+           VALUES ($1, 'trial', NOW(), NOW(), NOW() + INTERVAL '7 days')
+           RETURNING id, email, subscription_status, created_at, trial_ends_at`,
+          [normalizedEmail]
+        );
+        
+        user = newUserResult.rows[0];
+        
+        console.log(`✅ New user created successfully:`, {
+          id: user.id,
+          email: user.email,
+          status: user.subscription_status,
+          trialEnds: user.trial_ends_at
+        });
+        
+        // Log audit trail for new signup
+        await db.query(
+          `INSERT INTO login_audit_log (email, action, ip_address, success)
+           VALUES ($1, 'new_user_created_via_magic_link', $2, true)`,
+          [normalizedEmail, clientIp]
+        ).catch(err => console.warn('Audit log failed:', err));
+        
+      } catch (createError) {
+        console.error('❌ Failed to create new user:', createError);
+        return res.status(500).json({ 
+          error: 'Failed to create account. Please try again.',
+          details: createError.message 
+        });
+      }
       
-      return res.status(404).json({ 
-        error: 'No account found with this email.',
-        suggestion: 'Please sign up first or check your email spelling.'
+    } else {
+      // EXISTING USER
+      user = userResult.rows[0];
+      console.log(`✅ Existing user found:`, {
+        id: user.id,
+        email: user.email,
+        status: user.subscription_status
       });
     }
-    
-    const user = userResult.rows[0];
-    console.log(`✅ User found: ${normalizedEmail} (ID: ${user.id})`);
     
     // ==================== CREATE MAGIC LINK TOKEN ====================
     let magicLinkRecord;
@@ -3987,6 +4063,70 @@ app.post('/api/admin/resend-magic-link', async (req, res) => {
   }
 });
 
+// ==================== TEST ENDPOINT - RESEND ====================
+app.get('/api/test-resend', async (req, res) => {
+  console.log('🧪 Direct Resend API test initiated...');
+  
+  try {
+    console.log('📋 Test configuration:', {
+      from: process.env.EMAIL_FROM,
+      apiKeySet: !!process.env.RESEND_API_KEY,
+      apiKeyPrefix: process.env.RESEND_API_KEY?.substring(0, 10) + '...',
+      resendClientExists: !!resend,
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log('📤 Sending test email via Resend...');
+    
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'VERA <support@veraneural.com>',
+      to: 'support@veraneural.com',
+      subject: 'VERA Resend Test - ' + new Date().toISOString(),
+      html: `
+        <h1>✅ Resend Test Successful</h1>
+        <p>This email confirms that Resend is working correctly.</p>
+        <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
+        <p><strong>From:</strong> ${process.env.EMAIL_FROM}</p>
+      `
+    });
+    
+    console.log('✅ Test email sent successfully:', {
+      id: result.id,
+      fullResponse: JSON.stringify(result, null, 2)
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'Test email sent successfully!',
+      resendId: result.id,
+      result: result 
+    });
+    
+  } catch (error) {
+    console.error('❌ Resend test failed - FULL ERROR:', {
+      message: error.message,
+      name: error.name,
+      code: error.code,
+      statusCode: error.statusCode,
+      cause: error.cause,
+      response: error.response,
+      stack: error.stack,
+      fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+    });
+    
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      errorType: error.name,
+      details: {
+        message: error.message,
+        code: error.code,
+        statusCode: error.statusCode
+      }
+    });
+  }
+});
+
 // ==================== EXPORT FOR SERVERLESS ====================
 // ==================== ERROR HANDLER (Must be LAST middleware!) ====================
 // Sentry error handler (must come after all other middleware and routes)
@@ -4021,6 +4161,10 @@ if (require.main === module) {
     console.log('  • POST /api/auth/logout');
     console.log('  • GET  /health');
     console.log('  • GET  /api/auth/check');
+    console.log('  • POST /api/auth/send-magic-link  (passwordless)');
+    console.log('  • GET  /verify-magic-link         (token verification)');
+    console.log('  • POST /api/request-magic-link    (chat re-auth)');
+    console.log('  • GET  /api/test-resend           (diagnostic)');
     console.log('  • POST /api/chat');
     console.log('  •');
     console.log('  • POST /api/history');
