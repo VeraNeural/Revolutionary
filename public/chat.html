@@ -2178,15 +2178,72 @@
             </form>
         </div>
 
-        <!-- Email Collection Modal (Guest Message 4) -->
-        <div class="email-collection-modal" id="emailCollectionModal">
-            <button class="email-collection-close" onclick="closeEmailModal()" title="Skip">✕</button>
-            <h3>Remember Me?</h3>
-            <p>I'd love to pick up where we left off next time.</p>
-            <form onsubmit="handleEmailCollection(event)">
-                <input type="email" id="emailInput" placeholder="Your email" required>
-                <button type="submit">Yes, Remember Me</button>
-            </form>
+        <!-- Auth Required Modal - Clean and Simple -->
+        <div id="auth-required-modal" class="modal" style="display: none;">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content" style="
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(30, 30, 50, 0.95);
+                backdrop-filter: blur(20px);
+                border: 2px solid rgba(138, 97, 177, 0.5);
+                border-radius: 24px;
+                padding: 40px;
+                max-width: 400px;
+                width: 90%;
+                z-index: 10000;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            ">
+                <button onclick="closeAuthModal()" style="
+                    position: absolute;
+                    top: 16px;
+                    right: 16px;
+                    background: none;
+                    border: none;
+                    color: white;
+                    font-size: 24px;
+                    cursor: pointer;
+                ">×</button>
+                
+                <h2 style="color: white; font-size: 24px; margin-bottom: 16px; text-align: center;">
+                    Sign in to continue
+                </h2>
+                
+                <p style="color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 24px;">
+                    To keep our conversations safe and private, I need your email.
+                </p>
+                
+                <input type="email" id="auth-email-input" placeholder="Your email address..." style="
+                    width: 100%;
+                    padding: 16px;
+                    border-radius: 12px;
+                    border: 1px solid rgba(255,255,255,0.2);
+                    background: rgba(255,255,255,0.1);
+                    color: white;
+                    font-size: 16px;
+                    margin-bottom: 16px;
+                "/>
+                
+                <button onclick="sendAuthLink()" style="
+                    width: 100%;
+                    padding: 16px;
+                    border-radius: 12px;
+                    border: none;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    font-size: 16px;
+                    font-weight: 600;
+                    cursor: pointer;
+                ">
+                    Send me a secure link
+                </button>
+                
+                <p style="color: rgba(255,255,255,0.6); text-align: center; margin-top: 16px; font-size: 14px;">
+                    Takes 30 seconds
+                </p>
+            </div>
         </div>
 
         <!-- Conversation History Modal -->
@@ -2600,52 +2657,50 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
             }
         }
 
+        function closeAuthModal() {
+            document.getElementById('auth-required-modal').style.display = 'none';
+        }
+
+        function openAuthModal() {
+            document.getElementById('auth-required-modal').style.display = 'block';
+        }
+
+        async function sendAuthLink() {
+            const email = document.getElementById('auth-email-input').value.trim();
+            if (!email || !email.includes('@')) {
+                alert('Please enter a valid email');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/send-magic-link', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                if (response.ok) {
+                    alert('✅ Check your email! Click the link to continue.');
+                    closeAuthModal();
+                } else {
+                    alert('Something went wrong. Please try again.');
+                }
+            } catch (error) {
+                console.error('Auth error:', error);
+                alert('Error sending link. Please try again.');
+            }
+        }
+
         function closeEmailModal() {
-            const modal = document.getElementById('emailCollectionModal');
+            const modal = document.getElementById('auth-required-modal');
             if (modal) {
                 modal.style.display = 'none';
             }
         }
 
         async function handleEmailCollection(event) {
-            event.preventDefault();
-            const email = document.getElementById('emailInput').value.trim();
-            
-            if (!email) {
-                alert('Please enter your email');
-                return;
-            }
-
-            try {
-                // Request magic link to authenticate user
-                const response = await safeJsonFetch('/api/request-magic-link', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        email,
-                        userName: localStorage.getItem('veraUserName') || 'friend'
-                    })
-                });
-
-                if (response.success) {
-                    // Update localStorage
-                    localStorage.setItem('veraGuestEmail', email);
-                    localStorage.setItem('veraGuestEmailCollected', 'true');
-                    
-                    // Close modal and show success message
-                    closeEmailModal();
-                    addMessage('vera', `Check your email, ${localStorage.getItem('veraUserName') || 'friend'}. I've sent you a link to continue. I'll be waiting. 💜`);
-                    
-                    // Show additional message about the magic link
-                    setTimeout(() => {
-                        addMessage('vera', 'Click the link in your email to continue our conversation with your account secured. No password needed - just pure presence.');
-                    }, 1500);
-                } else {
-                    throw new Error(response.error || 'Failed to send magic link');
-                }
-            } catch (error) {
-                console.error('Email collection error:', error);
-                alert('Sorry, there was an error sending the magic link. Please try again.');
-            }
+            if (event) event.preventDefault();
+            sendAuthLink();
         }
 
         async function checkSubscriptionStatus() {
