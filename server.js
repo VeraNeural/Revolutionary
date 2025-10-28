@@ -1020,6 +1020,33 @@ async function initializeDatabase() {
       )
     `);
 
+    // Create magic_links table for password reset and magic link tokens
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS magic_links (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        token VARCHAR(255) UNIQUE NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        used_at TIMESTAMP
+      )
+    `);
+
+    // Create login_audit_log table for security tracking
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS login_audit_log (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255),
+        token_id INTEGER REFERENCES magic_links(id),
+        action VARCHAR(100) NOT NULL,
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        success BOOLEAN DEFAULT true,
+        error_message TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Create indexes used by the schema (non-critical but helpful)
     try {
       await db.query('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');
