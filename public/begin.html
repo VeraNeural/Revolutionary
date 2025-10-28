@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>VERA - Your AI Co-Regulator</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(ellipse at top, #151832 0%, #0A0E27 40%, #000 100%);
+            color: rgba(255, 255, 255, 0.95);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        /* Living Universe Background */
+        .universe {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(177, 156, 217, 0.6);
+            border-radius: 50%;
+            animation: twinkle 4s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        /* Main Container */
+        .container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 600px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* Breathing Orb */
+        .orb-container {
+            width: 300px;
+            height: 300px;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .orb {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            background: radial-gradient(circle at 35% 35%, 
+                rgba(155, 89, 182, 0.9) 0%, 
+                rgba(177, 156, 217, 0.7) 15%,
+                rgba(100, 181, 246, 0.6) 30%, 
+                rgba(155, 89, 182, 0.4) 50%,
+                rgba(100, 181, 246, 0.2) 70%,
+                transparent 90%);
+            box-shadow: 
+                0 0 100px rgba(155, 89, 182, 0.8),
+                0 0 200px rgba(100, 181, 246, 0.6),
+                inset 0 0 80px rgba(100, 181, 246, 0.5),
+                inset 0 0 150px rgba(155, 89, 182, 0.4),
+                inset -20px -20px 100px rgba(177, 156, 217, 0.3);
+            overflow: hidden;
+            animation: orbBreathing 6s ease-in-out infinite;
+        }
+
+        /* Inner glow that moves */
+        .orb::before {
+            content: '';
+            position: absolute;
+            width: 120%;
+            height: 120%;
+            top: -10%;
+            left: -10%;
+            background: radial-gradient(circle at 40% 40%, 
+                rgba(255, 255, 255, 0.3) 0%,
+                rgba(177, 156, 217, 0.2) 20%,
+                transparent 50%);
+            border-radius: 50%;
+            animation: innerGlowMove 8s infinite ease-in-out;
+        }
+
+        @keyframes innerGlowMove {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(-5%, -5%) scale(1.1); }
+            50% { transform: translate(-8%, -8%) scale(1.15); }
+            75% { transform: translate(-5%, -5%) scale(1.1); }
+        }
+
+        @keyframes orbBreathing {
+            0%, 100% { 
+                transform: scale(1);
+                opacity: 0.95;
+                box-shadow: 
+                    0 0 100px rgba(155, 89, 182, 0.8),
+                    0 0 200px rgba(100, 181, 246, 0.6),
+                    inset 0 0 80px rgba(100, 181, 246, 0.5),
+                    inset 0 0 150px rgba(155, 89, 182, 0.4);
+            }
+            50% { 
+                transform: scale(1.12);
+                opacity: 1;
+                box-shadow: 
+                    0 0 150px rgba(155, 89, 182, 1),
+                    0 0 300px rgba(100, 181, 246, 0.8),
+                    inset 0 0 120px rgba(100, 181, 246, 0.7),
+                    inset 0 0 200px rgba(155, 89, 182, 0.6);
+            }
+        }
+
+        /* Typography */
+        h1 {
+            font-size: clamp(3rem, 8vw, 4.5rem);
+            font-weight: 200;
+            letter-spacing: 0.5em;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #B19CD9, #64B5F6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: clamp(1.1rem, 3vw, 1.4rem);
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 2rem;
+            letter-spacing: 0.05em;
+        }
+
+        .description {
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.75);
+            margin-bottom: 3rem;
+            max-width: 500px;
+        }
+
+        /* Email Form */
+        .signup-form {
+            width: 100%;
+            max-width: 450px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .email-input {
+            width: 100%;
+            padding: 1.2rem 1.5rem;
+            font-size: 1.1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(155, 89, 182, 0.3);
+            border-radius: 12px;
+            color: white;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .email-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .email-input:focus {
+            outline: none;
+            border-color: rgba(155, 89, 182, 0.8);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 30px rgba(155, 89, 182, 0.4);
+        }
+
+        .trial-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, rgba(155, 89, 182, 0.3), rgba(100, 181, 246, 0.3));
+            border: 1px solid rgba(155, 89, 182, 0.5);
+            padding: 0.6rem 1.5rem;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #B19CD9;
+        }
+
+        .cta-button {
+            padding: 1.3rem 2rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #9B59B6, #64B5F6);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(155, 89, 182, 0.4);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(155, 89, 182, 0.6);
+        }
+
+        .cta-button:active {
+            transform: translateY(0);
+        }
+
+        .cta-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .pricing {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 0.5rem;
+        }
+
+        .success-message {
+            background: rgba(100, 181, 246, 0.2);
+            border: 1px solid rgba(100, 181, 246, 0.4);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            display: none;
+        }
+
+        .success-message.visible {
+            display: block;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Mobile */
+        /*
+            Mobile/IOS fixes:
+            - Use a CSS var (--vh) set via JS to account for the dynamic viewport height on mobile browsers
+            - Prevent body/page overscroll and rubber-band using overscroll-behavior
+            - Keep header/top elements fixed and the signup form pinned to the bottom on small screens
+            - Ensure any chat message area (if present) can scroll independently with -webkit-overflow-scrolling
+        */
+        @media (max-width: 768px) {
+            .orb-container {
+                width: 200px;
+                height: 200px;
+                margin-bottom: 2rem;
+            }
+
+            h1 {
+                letter-spacing: 0.3em;
+            }
+
+            .description {
+                font-size: 1rem;
+                margin-bottom: 2rem;
+            }
+
+            .email-input {
+                padding: 1rem 1.2rem;
+                font-size: 1rem;
+            }
+
+            .cta-button {
+                padding: 1.1rem 1.8rem;
+                font-size: 1.1rem;
+            }
+
+            /* Make the page use the mobile-safe viewport height and disable body scroll */
+            html, body {
+                height: calc(var(--vh, 1vh) * 100);
+                overflow: hidden; /* prevent the whole page from scrolling */
+                overscroll-behavior: none; /* prevent rubber-band/bounce */
+                -webkit-overflow-scrolling: auto;
+            }
+
+            /* Container should expand vertically and allow an inner area to scroll if needed */
+            .container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                padding: 1rem 1.25rem;
+                width: 100%;
+                max-width: 720px;
+                box-sizing: border-box;
+                /* Use remaining height so we can position form at bottom */
+                min-height: calc(var(--vh, 1vh) * 100);
+            }
+
+            /* If a header element exists, pin it to the top */
+            header, .header, .chat-header {
+                position: fixed;
+                top: env(safe-area-inset-top, 0);
+                left: 0;
+                right: 0;
+                z-index: 20;
+                backdrop-filter: blur(6px);
+            }
+
+            /* Pin the signup form / input area to bottom so keyboard pushes it up instead of the whole page */
+            .signup-form {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: calc(env(safe-area-inset-bottom, 0) + 12px);
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                padding: 0.75rem 1rem;
+                max-width: none;
+                margin: 0 auto;
+                width: min(720px, 100%);
+                background: transparent;
+                z-index: 25;
+            }
+
+            /* Make the email input and CTA fill nicely when pinned */
+            .email-input {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .cta-button {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            /* Provide a scrollable area for long content/messages (if present) */
+            .messages, .chat-messages, .content-scroll {
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                max-height: calc(var(--vh, 1vh) * 100 - 220px); /* leave space for header + input */
+                width: 100%;
+            }
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Minimal hamburger/menu styles to match chat aesthetic */
+        .menu-toggle {
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 12px) + 8px);
+            right: 12px;
+            border-radius: 8px;
+            z-index: 1200;
+        }
+
+        .menu-line { width: 22px; height: 2px; background: rgba(255,255,255,0.9); }
+
+        .hamburger-dropdown {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 12px) + 56px);
+            right: 12px;
+            background: rgba(10,12,28,0.95);
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 12px;
+            min-width: 220px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.22s ease;
+            z-index: 1199;
+            overflow: hidden;
+        }
+
+        .hamburger-dropdown.active { opacity: 1; visibility: visible; transform: translateY(0); }
+
+        .dropdown-item {
+            padding: 0.85rem 1rem;
+            color: rgba(255,255,255,0.78);
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+            text-decoration: none;
+        }
+
+        .dropdown-item:last-child { border-bottom: none; }
+
+        .dropdown-item:hover { background: rgba(255,255,255,0.02); }
+    </style>
+</head>
+<body>
+    <!-- Living Universe -->
+    <div class="universe" id="universe"></div>
+
+    <!-- Main Content -->
+    <!-- Header / Menu -->
+    <header class="chat-header" role="banner" aria-hidden="false">
+        <div style="width:1rem"></div>
+        <div class="vera-identity" style="visibility:hidden">VERA</div>
+        <div class="header-controls">
+            <button class="menu-toggle" id="menuToggle" aria-haspopup="true" aria-expanded="false" aria-label="Menu">
+                <span class="menu-line"></span>
+                <span class="menu-line"></span>
+                <span class="menu-line"></span>
+            </button>
+        </div>
+        <div class="hamburger-dropdown" id="hamburgerDropdown" aria-hidden="true">
+            <a class="dropdown-item" href="/terms.html">Terms &amp; Conditions</a>
+            <a class="dropdown-item" href="/privacy.html">Privacy Policy</a>
+        </div>
+    </header>
+    <div class="container">
+        <!-- Breathing Orb -->
+        <div class="orb-container">
+            <div class="orb"></div>
+        </div>
+
+        <!-- Text Content -->
+        <h1>VERA</h1>
+        <p class="subtitle">Your AI Co-Regulator</p>
+        <p class="description">
+            I help you listen to what your body already knows.<br>
+            Not an AI pretending to be human, but a revolutionary intelligence built for your nervous system.
+        </p>
+
+        <!-- Trial Badge -->
+        <div class="trial-badge">✨ 48-Hour Free Trial</div>
+
+        <!-- Signup Form -->
+        <form class="signup-form" id="signupForm">
+            <div class="input-wrapper">
+                <input 
+                    type="email" 
+                    id="emailInput"
+                    class="email-input" 
+                    placeholder="Enter your email"
+                    required
+                    autocomplete="email"
+                >
+            </div>
+            <button type="submit" class="cta-button" id="submitBtn">
+                Begin Your Journey
+            </button>
+            <div class="pricing">Then $12/month • Cancel anytime</div>
+            <div class="error-message" id="errorMessage"></div>
+        </form>
+
+        <!-- Success Message -->
+        <div class="success-message" id="successMessage">
+            ✨ <strong>Check your email!</strong><br>
+            We've sent you a magic link to start your 48-hour free trial with VERA.
+        </div>
+    </div>
+
+    <script>
+        // Create living universe stars
+        function createUniverse() {
+            const universe = document.getElementById('universe');
+            const starCount = 50;
+
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 4 + 's';
+                universe.appendChild(star);
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const emailInput = document.getElementById('emailInput');
+            const submitBtn = document.getElementById('submitBtn');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            const email = emailInput.value.trim();
+
+            // Reset messages
+            errorMessage.textContent = '';
+            successMessage.classList.remove('visible');
+
+            // Disable button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending magic link...';
+
+            try {
+                const response = await fetch('/api/auth/send-trial-magic-link', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Show success message
+                    successMessage.classList.add('visible');
+                    // Hide form
+                    document.getElementById('signupForm').style.display = 'none';
+                } else {
+                    throw new Error(data.error || 'Failed to send magic link');
+                }
+
+            } catch (error) {
+                console.error('Signup error:', error);
+                errorMessage.textContent = error.message || 'Something went wrong. Please try again.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Begin Your Journey';
+            }
+        });
+
+        // Initialize universe on load
+        window.addEventListener('DOMContentLoaded', createUniverse);
+    </script>
+    <script>
+        // Toggle hamburger dropdown
+        function toggleMenu() {
+            const dd = document.getElementById('hamburgerDropdown');
+            const btn = document.getElementById('menuToggle');
+            const isActive = dd.classList.toggle('active');
+            dd.setAttribute('aria-hidden', String(!isActive));
+            btn.setAttribute('aria-expanded', String(isActive));
+        }
+
+        document.addEventListener('click', (e) => {
+            const dd = document.getElementById('hamburgerDropdown');
+            const btn = document.getElementById('menuToggle');
+            if (!dd || !btn) return;
+            if (btn.contains(e.target)) return; // clicking the button handled by toggle
+            if (!dd.contains(e.target)) {
+                dd.classList.remove('active');
+                dd.setAttribute('aria-hidden', 'true');
+                btn.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        // wire button
+        window.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('menuToggle');
+            if (btn) btn.addEventListener('click', toggleMenu);
+        });
+    </script>
+    <!-- Mobile viewport & keyboard helper -->
+    <script>
+        // Set a --vh CSS var equal to 1% of the viewport height to handle mobile Safari dynamic viewport
+        function setVhVar() {
+            try {
+                const vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty('--vh', `${vh}px`);
+            } catch (e) {
+                // ignore
+            }
+        }
+
+        // When inputs focus on iOS/Android, add a flag so CSS or other scripts can adjust spacing
+        function watchInputsForKeyboard() {
+            const inputs = Array.from(document.querySelectorAll('input, textarea'));
+            inputs.forEach((el) => {
+                el.addEventListener('focus', () => {
+                    document.body.classList.add('keyboard-open');
+                    // ensure the focused element is visible (pin-to-bottom forms will stay above keyboard)
+                    setTimeout(() => el.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50);
+                });
+                el.addEventListener('blur', () => {
+                    document.body.classList.remove('keyboard-open');
+                });
+            });
+        }
+
+        // Initialize helpers
+        window.addEventListener('load', () => {
+            setVhVar();
+            watchInputsForKeyboard();
+        });
+
+        // Update on resize/orientation change
+        window.addEventListener('resize', () => {
+            // small delay so mobile browsers can settle
+            setTimeout(setVhVar, 50);
+        });
+        window.addEventListener('orientationchange', () => setTimeout(setVhVar, 150));
+    </script>
+    <!-- Footer disclaimer -->
+    <footer style="width:100%;box-sizing:border-box;max-width:720px;margin:0 auto;padding:0.75rem 1rem 2.5rem;color:rgba(255,255,255,0.6);font-size:0.78rem;text-align:center;line-height:1.25;">
+        <div style="opacity:0.95;margin-bottom:6px;">VERA is not a licensed therapist or healthcare provider. This is an AI tool and should not replace professional medical advice.</div>
+        <div style="opacity:0.8;font-weight:500;">VERA™ © 2025 VERANeural Inc. All rights reserved.</div>
+    </footer>
+</body>
+</html>
