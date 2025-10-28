@@ -2259,8 +2259,11 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 
   try {
-    // Check if user already exists
-    const existing = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+    // Normalize email (case-insensitive)
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Check if user already exists (case-insensitive)
+    const existing = await db.query('SELECT id FROM users WHERE LOWER(email) = $1', [normalizedEmail]);
     if (existing.rows.length > 0) {
       return res.status(400).json({ error: 'Email already registered' });
     }
@@ -2271,14 +2274,14 @@ app.post('/api/auth/signup', async (req, res) => {
     // Create user
     await db.query(
       'INSERT INTO users (email, password, name, subscription_status) VALUES ($1, $2, $3, $4)',
-      [email, passwordHash, email.split('@')[0], 'inactive']
+      [normalizedEmail, passwordHash, normalizedEmail.split('@')[0], 'inactive']
     );
 
     // Set session
-    req.session.userEmail = email;
+    req.session.userEmail = normalizedEmail;
     await req.session.save();
 
-    console.log('✅ User signed up:', email);
+    console.log('✅ User signed up:', normalizedEmail);
     res.json({ success: true, redirect: '/chat.html' });
   } catch (error) {
     console.error('❌ Signup error:', error);
@@ -2295,13 +2298,22 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   try {
-    // Find user
-    const result = await db.query('SELECT id, password FROM users WHERE email = $1', [email]);
+    // Normalize email (case-insensitive)
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Find user (case-insensitive)
+    const result = await db.query('SELECT id, password FROM users WHERE LOWER(email) = $1', [normalizedEmail]);
     if (result.rows.length === 0) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     const user = result.rows[0];
+
+    // Check if password exists (safety check)
+    if (!user.password) {
+      console.warn(`⚠️ User ${normalizedEmail} has no password hash stored`);
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
 
     // Check password
     const passwordMatch = await bcrypt.compare(password, user.password);
@@ -2309,11 +2321,11 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Set session
-    req.session.userEmail = email;
+    // Set session with normalized email
+    req.session.userEmail = normalizedEmail;
     await req.session.save();
 
-    console.log('✅ User logged in:', email);
+    console.log('✅ User logged in:', normalizedEmail);
     res.json({ success: true, redirect: '/chat.html' });
   } catch (error) {
     console.error('❌ Login error:', error);
