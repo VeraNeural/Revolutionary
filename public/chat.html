@@ -2560,11 +2560,19 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
                     userEmail = authData.email || null;
                     userName = userEmail ? userEmail.split('@')[0] : 'friend';
                     isSubscriber = authData.isSubscriber || false;
-                    console.log('✅ Authenticated as:', userName);
+                    console.log('✅ Authenticated as:', userName, '| Subscriber:', isSubscriber);
                     
-                    // Clear guest flag for authenticated users
-                    localStorage.removeItem('veraIsGuest');
-                    localStorage.removeItem('veraGuestMessageCount');
+                    // Only clear guest flag for PAID subscribers
+                    // Trial users and non-subscribers should still have message limits
+                    if (isSubscriber) {
+                        localStorage.removeItem('veraIsGuest');
+                        localStorage.removeItem('veraGuestMessageCount');
+                    } else {
+                        // Authenticated but not yet subscriber = still guest-like
+                        localStorage.setItem('veraIsGuest', 'true');
+                        guestMessageCount = parseInt(localStorage.getItem('veraGuestMessageCount') || '0');
+                        console.log('👤 Trial user mode - still tracking message count:', guestMessageCount);
+                    }
                 } else {
                     // User is NOT authenticated - mark as guest
                     localStorage.setItem('veraIsGuest', 'true');
