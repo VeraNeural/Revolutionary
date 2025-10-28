@@ -1183,6 +1183,11 @@ app.get('/professional', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'professional.html'));
 });
 
+// Serve VR Vision page
+app.get('/VR-vera.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'VR-vera.html'));
+});
+
 // ==================== HEALTH CHECK & MONITORING ====================
 const monitor = require('./lib/monitoring'); // ✅
 
