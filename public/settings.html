@@ -169,6 +169,27 @@
             gap: 0.5rem;
         }
 
+        /* Orb visuals used across settings instead of emojis */
+        .settings-orb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.25), inset 0 0 6px rgba(255,255,255,0.02);
+            margin-right: 8px;
+        }
+        .settings-orb-account { background: linear-gradient(135deg,#DDEFFE 0%,#D0E8FF 100%); }
+        .settings-orb-subscription { background: linear-gradient(135deg,#F6E8FF 0%,#E8D8FF 100%); }
+        .settings-orb-data { background: linear-gradient(135deg,#EAF7F0 0%,#DFF0E8 100%); }
+        .settings-orb-preferences { background: linear-gradient(135deg,#F0F0FF 0%,#E8E0FF 100%); }
+        .settings-orb-save { background: linear-gradient(135deg,#E8F6FF 0%,#DFF0FF 100%); }
+        .settings-orb-download { background: linear-gradient(135deg,#EAF3FF 0%,#DDEEFF 100%); }
+        .settings-orb-delete { background: linear-gradient(135deg,#FFEDEC 0%,#FFDCD4 100%); }
+        .settings-orb-warning { background: linear-gradient(135deg,#FFF6E6 0%,#FFEFD0 100%); }
+        .settings-orb-light { background: linear-gradient(135deg,#F6ECFF 0%, #EADDFF 100%); }
+        .settings-orb-dark { background: linear-gradient(135deg,#2A2E3C 0%, #1A1C28 100%); }
+        .settings-orb-deep { background: linear-gradient(135deg,#0B0B0B 0%, #000000 100%); }
+
         .section-divider {
             width: 100%;
             height: 1px;
@@ -532,13 +553,13 @@
     <div class="settings-container">
         <!-- Header -->
         <div class="settings-header">
-            <h1 class="settings-title">⚙️ Settings</h1>
-            <button class="back-button" onclick="goBack()">← Back to Chat</button>
+            <h1 class="settings-title"><span class="settings-orb settings-orb-preferences" aria-hidden="true"></span>Settings</h1>
+            <button class="back-button" onclick="goBack()">Back to Chat</button>
         </div>
 
         <!-- ACCOUNT SECTION -->
         <div class="settings-section">
-            <h2 class="section-title">👤 Account</h2>
+            <h2 class="section-title"><span class="settings-orb settings-orb-account" aria-hidden="true"></span>Account</h2>
             
             <div class="form-group">
                 <label class="form-label">Email</label>
@@ -556,14 +577,14 @@
 
             <div class="action-row" style="margin-top: 1.5rem;">
                 <button class="button button-primary" onclick="saveName()">
-                    <span>💾 Save Name</span>
+                    <span><span class="settings-orb settings-orb-save" aria-hidden="true"></span>Save Name</span>
                 </button>
             </div>
         </div>
 
         <!-- SUBSCRIPTION SECTION -->
         <div class="settings-section">
-            <h2 class="section-title">💎 Subscription</h2>
+            <h2 class="section-title"><span class="settings-orb settings-orb-subscription" aria-hidden="true"></span>Subscription</h2>
             
             <div class="form-group">
                 <label class="form-label">Current Plan</label>
@@ -584,20 +605,20 @@
 
             <div class="action-row" style="margin-top: 1.5rem;">
                 <button class="button button-primary" onclick="manageSubscription()">
-                    <span>🔗 Manage Subscription</span>
+                    <span><span class="settings-orb settings-orb-subscription" aria-hidden="true"></span>Manage Subscription</span>
                 </button>
             </div>
         </div>
 
         <!-- DATA & PRIVACY SECTION -->
         <div class="settings-section">
-            <h2 class="section-title">📊 Data & Privacy</h2>
+            <h2 class="section-title"><span class="settings-orb settings-orb-data" aria-hidden="true"></span>Data & Privacy</h2>
 
             <div class="form-group">
                 <label class="form-label">Download My Data</label>
                 <p class="info-text">Export all your conversations as a JSON file</p>
                 <button class="button button-secondary" style="margin-top: 0.75rem;" onclick="downloadData()">
-                    <span>⬇️ Download Data</span>
+                    <span><span class="settings-orb settings-orb-download" aria-hidden="true"></span>Download Data</span>
                 </button>
             </div>
 
@@ -607,7 +628,7 @@
                 <label class="form-label">Delete Conversation History</label>
                 <p class="info-text">Permanently delete all conversations. Your account will remain active.</p>
                 <button class="button button-danger button-small" style="margin-top: 0.75rem;" onclick="confirmDeleteHistory()">
-                    <span>🗑️ Delete History</span>
+                    <span><span class="settings-orb settings-orb-delete" aria-hidden="true"></span>Delete History</span>
                 </button>
             </div>
 
@@ -615,23 +636,23 @@
 
             <div class="form-group">
                 <label class="form-label">Delete Account Permanently</label>
-                <p class="warning-text">⚠️ This action cannot be undone. Your subscription will be cancelled and all data will be permanently deleted.</p>
+                <p class="warning-text"><span class="settings-orb settings-orb-warning" aria-hidden="true"></span>This action cannot be undone. Your subscription will be cancelled and all data will be permanently deleted.</p>
                 <button class="button button-danger" style="margin-top: 0.75rem;" onclick="confirmDeleteAccount()">
-                    <span>❌ Delete Account</span>
+                    <span><span class="settings-orb settings-orb-delete" aria-hidden="true"></span>Delete Account</span>
                 </button>
             </div>
         </div>
 
         <!-- PREFERENCES SECTION -->
         <div class="settings-section">
-            <h2 class="section-title">🎨 Preferences</h2>
+            <h2 class="section-title"><span class="settings-orb settings-orb-preferences" aria-hidden="true"></span>Preferences</h2>
 
             <div class="form-group">
                 <label class="form-label">Theme</label>
                 <div style="display: flex; gap: 1rem; margin-top: 0.75rem;">
-                    <button class="button button-secondary" onclick="setTheme('light')" id="themeLight">☀️ Light</button>
-                    <button class="button button-secondary" onclick="setTheme('dark')" id="themeDark">🌙 Dark</button>
-                    <button class="button button-secondary" onclick="setTheme('deep')" id="themeDeep">🌑 Deep</button>
+                    <button class="button button-secondary" onclick="setTheme('light')" id="themeLight"><span class="settings-orb settings-orb-light" aria-hidden="true"></span>Light</button>
+                    <button class="button button-secondary" onclick="setTheme('dark')" id="themeDark"><span class="settings-orb settings-orb-dark" aria-hidden="true"></span>Dark</button>
+                    <button class="button button-secondary" onclick="setTheme('deep')" id="themeDeep"><span class="settings-orb settings-orb-deep" aria-hidden="true"></span>Deep</button>
                 </div>
             </div>
 
