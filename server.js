@@ -277,7 +277,7 @@ process.on('SIGINT', () => {
 // ==================== DATABASE MIGRATIONS ====================
 // Run migrations automatically on startup (production only)
 async function runDatabaseMigrations() {
-  const DATABASE_URL = process.env.DATABASE_URL;
+  const DATABASE_URL = process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;;
   
   // Only run migrations if DATABASE_URL is set (production environment)
   if (!DATABASE_URL) {
@@ -293,8 +293,11 @@ async function runDatabaseMigrations() {
     // Create a temporary pool for migrations
     const { Pool } = require('pg');
     const pool = new Pool({
-      connectionString: DATABASE_URL,
-      statement_timeout: 30000,
+     connectionString: DATABASE_URL,
+  statement_timeout: 30000,
+  ssl: {
+    rejectUnauthorized: false
+  }
     });
 
     let successCount = 0;
@@ -1758,6 +1761,7 @@ app.get('/api/auth/check', async (req, res) => {
         authenticated: true,
         email: req.session.userEmail,
         subscription: user.subscription_status,
+        isSubscriber: user.subscription_status === 'active', // Only 'active' paid subscriptions count
       });
     }
 
@@ -1774,6 +1778,7 @@ app.get('/api/auth/check', async (req, res) => {
           authenticated: true,
           email: req.session.userEmail,
           subscription: subscription.status,
+          isSubscriber: subscription.status === 'active',
         });
       }
     }
@@ -1783,6 +1788,7 @@ app.get('/api/auth/check', async (req, res) => {
       authenticated: true,
       email: req.session.userEmail,
       subscription: 'inactive',
+      isSubscriber: false,
     });
   } catch (error) {
     console.error('❌ Auth check error:', error);
