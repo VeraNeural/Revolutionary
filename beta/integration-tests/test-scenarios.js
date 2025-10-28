@@ -9,19 +9,19 @@ const scenarios = [
       patternAnalysis: {
         adaptiveCode: 'freeze',
         nervousSystem: 'sympathetic',
-        suggestion: 'Provide grounding and safety'
+        suggestion: 'Provide grounding and safety',
       },
       somaticReading: {
         primarySignal: 'emergence',
         energyQuality: 'exploratory',
-        curiosityPresent: true
-      }
+        curiosityPresent: true,
+      },
     },
     expectedBehavior: {
       trustSomatic: true,
       acknowledgePath: 'name the gap',
-      responseStyle: 'curious partnership'
-    }
+      responseStyle: 'curious partnership',
+    },
   },
   {
     name: 'Edge of Knowing',
@@ -30,19 +30,19 @@ const scenarios = [
       patternAnalysis: {
         adaptiveCode: 'mixed',
         nervousSystem: 'ventral vagal with activation',
-        suggestion: 'Stay with emergence'
+        suggestion: 'Stay with emergence',
       },
       somaticReading: {
         primarySignal: 'edge',
         energyQuality: 'anticipatory',
-        curiosityPresent: true
-      }
+        curiosityPresent: true,
+      },
     },
     expectedBehavior: {
       trustSomatic: true,
       holdUncertainty: true,
-      responseStyle: 'witnessing presence'
-    }
+      responseStyle: 'witnessing presence',
+    },
   },
   // Add more scenarios as needed...
 ];

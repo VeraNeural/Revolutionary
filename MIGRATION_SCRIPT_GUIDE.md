@@ -55,6 +55,7 @@ node run-migrations.js
 ```
 
 **On Windows PowerShell:**
+
 ```powershell
 $env:DATABASE_URL = "postgresql://your-user:your-password@localhost:5432/vera"
 node run-migrations.js
@@ -87,6 +88,7 @@ You can add to `package.json` for convenience:
 ```
 
 Then run with:
+
 ```bash
 npm run migrate
 ```
@@ -157,10 +159,10 @@ Exit code will be `1` (failure) if any errors occur.
 
 ## Exit Codes
 
-| Code | Meaning |
-|------|---------|
-| 0 | Success - migrations completed |
-| 1 | Failure - one or more migrations failed |
+| Code | Meaning                                 |
+| ---- | --------------------------------------- |
+| 0    | Success - migrations completed          |
+| 1    | Failure - one or more migrations failed |
 
 ---
 
@@ -174,6 +176,7 @@ The script is **idempotent** because:
 4. The script continues executing even if some statements are skipped
 
 This means you can safely run:
+
 - Multiple times on the same database
 - After partial migrations
 - Without data loss
@@ -183,6 +186,7 @@ This means you can safely run:
 ## Error Handling
 
 ### Automatically Handled
+
 - ✅ Table already exists
 - ✅ Index already exists
 - ✅ Duplicate constraints
@@ -190,6 +194,7 @@ This means you can safely run:
 - ✅ Missing DATABASE_URL in development
 
 ### Will Fail Startup
+
 - ❌ Actual SQL syntax errors
 - ❌ Connection refused (database down)
 - ❌ Permission denied (insufficient privileges)
@@ -289,11 +294,13 @@ node server.js
 The `DATABASE_MIGRATIONS.sql` file includes:
 
 ### Tables Created
+
 1. `magic_links` - Track magic link tokens
 2. `email_delivery_logs` - Log all email delivery attempts
 3. `login_audit_log` - Audit all login attempts
 
 ### Indexes Created
+
 1. `idx_magic_links_token` - Fast token lookup
 2. `idx_magic_links_email` - Fast email queries
 3. `idx_magic_links_active` - Efficient valid token queries
@@ -323,14 +330,15 @@ SELECT COUNT(*) FROM email_delivery_logs;
 SELECT COUNT(*) FROM login_audit_log;
 
 -- Check all migration tables
-SELECT table_name FROM information_schema.tables 
-WHERE table_schema = 'public' 
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'public'
 AND table_name IN ('magic_links', 'email_delivery_logs', 'login_audit_log');
 ```
 
 ### Check Logs
 
 In Railway:
+
 1. Go to your app
 2. Click "Deployments" tab
 3. Find latest deployment

@@ -3,6 +3,7 @@
 ## Files Modified/Created
 
 ### ✨ New Files
+
 1. **`public/subscribe.html`** - Subscription landing page (586 lines)
    - Beautiful UI with pricing cards
    - Benefits and FAQ sections
@@ -11,6 +12,7 @@
 2. **`STRIPE_SUBSCRIPTION_SETUP.md`** - Complete setup documentation
 
 ### 🔧 Modified Files
+
 1. **`server.js`** - Added two endpoints
    - `POST /api/create-checkout-session` (lines 2952-3011)
    - `POST /api/stripe-webhook` (lines 3016-3085)
@@ -24,6 +26,7 @@
 ## 🔌 API Endpoints
 
 ### CREATE CHECKOUT SESSION
+
 ```
 POST /api/create-checkout-session
 Content-Type: application/json
@@ -41,6 +44,7 @@ Response:
 ```
 
 ### STRIPE WEBHOOK
+
 ```
 POST /api/stripe-webhook
 X-Stripe-Signature: [signature]
@@ -56,13 +60,14 @@ Handles:
 
 ## 💰 Pricing Configuration
 
-| Plan | Price | Billing | Savings |
-|------|-------|---------|---------|
-| Monthly | $12/month | Monthly | - |
-| Annual | $99/year | Yearly | $45 (2 months free) |
-| Sliding Scale | Custom | Custom | Negotiable |
+| Plan          | Price     | Billing | Savings             |
+| ------------- | --------- | ------- | ------------------- |
+| Monthly       | $12/month | Monthly | -                   |
+| Annual        | $99/year  | Yearly  | $45 (2 months free) |
+| Sliding Scale | Custom    | Custom  | Negotiable          |
 
 **Price IDs** (in `.env.local`):
+
 ```
 STRIPE_PRICE_MONTHLY=price_1SIgAtF8aJ0BDqA3WXVJsuVD
 STRIPE_PRICE_ANNUAL=price_1SIgAtF8aJ0BDqA3WXVJsuVD
@@ -108,10 +113,10 @@ STRIPE_PRICE_ANNUAL=price_1SIgAtF8aJ0BDqA3WXVJsuVD
 
 Use in Stripe Testmode Checkout:
 
-| Outcome | Card | Expiry | CVC |
-|---------|------|--------|-----|
-| ✅ Success | 4242 4242 4242 4242 | Any future | Any 3 digits |
-| ❌ Decline | 4000 0000 0000 0002 | Any future | Any 3 digits |
+| Outcome                | Card                | Expiry     | CVC          |
+| ---------------------- | ------------------- | ---------- | ------------ |
+| ✅ Success             | 4242 4242 4242 4242 | Any future | Any 3 digits |
+| ❌ Decline             | 4000 0000 0000 0002 | Any future | Any 3 digits |
 | ⏸️ Decline (Lost Card) | 4000 0000 0000 0259 | Any future | Any 3 digits |
 
 ---
@@ -133,7 +138,7 @@ Use in Stripe Testmode Checkout:
 
 Once deployed to production:
 
-1. **Webhook Delivery**: 
+1. **Webhook Delivery**:
    - Stripe Dashboard → Developers → Webhooks → [webhook endpoint]
    - Shows all webhook events and delivery status
 
@@ -154,23 +159,28 @@ Once deployed to production:
 ## 🚨 Troubleshooting
 
 ### "Not authenticated" error
+
 - User must be logged in or have active session
 - Check `/api/auth/check` endpoint
 
 ### "Invalid price type" error
+
 - Must be exactly "monthly" or "annual"
 - Check frontend JavaScript for typos
 
 ### Webhook not updating database
+
 - Verify STRIPE_WEBHOOK_SECRET is correct
 - Check database connectivity
 - Review server console for error logs
 
 ### Stripe redirect goes to wrong URL
+
 - Verify APP_URL is set in .env.local
 - Checkout session URLs use this for redirects
 
 ### Test payment doesn't trigger webhook
+
 - Make sure webhook endpoint is configured in Stripe Dashboard
 - Use Stripe CLI: `stripe listen --forward-to localhost:8080/api/stripe-webhook`
 
@@ -209,4 +219,3 @@ Once deployed to production:
 ---
 
 **Status**: ✅ Ready to Deploy
-

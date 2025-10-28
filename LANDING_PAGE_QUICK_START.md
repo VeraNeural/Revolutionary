@@ -5,6 +5,7 @@
 ### What Users See Now:
 
 **URL: `/` (Root Homepage)**
+
 ```
 ┌─────────────────────────────────┐
 │                                 │
@@ -46,6 +47,7 @@
 **Subject:** ✨ Your 48-Hour VERA Trial is Ready
 
 **Preview:**
+
 ```
 ╔════════════════════════════════╗
 ║ ✨ Welcome to VERA            ║
@@ -62,12 +64,12 @@ Click below to begin your 48-hour free trial:
     └──────────────────────────┘
 
 ⏱️ 48-Hour Trial
-Your trial starts immediately after you click 
-the link above. Enjoy full access to VERA for 
+Your trial starts immediately after you click
+the link above. Enjoy full access to VERA for
 48 hours, completely free.
 
 💳 After Your Trial
-After 48 hours, upgrade to continue for just 
+After 48 hours, upgrade to continue for just
 $12/month. Cancel anytime.
 
 Link expires in 15 minutes and can only be used once.
@@ -80,6 +82,7 @@ Link expires in 15 minutes and can only be used once.
 ## 🛠️ Technical Stack
 
 **Frontend (Landing Page):**
+
 - Pure HTML/CSS/JavaScript (no dependencies)
 - Breathing orb animation (CSS keyframes)
 - Living universe background (SVG stars)
@@ -88,6 +91,7 @@ Link expires in 15 minutes and can only be used once.
 - Mobile responsive design
 
 **Backend (Trial System):**
+
 - Node.js/Express server
 - PostgreSQL database
 - `connect-pg-simple` session store
@@ -95,6 +99,7 @@ Link expires in 15 minutes and can only be used once.
 - Magic link authentication (15-min token expiry)
 
 **Database:**
+
 - Users table with `trial_starts_at` & `trial_ends_at`
 - Login audit log for tracking
 - Sessions table (auto-managed)
@@ -105,7 +110,9 @@ Link expires in 15 minutes and can only be used once.
 ## 🎯 Remaining Work (NOT DONE YET)
 
 ### ⏳ Task 4: Trial Banner UI
+
 Add countdown banner to chat showing:
+
 - ⏳ "48:00:00 remaining in trial"
 - 💳 "Upgrade Now" button
 - After 48h: "Trial Expired - Upgrade to Continue"
@@ -113,14 +120,18 @@ Add countdown banner to chat showing:
 **Files to modify:** `public/chat.html` or `public/vera-ai.html`
 
 ### ⏳ Task 5: Stripe Integration
+
 Connect "Upgrade Now" button to Stripe checkout:
+
 - Create checkout session
 - Collect payment ($12/month)
 - Update user subscription status
 - Handle subscription in webhook
 
 ### ⏳ Task 6: End-to-End Testing
+
 Test complete flow:
+
 1. Landing page loads ✓
 2. Email submission works ✓
 3. Trial user created ✓
@@ -142,6 +153,7 @@ Test complete flow:
 **Live URL:** Your Railway app URL + `/`
 
 **To Test:**
+
 ```
 1. Wait 2-5 minutes
 2. Visit https://your-railway-url/
@@ -160,6 +172,7 @@ Test complete flow:
 **POST** `/api/auth/send-trial-magic-link`
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com"
@@ -167,6 +180,7 @@ Test complete flow:
 ```
 
 **Response (Success):**
+
 ```json
 {
   "success": true,
@@ -175,6 +189,7 @@ Test complete flow:
 ```
 
 **Response (Error):**
+
 ```json
 {
   "error": "Please enter a valid email address"
@@ -207,6 +222,7 @@ stripe_subscription_id = 'sub_xxxxx'
 ## 🎨 UI Components Created
 
 ### Landing Page Elements:
+
 - ✨ Breathing orb (6-sec cycle, scales 1→1.12)
 - ⭐ 50 twinkling stars (living universe background)
 - 📧 Email input with focus effect
@@ -216,6 +232,7 @@ stripe_subscription_id = 'sub_xxxxx'
 - 📱 Mobile responsive layout
 
 ### Email Elements:
+
 - 📨 Beautiful HTML email template
 - 🎨 Gradient headers (purple to blue)
 - 🔗 Magic link button
@@ -243,6 +260,7 @@ stripe_subscription_id = 'sub_xxxxx'
 **NEXT STEP:** Build trial banner UI in chat interface
 
 This shows:
+
 - Time remaining in trial (countdown)
 - "Upgrade Now" button
 - Auto-hide after upgrade
@@ -250,8 +268,8 @@ This shows:
 ```javascript
 // Example banner display
 if (user.subscription_status === 'trial' && now < trial_ends_at) {
-  hours_remaining = (trial_ends_at - now) / 3600
-  display_banner(`${hours_remaining}h remaining • Upgrade Now →`)
+  hours_remaining = (trial_ends_at - now) / 3600;
+  display_banner(`${hours_remaining}h remaining • Upgrade Now →`);
 }
 ```
 
@@ -263,7 +281,7 @@ if (user.subscription_status === 'trial' && now < trial_ends_at) {
 **Trial System:** ✅ LIVE  
 **Magic Links:** ✅ LIVE  
 **Trial Banner:** ⏳ NEXT  
-**Stripe Integration:** ⏳ AFTER BANNER  
+**Stripe Integration:** ⏳ AFTER BANNER
 
 **Total Progress:** 3/7 tasks complete (43%)
 

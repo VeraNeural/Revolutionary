@@ -3,6 +3,7 @@
 ## 🎉 What's New
 
 Users can now **save and manage multiple conversation sessions** with VERA! Each conversation is stored separately and can be:
+
 - ✅ Viewed in a beautiful history list
 - ✅ Loaded back into the chat at any time
 - ✅ Deleted when no longer needed
@@ -43,6 +44,7 @@ SELECT COUNT(*) FROM conversations;
 If the full script doesn't work, run these queries one at a time:
 
 1. **Create conversations table:**
+
 ```sql
 CREATE TABLE IF NOT EXISTS conversations (
   id SERIAL PRIMARY KEY,
@@ -59,22 +61,24 @@ CREATE INDEX idx_conversations_created_at ON conversations(created_at);
 ```
 
 2. **Update messages table:**
+
 ```sql
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS conversation_id INTEGER REFERENCES conversations(id) ON DELETE CASCADE;
 CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
 ```
 
 3. **Create trigger function:**
+
 ```sql
 CREATE OR REPLACE FUNCTION update_conversation_on_message()
 RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.conversation_id IS NOT NULL THEN
-        UPDATE conversations 
-        SET 
+        UPDATE conversations
+        SET
             updated_at = CURRENT_TIMESTAMP,
             message_count = (SELECT COUNT(*) FROM messages WHERE conversation_id = NEW.conversation_id),
-            last_message_preview = CASE 
+            last_message_preview = CASE
                 WHEN NEW.role = 'user' THEN LEFT(NEW.content, 100)
                 ELSE (SELECT LEFT(content, 100) FROM messages WHERE conversation_id = NEW.conversation_id AND role = 'user' ORDER BY created_at DESC LIMIT 1)
             END
@@ -86,53 +90,55 @@ $$ language 'plpgsql';
 ```
 
 4. **Create trigger:**
+
 ```sql
 DROP TRIGGER IF EXISTS trigger_update_conversation ON messages;
-CREATE TRIGGER trigger_update_conversation 
+CREATE TRIGGER trigger_update_conversation
 AFTER INSERT ON messages
 FOR EACH ROW EXECUTE FUNCTION update_conversation_on_message();
 ```
 
 5. **Migrate existing messages:**
+
 ```sql
 DO $$
 DECLARE
     user_record RECORD;
     new_conversation_id INTEGER;
 BEGIN
-    FOR user_record IN 
-        SELECT DISTINCT user_id 
-        FROM messages 
+    FOR user_record IN
+        SELECT DISTINCT user_id
+        FROM messages
         WHERE conversation_id IS NULL
     LOOP
         INSERT INTO conversations (user_id, title, created_at)
-        SELECT 
+        SELECT
             user_record.user_id,
             'Conversation from ' || TO_CHAR(MIN(created_at), 'Mon DD, YYYY'),
             MIN(created_at)
         FROM messages
         WHERE user_id = user_record.user_id
         RETURNING id INTO new_conversation_id;
-        
-        UPDATE messages 
+
+        UPDATE messages
         SET conversation_id = new_conversation_id
-        WHERE user_id = user_record.user_id 
+        WHERE user_id = user_record.user_id
         AND conversation_id IS NULL;
-        
-        UPDATE conversations 
-        SET 
+
+        UPDATE conversations
+        SET
             message_count = (SELECT COUNT(*) FROM messages WHERE conversation_id = new_conversation_id),
             last_message_preview = (
-                SELECT LEFT(content, 100) 
-                FROM messages 
-                WHERE conversation_id = new_conversation_id 
-                AND role = 'user' 
-                ORDER BY created_at DESC 
+                SELECT LEFT(content, 100)
+                FROM messages
+                WHERE conversation_id = new_conversation_id
+                AND role = 'user'
+                ORDER BY created_at DESC
                 LIMIT 1
             ),
             updated_at = (
-                SELECT MAX(created_at) 
-                FROM messages 
+                SELECT MAX(created_at)
+                FROM messages
                 WHERE conversation_id = new_conversation_id
             )
         WHERE id = new_conversation_id;
@@ -155,14 +161,14 @@ SELECT COUNT(*) as linked_messages FROM messages WHERE conversation_id IS NOT NU
 SELECT COUNT(*) as orphaned_messages FROM messages WHERE conversation_id IS NULL;
 
 -- View sample conversations
-SELECT 
-    id, 
-    user_id, 
-    title, 
-    message_count, 
-    created_at 
-FROM conversations 
-ORDER BY created_at DESC 
+SELECT
+    id,
+    user_id,
+    title,
+    message_count,
+    created_at
+FROM conversations
+ORDER BY created_at DESC
 LIMIT 5;
 ```
 
@@ -208,16 +214,19 @@ LIMIT 5;
 ## 🔧 Troubleshooting
 
 **"Migration failed"**
+
 - Make sure you're connected to the right database
 - Try running queries individually (see Option 3 above)
 - Check Railway logs for specific errors
 
 **"No conversations showing"**
+
 - Migration may not have run successfully
 - Check if `conversations` table exists: `\dt` or `SELECT * FROM conversations LIMIT 1;`
 - Verify existing messages were migrated
 
 **"Can't delete conversations"**
+
 - Check foreign key constraints are in place
 - Ensure cascade delete is set: `ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_conversation_id_fkey; ALTER TABLE messages ADD CONSTRAINT messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE;`
 

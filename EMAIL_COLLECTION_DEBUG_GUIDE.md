@@ -1,6 +1,7 @@
 # 🎯 Email Collection Debug Guide
 
 ## **Deployment Status**
+
 ✅ **Commit**: `683e680`  
 ✅ **Branch**: main  
 ✅ **Live**: app.veraneural.com
@@ -10,16 +11,19 @@
 ## **Testing Instructions**
 
 ### **Step 1: Open Incognito Window**
+
 - Opens without any cached session
 - Fresh localStorage
 
 ### **Step 2: Start Fresh Chat**
+
 - Click the orb → enter name → "Enter"
 - You're now a GUEST user
 - `localStorage.veraIsGuest = 'true'`
 - `localStorage.veraGuestMessageCount = '0'`
 
 ### **Step 3: Send Exactly 4 Messages**
+
 Monitor the logs at each stage.
 
 ---
@@ -29,6 +33,7 @@ Monitor the logs at each stage.
 ### **Message 1: guestMessageCount = 1**
 
 #### **Browser Console (Frontend):**
+
 ```
 📊 [GUEST COUNT] Incremented to: 1
 
@@ -45,6 +50,7 @@ Monitor the logs at each stage.
 ```
 
 #### **Server Logs (Backend - Railway):**
+
 ```
 📥 [REQUEST BODY] guestMessageCount from frontend: Object
   received: 1
@@ -79,6 +85,7 @@ Monitor the logs at each stage.
 ```
 
 #### **Browser Console (Response):**
+
 ```
 📥 [MOBILE DEBUG] API response received: Object
   isGuestMessage4: false
@@ -94,11 +101,13 @@ Monitor the logs at each stage.
 ---
 
 ### **Message 2: guestMessageCount = 2**
+
 Same pattern as Message 1, but `guestMessageCount: 2`, `isGuestMessage4: false`
 
 ---
 
 ### **Message 3: guestMessageCount = 3**
+
 Same pattern, but `guestMessageCount: 3`, `isGuestMessage4: false`
 
 ---
@@ -106,6 +115,7 @@ Same pattern, but `guestMessageCount: 3`, `isGuestMessage4: false`
 ### **Message 4: guestMessageCount = 4** ✅ THIS IS WHERE IT SHOULD TRIGGER!
 
 #### **Browser Console (Frontend):**
+
 ```
 📊 [GUEST COUNT] Incremented to: 4
 
@@ -116,6 +126,7 @@ Same pattern, but `guestMessageCount: 3`, `isGuestMessage4: false`
 ```
 
 #### **Server Logs (Backend - Railway):**
+
 ```
 📥 [REQUEST BODY] guestMessageCount from frontend: Object
   received: 4
@@ -147,6 +158,7 @@ Same pattern, but `guestMessageCount: 3`, `isGuestMessage4: false`
 ```
 
 #### **Browser Console (Response):**
+
 ```
 📥 [MOBILE DEBUG] API response received: Object
   isGuestMessage4: true  ← SHOULD BE TRUE!
@@ -162,6 +174,7 @@ Same pattern, but `guestMessageCount: 3`, `isGuestMessage4: false`
 ```
 
 #### **Email Modal Should Appear!**
+
 ```
 "Would you like me to remember you? I'll need your email..."
 ```
@@ -171,29 +184,40 @@ Same pattern, but `guestMessageCount: 3`, `isGuestMessage4: false`
 ## **What If It's Still False?**
 
 ### **Check #1: Frontend**
+
 If `📊 [FRONTEND SENDING] guestMessageCount` shows `null` or `undefined` when it should be 4:
+
 - The `localStorage.getItem('veraIsGuest')` is not returning `'true'`
 - OR `guestMessageCount` variable is not tracking correctly
 
 ### **Check #2: Request Body**
+
 If server logs show:
+
 ```
 received: null
 ```
+
 The frontend is sending `null` instead of the number. Check if `veraIsGuest` flag is set.
 
 ### **Check #3: Vera-AI**
+
 If `equals4: false` even though `value: 4`:
+
 ```javascript
 const isGuestMessage4 = guestMessageCount === 4;
 ```
+
 This would only be false if `guestMessageCount !== 4` (not a number, or wrong value)
 
 ### **Check #4: Response Object**
+
 If backend shows `isGuestMessage4: false` but vera-ai returned `true`:
+
 ```javascript
-isGuestMessage4: veraResult.isGuestMessage4 || false
+isGuestMessage4: veraResult.isGuestMessage4 || false;
 ```
+
 The `|| false` would only make it false if `veraResult.isGuestMessage4` is falsy (including undefined)
 
 ---
@@ -201,6 +225,7 @@ The `|| false` would only make it false if `veraResult.isGuestMessage4` is falsy
 ## **Log Collection Instructions**
 
 ### **From Browser Console:**
+
 1. Open DevTools (F12)
 2. Go to Console tab
 3. Send 4 messages
@@ -208,6 +233,7 @@ The `|| false` would only make it false if `veraResult.isGuestMessage4` is falsy
 5. Share the output
 
 ### **From Railway Dashboard:**
+
 1. Go to: https://dashboard.railway.app
 2. Project: Revolutionary
 3. Service: web
@@ -216,6 +242,7 @@ The `|| false` would only make it false if `veraResult.isGuestMessage4` is falsy
 6. Share the output
 
 ### **Key Terms to Search For:**
+
 - `📊 [GUEST COUNT]`
 - `📥 [REQUEST BODY]`
 - `📊 [VERA-AI] Received`
@@ -228,19 +255,20 @@ The `|| false` would only make it false if `veraResult.isGuestMessage4` is falsy
 
 ## **Expected Behavior**
 
-| Message | Count | isGuestMessage4 | Modal Shows |
-|---------|-------|-----------------|------------|
-| 1 | 1 | false | ❌ |
-| 2 | 2 | false | ❌ |
-| 3 | 3 | false | ❌ |
-| **4** | **4** | **true** | **✅** |
-| 5 | 5 | false | ❌ (signup instead) |
+| Message | Count | isGuestMessage4 | Modal Shows         |
+| ------- | ----- | --------------- | ------------------- |
+| 1       | 1     | false           | ❌                  |
+| 2       | 2     | false           | ❌                  |
+| 3       | 3     | false           | ❌                  |
+| **4**   | **4** | **true**        | **✅**              |
+| 5       | 5     | false           | ❌ (signup instead) |
 
 ---
 
 ## **If Still Broken**
 
 Share:
+
 1. **Browser console output** (messages 1-4)
 2. **Server logs from Railway** (same time period)
 3. **Exact message count you see in each log**

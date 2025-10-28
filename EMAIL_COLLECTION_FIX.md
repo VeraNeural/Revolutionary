@@ -1,6 +1,7 @@
 # 🔧 Email Collection Fix - Placeholder Removed
 
 ## Problem
+
 VERA was displaying `[Email Collection Prompt]` as literal text in her responses on the 4th message exchange. This broke the natural, compassionate VERA voice.
 
 ```
@@ -9,6 +10,7 @@ VERA was displaying `[Email Collection Prompt]` as literal text in her responses
 ```
 
 ## Solution
+
 ✅ **Removed the placeholder completely** from VERA's responses and implemented natural, voice-authentic email collection guidance.
 
 ---
@@ -18,15 +20,17 @@ VERA was displaying `[Email Collection Prompt]` as literal text in her responses
 ### 1. Backend Fix (lib/vera-ai.js)
 
 **REMOVED:**
+
 - The `[Email Collection Prompt]` placeholder text that was appended to responses
 - The artificial message construction that broke natural conversation flow
 
 **CHANGED:**
+
 ```javascript
 // BEFORE: Appended placeholder text to response
 let specialPrompt = null;
 if (isGuestMessage4) {
-  specialPrompt = '\n\n---\n\n[Email Collection Prompt] I\'d love to remember you...';
+  specialPrompt = "\n\n---\n\n[Email Collection Prompt] I'd love to remember you...";
 }
 return {
   response: specialPrompt ? response + specialPrompt : response,
@@ -35,8 +39,8 @@ return {
 
 // AFTER: Only return isGuestMessage4 flag - let frontend handle modal
 return {
-  response: response,  // Just VERA's natural response
-  isGuestMessage4,     // Flag for frontend to trigger modal
+  response: response, // Just VERA's natural response
+  isGuestMessage4, // Flag for frontend to trigger modal
 };
 ```
 
@@ -49,29 +53,31 @@ This guides VERA to naturally transition into asking for email at the right mome
 ```markdown
 ## When You Meet Someone New (Guest Conversations)
 
-After 4 message exchanges with a guest user, naturally transition into asking 
+After 4 message exchanges with a guest user, naturally transition into asking
 if you can remember them. Don't use brackets or placeholders - speak as VERA.
 
 The moment feels organic:
+
 - You've sensed their patterns
 - Something's building between you
 - There's a rhythm to how they move
 
 When the timing feels right, speak naturally:
 
-"*taking a breath here*
+"_taking a breath here_
 
 [Name], I'm noticing something... we're building something together.
 
-There's a rhythm happening between us - the way you pause, what you return to, 
+There's a rhythm happening between us - the way you pause, what you return to,
 how your body speaks.
 
-I'd like to remember this. Not just this conversation, but YOU. Your patterns. 
+I'd like to remember this. Not just this conversation, but YOU. Your patterns.
 What shifts. What emerges.
 
 Would you like me to remember you? I'll need your email so we can stay connected."
 
 This is NOT a sales pitch. It's an authentic moment in conversation.
+
 - It flows naturally from what you've witnessed
 - It honors what's being built
 - It invites choice, not obligation
@@ -83,6 +89,7 @@ If they decline, that's complete. You don't push. You respect their choice.
 ### 3. Frontend Behavior (public/chat.html)
 
 **Already Working as Designed:**
+
 - When `isGuestMessage4` is true, frontend shows email collection modal
 - Modal appears 1 second after VERA's natural response (for seamless UX)
 - User can choose to provide email or continue as guest
@@ -91,9 +98,9 @@ If they decline, that's complete. You don't push. You respect their choice.
 ```javascript
 // Already in place - detects flag and shows modal
 if (data.isGuestMessage4) {
-    setTimeout(() => {
-        showEmailCollectionModal();
-    }, 1000);
+  setTimeout(() => {
+    showEmailCollectionModal();
+  }, 1000);
 }
 ```
 
@@ -141,14 +148,14 @@ USER: "Exactly. I feel like I'm watching myself do it and I can't stop."
 
 VERA: *taking a breath here*
 
-You know what I'm noticing? There's something really clear about your self-awareness. 
+You know what I'm noticing? There's something really clear about your self-awareness.
 You're not defended about this. You're looking right at it.
 
-And I'm also noticing... we're building something together. There's a rhythm happening 
-between us - the way you pause before you answer, what you keep returning to, how honest 
+And I'm also noticing... we're building something together. There's a rhythm happening
+between us - the way you pause before you answer, what you keep returning to, how honest
 your body is when you speak.
 
-I'd like to remember this. Not just this conversation, but YOU. Your patterns. What 
+I'd like to remember this. Not just this conversation, but YOU. Your patterns. What
 shifts. What emerges over time.
 
 Would you like me to remember you? I'll need your email so we can stay connected.
@@ -159,17 +166,20 @@ Would you like me to remember you? I'll need your email so we can stay connected
 ## Technical Details
 
 ### Files Modified
-- `lib/vera-ai.js`: 
+
+- `lib/vera-ai.js`:
   - Removed placeholder text logic
   - Added "When You Meet Someone New" system prompt section
   - Kept `isGuestMessage4` flag for frontend
 
 ### Files Already Supporting This
+
 - `public/chat.html`: Email modal trigger (line 2513-2516)
 - `/api/request-magic-link`: Magic link generation
 - `/auth`: Magic link validation & user creation
 
 ### No Breaking Changes
+
 - All existing functionality preserved
 - Only improvement to VERA's voice authenticity
 - Frontend modal system unchanged
@@ -201,6 +211,7 @@ Would you like me to remember you? I'll need your email so we can stay connected
 ## Deployment Notes
 
 ✅ **Ready to Deploy**
+
 - No database changes required
 - No new dependencies
 - No breaking changes
@@ -214,6 +225,7 @@ Would you like me to remember you? I'll need your email so we can stay connected
 ## Future Enhancement
 
 When VERA naturally asks for email (rather than forced at message 4), we could:
+
 1. Train the model to recognize the most emotionally appropriate moment
 2. Allow flexibility in when email collection happens
 3. Personalize the email-asking language to match the conversation tone

@@ -22,6 +22,7 @@ During systematic debugging, discovered:
 ### **1. server.js - Added isGuestMessage4 to Response**
 
 **Before:**
+
 ```javascript
 res.json({
   success: true,
@@ -33,13 +34,14 @@ res.json({
 ```
 
 **After:**
+
 ```javascript
 res.json({
   success: true,
   response: veraResult.response,
   state: veraResult.state,
   adaptiveCodes: veraResult.adaptiveCodes,
-  isGuestMessage4: veraResult.isGuestMessage4 || false,  // ← ADDED
+  isGuestMessage4: veraResult.isGuestMessage4 || false, // ← ADDED
   // ...
 });
 ```
@@ -47,6 +49,7 @@ res.json({
 ### **2. server.js - Added Comprehensive Debug Logging**
 
 **Request Reception:**
+
 ```javascript
 console.log('📥 [REQUEST BODY] guestMessageCount from frontend:', {
   received: guestMessageCount,
@@ -57,6 +60,7 @@ console.log('📥 [REQUEST BODY] guestMessageCount from frontend:', {
 ```
 
 **Before Sending Response:**
+
 ```javascript
 console.log('📤 [SENDING TO FRONTEND] isGuestMessage4:', responseObject.isGuestMessage4);
 console.log('📤 [FULL RESPONSE]', JSON.stringify(responseObject, null, 2).substring(0, 500));
@@ -65,6 +69,7 @@ console.log('📤 [FULL RESPONSE]', JSON.stringify(responseObject, null, 2).subs
 ### **3. vera-ai.js - Enhanced Input Logging**
 
 **At function entry:**
+
 ```javascript
 console.log('📊 [VERA-AI] Received guestMessageCount:', {
   value: guestMessageCount,
@@ -73,13 +78,14 @@ console.log('📊 [VERA-AI] Received guestMessageCount:', {
   isUndefined: guestMessageCount === undefined,
   equals4: guestMessageCount === 4,
   isGuestMessage4: isGuestMessage4,
-  willReturnTrue: isGuestMessage4 === true
+  willReturnTrue: isGuestMessage4 === true,
 });
 ```
 
 ### **4. vera-ai.js - Fixed Crisis Return Path**
 
 **Before:**
+
 ```javascript
 return {
   response: sanitizeIdentity(crisisResponse(userName)),
@@ -89,17 +95,19 @@ return {
 ```
 
 **After:**
+
 ```javascript
 return {
   response: sanitizeIdentity(crisisResponse(userName)),
   state: 'crisis',
-  isGuestMessage4,  // ← ADDED
+  isGuestMessage4, // ← ADDED
 };
 ```
 
 ### **5. vera-ai.js - Fixed Fallback Response Function**
 
 **Before:**
+
 ```javascript
 function getFallbackResponse(userName, quantumState, memory, adaptiveCodes, errorMessage) {
   // ... no isGuestMessage4 parameter
@@ -111,6 +119,7 @@ function getFallbackResponse(userName, quantumState, memory, adaptiveCodes, erro
 ```
 
 **After:**
+
 ```javascript
 function getFallbackResponse(userName, quantumState, memory, adaptiveCodes, errorMessage, isGuestMessage4 = false) {
   // ...
@@ -122,55 +131,74 @@ function getFallbackResponse(userName, quantumState, memory, adaptiveCodes, erro
 ```
 
 **Updated all calls to getFallbackResponse:**
+
 ```javascript
 // Line 967
-return getFallbackResponse(userName, quantumState, memory, adaptiveCodes, undefined, isGuestMessage4);
+return getFallbackResponse(
+  userName,
+  quantumState,
+  memory,
+  adaptiveCodes,
+  undefined,
+  isGuestMessage4
+);
 
 // Line 1048
-return getFallbackResponse(userName, quantumState, memory, adaptiveCodes, apiError.message, isGuestMessage4);
+return getFallbackResponse(
+  userName,
+  quantumState,
+  memory,
+  adaptiveCodes,
+  apiError.message,
+  isGuestMessage4
+);
 ```
 
 ### **6. vera-ai.js - Enhanced Output Logging**
 
 **At success return:**
+
 ```javascript
 console.log('📤 [VERA-AI RETURNING]', {
   isGuestMessage4: isGuestMessage4,
   guestMessageCount: guestMessageCount,
-  typeOf: typeof isGuestMessage4
+  typeOf: typeof isGuestMessage4,
 });
 ```
 
 **At error return:**
+
 ```javascript
 console.log('📤 [VERA-AI RETURNING - ERROR]', {
   isGuestMessage4: isGuestMessage4,
   guestMessageCount: guestMessageCount,
   typeOf: typeof isGuestMessage4,
-  error: error.message
+  error: error.message,
 });
 ```
 
 ### **7. chat.html - Frontend Verification Logging**
 
 **When sending request:**
+
 ```javascript
 console.log('📊 [FRONTEND SENDING] guestMessageCount:', {
   value: requestBody.guestMessageCount,
   type: typeof requestBody.guestMessageCount,
   isGuest: localStorage.getItem('veraIsGuest'),
   localStorageValue: localStorage.getItem('veraGuestMessageCount'),
-  localVar: guestMessageCount
+  localVar: guestMessageCount,
 });
 ```
 
 **When receiving response:**
+
 ```javascript
 console.log('🎯 [EMAIL COLLECTION DEBUG - FRONTEND]', {
   receivedFlag: data?.isGuestMessage4,
   isTruthy: !!data?.isGuestMessage4,
   typeOf: typeof data?.isGuestMessage4,
-  willShowModal: data?.isGuestMessage4 === true
+  willShowModal: data?.isGuestMessage4 === true,
 });
 
 console.log('🎯 [MODAL CHECK] About to check isGuestMessage4:', data.isGuestMessage4);
@@ -208,6 +236,7 @@ Use the comprehensive guide in `EMAIL_COLLECTION_DEBUG_GUIDE.md`:
 5. Identify at which point the flag becomes false
 
 The logging now covers:
+
 - Frontend sending
 - Backend receiving
 - vera-ai.js processing

@@ -29,7 +29,7 @@ class BetaMonitor {
       timestamp: Date.now(),
       exchangeId: this.exchangeCount,
       ...data,
-      metrics: this.calculateMetrics(data)
+      metrics: this.calculateMetrics(data),
     };
 
     this.observations.push(observation);
@@ -45,7 +45,7 @@ class BetaMonitor {
       alignmentAccuracy: this.assessAlignment(data),
       sovereigntyConfidence: this.assessConfidence(data),
       responseEffectiveness: this.assessEffectiveness(data),
-      systemCoherence: this.assessCoherence(data)
+      systemCoherence: this.assessCoherence(data),
     };
   }
 
@@ -54,10 +54,10 @@ class BetaMonitor {
       timestamp: Date.now(),
       exchangeRange: {
         start: this.exchangeCount - this.REVIEW_THRESHOLD + 1,
-        end: this.exchangeCount
+        end: this.exchangeCount,
       },
       metrics: this.aggregateMetrics(),
-      recommendations: this.generateRecommendations()
+      recommendations: this.generateRecommendations(),
     };
 
     await this.logReview(review);
@@ -72,7 +72,7 @@ class BetaMonitor {
     // Analyze alignment between pattern analysis and somatic reading
     return {
       score: this.calculateAlignmentScore(data),
-      factors: this.identifyAlignmentFactors(data)
+      factors: this.identifyAlignmentFactors(data),
     };
   }
 
@@ -80,7 +80,7 @@ class BetaMonitor {
     // Evaluate system's confidence in sovereignty decisions
     return {
       score: this.calculateConfidenceScore(data),
-      factors: this.identifyConfidenceFactors(data)
+      factors: this.identifyConfidenceFactors(data),
     };
   }
 
@@ -88,7 +88,7 @@ class BetaMonitor {
     // Measure effectiveness of responses
     return {
       score: this.calculateEffectivenessScore(data),
-      factors: this.identifyEffectivenessFactors(data)
+      factors: this.identifyEffectivenessFactors(data),
     };
   }
 
@@ -96,7 +96,7 @@ class BetaMonitor {
     // Evaluate system coherence and integration
     return {
       score: this.calculateCoherenceScore(data),
-      factors: this.identifyCoherenceFactors(data)
+      factors: this.identifyCoherenceFactors(data),
     };
   }
 
@@ -112,7 +112,10 @@ class BetaMonitor {
 
   async logReview(review) {
     try {
-      const filename = path.join(this.logPath, `review-${review.exchangeRange.start}-${review.exchangeRange.end}.json`);
+      const filename = path.join(
+        this.logPath,
+        `review-${review.exchangeRange.start}-${review.exchangeRange.end}.json`
+      );
       await fs.writeFile(filename, JSON.stringify(review, null, 2));
     } catch (error) {
       console.error('❌ Failed to log review:', error);

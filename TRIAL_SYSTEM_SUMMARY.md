@@ -9,6 +9,7 @@ A complete trial tracking and management system has been implemented across all 
 ## 🎯 What's Working
 
 ### 1. Database Layer ✅
+
 ```
 users table:
 ├─ trial_starts_at TIMESTAMP      (when trial begins)
@@ -18,6 +19,7 @@ users table:
 ```
 
 ### 2. Backend Logic ✅
+
 ```
 /api/chat endpoint:
 ├─ Checks subscription_status
@@ -29,6 +31,7 @@ users table:
 ```
 
 ### 3. VERA's Awareness ✅
+
 ```
 System Prompt Enhancement:
 ├─ Knows current trial day
@@ -39,6 +42,7 @@ System Prompt Enhancement:
 ```
 
 ### 4. Frontend Banner ✅
+
 ```
 UI Component:
 ├─ Hidden for non-trial users
@@ -55,6 +59,7 @@ UI Component:
 ## 📊 User Experience Flow
 
 ### Days 1-4: Onboarding Phase
+
 ```
 ┌─────────────────────────────────┐
 │ VERA Trial - Day 1 of 7         │ ← Subtle blue banner
@@ -68,20 +73,22 @@ UI Component:
 ```
 
 ### Day 5: Choice Point Begins
+
 ```
 ┌─────────────────────────────────┐
 │ ⏰ 2 days left in your trial     │ ← Warm orange/red colors
 │ ██████████░░░ 71% ⚠ 2 left      │
 └─────────────────────────────────┘
 
-💬 VERA: "*I'm sensing something shifting...* 
-         As we move into the last stretch of this trial, 
+💬 VERA: "*I'm sensing something shifting...*
+         As we move into the last stretch of this trial,
          what's becoming clear about what you need?"
 
 🤔 User considers: Should I continue?
 ```
 
 ### Days 6-7: Final Days
+
 ```
 ┌─────────────────────────────────┐
 │ ⏰ Last day of trial!            │ ← Urgent styling
@@ -94,10 +101,11 @@ UI Component:
 ```
 
 ### After Trial: Free Tier
+
 ```
 ✅ Status: free_tier
 ✅ Message Limit: 1 per day
-✅ Last message today? 
+✅ Last message today?
    └─ BLOCKED: "Upgrade to continue"
 ✅ Different day?
    └─ ALLOWED: 1 message available
@@ -116,33 +124,33 @@ if (req.session.userEmail) {
   const user = await db.query(
     'SELECT subscription_status, trial_dates, last_free_message FROM users'
   );
-  
+
   // TRIAL CHECK
   if (user.subscription_status === 'trial') {
     const trialDay = calculateDaysPassed(user.trial_starts_at);
-    
+
     if (isExpired(user.trial_ends_at)) {
       // Auto-downgrade to free_tier
       await db.query('UPDATE users SET subscription_status = "free_tier"');
     }
   }
-  
+
   // FREE TIER CHECK
   if (user.subscription_status === 'free_tier') {
     const lastMessageToday = isSameDay(user.last_free_message_date, TODAY);
-    
+
     if (lastMessageToday) {
       // Block message
       return res.status(429).json({
         error: 'Daily limit reached',
-        message: 'Upgrade to VERA to continue unlimited conversations'
+        message: 'Upgrade to VERA to continue unlimited conversations',
       });
     } else {
       // Allow message
       await db.query('UPDATE users SET last_free_message_date = NOW()');
     }
   }
-  
+
   // ACTIVE subscribers: unlimited
 }
 
@@ -153,8 +161,8 @@ return res.json({
     status: userSubscriptionStatus,
     trialDay: trialDayCount,
     isOnTrial: status === 'trial',
-    daysRemaining: 7 - trialDay
-  }
+    daysRemaining: 7 - trialDay,
+  },
 });
 ```
 
@@ -165,22 +173,22 @@ return res.json({
 
 function updateTrialBanner(trialDay) {
   const banner = document.getElementById('trialBanner');
-  
+
   // Show banner
   banner.classList.remove('hidden');
-  
+
   // Update day count
   document.getElementById('trialDayNum').textContent = trialDay;
   document.getElementById('trialDaysRemaining').textContent = `${7 - trialDay} left`;
-  
+
   // Update progress (visual indicator)
   const percent = (trialDay / 7) * 100;
   document.getElementById('trialProgressFill').style.width = percent + '%';
-  
+
   // Apply critical styling on Day 5+
   if (trialDay >= 5) {
     banner.classList.add('critical');
-    
+
     if (trialDay === 5) {
       bannerText.innerHTML = '⏰ 2 days left in your trial';
     } else if (trialDay === 6) {
@@ -226,8 +234,8 @@ const contextData = {
     trialDayCount: 5,
     userSubscriptionStatus: 'trial',
     isOnDay5: true,
-    daysRemaining: 2
-  }
+    daysRemaining: 2,
+  },
 };
 ```
 
@@ -235,15 +243,15 @@ const contextData = {
 
 ## 📈 Key Metrics
 
-| Metric | Value | Note |
-|--------|-------|------|
-| Trial Duration | 7 days | Configurable |
-| Free Tier Limit | 1 msg/day | Configurable |
-| Day 5 Threshold | Day 5+ | When styling changes |
-| Database Queries | O(1) | Indexed lookups |
-| Code Changes | +390 lines | Net additions |
-| Files Modified | 7 | Database, backend, frontend |
-| Breaking Changes | 0 | Fully backward compatible |
+| Metric           | Value      | Note                        |
+| ---------------- | ---------- | --------------------------- |
+| Trial Duration   | 7 days     | Configurable                |
+| Free Tier Limit  | 1 msg/day  | Configurable                |
+| Day 5 Threshold  | Day 5+     | When styling changes        |
+| Database Queries | O(1)       | Indexed lookups             |
+| Code Changes     | +390 lines | Net additions               |
+| Files Modified   | 7          | Database, backend, frontend |
+| Breaking Changes | 0          | Fully backward compatible   |
 
 ---
 
@@ -252,18 +260,21 @@ const contextData = {
 ### Banner Styling
 
 **Days 1-4 (Subtle):**
+
 - Background: Soft purple/blue gradient (10% opacity)
 - Text: Primary color (dark)
 - Progress Bar: Lavender → Blue gradient
 - Border: Subtle purple (20% opacity)
 
 **Days 5-7 (Urgent):**
+
 - Background: Warm orange/red gradient (15% opacity)
 - Text: #d84444 (red)
 - Progress Bar: Red → Orange gradient
 - Border: Red (30% opacity)
 
 **Text Updates:**
+
 - Day 1-4: "Trial: Day X of 7"
 - Day 5: "⏰ 2 days left in your trial"
 - Day 6: "⏰ Last day of trial!"
@@ -377,6 +388,7 @@ CREATE INDEX IF NOT EXISTS idx_users_trial_ends ON users(trial_ends_at);
 ## 🔐 Security Considerations
 
 ✅ **Implemented:**
+
 - Server-side validation (not client-only)
 - Trial dates stored and checked server-side
 - Cannot bypass limits from frontend
@@ -385,6 +397,7 @@ CREATE INDEX IF NOT EXISTS idx_users_trial_ends ON users(trial_ends_at);
 - Rate limiting via daily message cap
 
 ✅ **No Changes Needed:**
+
 - Existing auth system still handles session
 - HTTPS still required
 - Session tokens unchanged
@@ -404,6 +417,7 @@ CREATE INDEX IF NOT EXISTS idx_users_trial_ends ON users(trial_ends_at);
 ## ✨ What's Next?
 
 **Potential Enhancements:**
+
 1. Email reminders on Day 5 and Day 7
 2. Pause trial feature (extend before expiration)
 3. Trial extension for referrals
@@ -419,5 +433,4 @@ CREATE INDEX IF NOT EXISTS idx_users_trial_ends ON users(trial_ends_at);
 **Commit:** d602b93  
 **Date:** October 27, 2025  
 **Files Modified:** 7  
-**Total Lines Added:** +677  
-
+**Total Lines Added:** +677

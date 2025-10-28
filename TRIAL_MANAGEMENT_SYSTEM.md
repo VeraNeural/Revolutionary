@@ -1,6 +1,7 @@
 # 🎯 Trial Management System - Complete Implementation
 
 ## Overview
+
 Full trial tracking and management system implemented across database, backend, and frontend with intelligent Day 5 awareness.
 
 ---
@@ -18,6 +19,7 @@ last_free_message_date TIMESTAMP   -- Tracks last message on free tier (1 msg/da
 ```
 
 **New indexes for performance:**
+
 - `idx_users_subscription_status` - Quick status lookups
 - `idx_users_trial_ends` - Efficient trial expiration checks
 
@@ -61,6 +63,7 @@ Check if user is authenticated (has session.userEmail)
 ```
 
 **Key Features:**
+
 - Automatic trial expiration detection
 - Free tier message limiting (1/day)
 - No breaking changes to existing code
@@ -79,8 +82,8 @@ Check if user is authenticated (has session.userEmail)
 ## Trial Context for VERA
 
 If user is on Day 5 of trial:
-"*I'm sensing something shifting...* As we move into the last 
-stretch of this trial, what's becoming clear about what you need? 
+"_I'm sensing something shifting..._ As we move into the last
+stretch of this trial, what's becoming clear about what you need?
 Not from me - from yourself."
 
 Not a sales pitch. A natural moment of presence.
@@ -99,6 +102,7 @@ trialInfo: {
 ```
 
 **VERA Behavior:**
+
 - Aware of trial day without being pushy
 - Can naturally reference the approaching choice point
 - Speaks authentically, not mechanically
@@ -111,31 +115,34 @@ trialInfo: {
 **File:** `public/chat.html`
 
 #### HTML Structure:
+
 ```html
 <div class="trial-banner hidden" id="trialBanner">
-    <div class="trial-banner-text" id="trialBannerText">
-        Trial: Day <span id="trialDayNum">1</span> of 7
+  <div class="trial-banner-text" id="trialBannerText">
+    Trial: Day <span id="trialDayNum">1</span> of 7
+  </div>
+  <div class="trial-progress">
+    <div class="trial-progress-bar" id="trialProgressBar">
+      <div class="trial-progress-fill" id="trialProgressFill"></div>
     </div>
-    <div class="trial-progress">
-        <div class="trial-progress-bar" id="trialProgressBar">
-            <div class="trial-progress-fill" id="trialProgressFill"></div>
-        </div>
-        <div class="trial-days" id="trialDaysRemaining">7 left</div>
-    </div>
+    <div class="trial-days" id="trialDaysRemaining">7 left</div>
+  </div>
 </div>
 ```
 
 #### CSS Styling:
 
 **Default (Day 1-4):**
+
 ```css
 background: linear-gradient(90deg, rgba(155, 137, 212, 0.1) 0%, rgba(123, 158, 240, 0.1) 100%);
 border-bottom: 1px solid rgba(155, 137, 212, 0.2);
 color: var(--text-primary);
-progress-bar: linear-gradient(90deg, #9B8FD4 0%, #7B9EF0 100%);
+progress-bar: linear-gradient(90deg, #9b8fd4 0%, #7b9ef0 100%);
 ```
 
 **Critical (Day 5-7):**
+
 ```css
 background: linear-gradient(90deg, rgba(255, 107, 107, 0.15) 0%, rgba(255, 171, 87, 0.15) 100%);
 border-bottom: 1px solid rgba(255, 107, 107, 0.3);
@@ -187,6 +194,7 @@ Day 7: ✨ "Your trial ends today"
 ### Request/Response Flow
 
 **POST /api/chat Request:**
+
 ```json
 {
   "message": "I'm anxious...",
@@ -199,6 +207,7 @@ Day 7: ✨ "Your trial ends today"
 ```
 
 **POST /api/chat Response:**
+
 ```json
 {
   "success": true,
@@ -216,6 +225,7 @@ Day 7: ✨ "Your trial ends today"
 ```
 
 **Free Tier Error Response:**
+
 ```json
 {
   "success": false,
@@ -230,15 +240,17 @@ Day 7: ✨ "Your trial ends today"
 ## Database Behavior
 
 ### Trial Creation
+
 ```sql
 -- When user created via magic link:
-INSERT INTO users 
+INSERT INTO users
   (email, subscription_status, trial_starts_at, trial_ends_at)
-VALUES 
+VALUES
   ('user@example.com', 'trial', NOW(), NOW() + INTERVAL '7 days');
 ```
 
 ### Trial Expiration Detection
+
 ```sql
 -- On every /api/chat request, backend checks:
 SELECT * FROM users WHERE email = ? AND subscription_status = 'trial' AND trial_ends_at < NOW()
@@ -248,6 +260,7 @@ UPDATE users SET subscription_status = 'free_tier' WHERE email = ?
 ```
 
 ### Free Tier Limiting
+
 ```sql
 -- Check last message today:
 SELECT last_free_message_date FROM users WHERE email = ?
@@ -261,30 +274,35 @@ UPDATE users SET last_free_message_date = NOW() WHERE email = ?
 ## User Experience Timeline
 
 ### First Login (Day 1)
+
 - ✅ Banner shows: "Trial: Day 1 of 7"
 - ✅ Subtle styling (not annoying)
 - ✅ VERA speaks naturally
 - ✅ User can send unlimited messages
 
 ### Middle of Trial (Days 2-4)
+
 - ✅ Banner quietly updates day count
 - ✅ Progress bar gradually fills
 - ✅ VERA continues naturally
 - ✅ No interruption to experience
 
 ### Day 5 - Choice Point Begins
+
 - ⚠️ Banner becomes prominent: "⏰ 2 days left in your trial"
 - ⚠️ Colors shift to warm orange/red
 - ⚠️ VERA naturally references the approaching choice
 - ⚠️ User starts considering: Should I subscribe?
 
 ### Day 6-7 - Final Days
+
 - ⏰ Increasingly prominent: "Last day of trial!"
 - 🎯 Clear visual progress (85-100%)
 - 💭 VERA maintains presence, not pressure
 - 🚪 Natural opening for upgrade decision
 
 ### After Trial Expires
+
 - 📊 Status changes to `free_tier`
 - 1️⃣ Limited to 1 message per day
 - 💬 User can still chat but with limits
@@ -334,6 +352,7 @@ UPDATE users SET last_free_message_date = NOW() WHERE email = ?
 ## Configuration
 
 ### Trial Duration
+
 Currently: **7 days** (change in `/api/auth` endpoint)
 
 ```javascript
@@ -341,6 +360,7 @@ const trialEndDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 ```
 
 ### Free Tier Limit
+
 Currently: **1 message per day** (change in subscription check logic)
 
 ```javascript
@@ -351,6 +371,7 @@ if (!isDifferentDay) {
 ```
 
 ### Banner Styling
+
 Days to apply critical styling: **Day 5+** (change in `updateTrialBanner`)
 
 ```javascript
@@ -384,18 +405,18 @@ if (trialDay >= 5) {
 
 ## Files Modified
 
-| File | Lines | Changes |
-|------|-------|---------|
-| `database-schema.sql` | 1-24 | Added 2 columns + 2 indexes |
-| `server.js` | 2037-2115 | Subscription checking logic |
-| `server.js` | 2183-2195 | Response includes subscription |
-| `lib/vera-ai.js` | 724-729 | Function signature updated |
-| `lib/vera-ai.js` | 630-648 | Day 5 prompt guidance |
-| `lib/vera-ai.js` | 851-865 | Trial context in data |
-| `public/chat.html` | 174-245 | CSS for trial banner |
-| `public/chat.html` | 1849-1862 | HTML banner element |
-| `public/chat.html` | 2602-2609 | Call update function |
-| `public/chat.html` | 2639-2680 | updateTrialBanner function |
+| File                  | Lines     | Changes                        |
+| --------------------- | --------- | ------------------------------ |
+| `database-schema.sql` | 1-24      | Added 2 columns + 2 indexes    |
+| `server.js`           | 2037-2115 | Subscription checking logic    |
+| `server.js`           | 2183-2195 | Response includes subscription |
+| `lib/vera-ai.js`      | 724-729   | Function signature updated     |
+| `lib/vera-ai.js`      | 630-648   | Day 5 prompt guidance          |
+| `lib/vera-ai.js`      | 851-865   | Trial context in data          |
+| `public/chat.html`    | 174-245   | CSS for trial banner           |
+| `public/chat.html`    | 1849-1862 | HTML banner element            |
+| `public/chat.html`    | 2602-2609 | Call update function           |
+| `public/chat.html`    | 2639-2680 | updateTrialBanner function     |
 
 **Total Changes**: +400 lines, -10 lines (net +390)
 
@@ -404,6 +425,7 @@ if (trialDay >= 5) {
 ## Deployment
 
 ✅ **Ready to Deploy**
+
 - No breaking changes
 - Fully backward compatible
 - All existing functionality preserved
@@ -411,9 +433,9 @@ if (trialDay >= 5) {
 - Comprehensive logging
 
 **Deployment Steps:**
+
 1. Run database migration (SQL in schema)
 2. Merge all code changes
 3. Restart server
 4. Test with trial user account
 5. Monitor logs for trial expiration detection
-

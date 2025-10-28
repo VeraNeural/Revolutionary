@@ -621,32 +621,32 @@ Token Validation Flow:
 ```
 ☐ Database migration:
   psql < database-schema.sql
-  
+
 ☐ Verify magic_links table:
   SELECT * FROM magic_links LIMIT 1;
-  
+
 ☐ Check environment variables:
   - RESEND_API_KEY=re_xxxxx
   - EMAIL_FROM=vera@example.com
   - APP_URL=https://app.com
-  
+
 ☐ Test magic link locally:
   - Send magic link
   - Check console for URL
   - Click link
   - Verify authentication
-  
+
 ☐ Verify email sending:
   - Resend API is responsive
   - Emails arrive in inbox
   - Links are clickable
-  
+
 ☐ Test error scenarios:
   - Missing token
   - Expired token
   - Used token
   - Database error
-  
+
 ☐ Monitor production:
   - Watch authentication success rate
   - Monitor email delivery

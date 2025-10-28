@@ -85,7 +85,7 @@ CREATE INDEX IF NOT EXISTS idx_login_audit_success ON login_audit_log(success);
 Run this query to confirm all tables exist:
 
 ```sql
-SELECT table_name FROM information_schema.tables 
+SELECT table_name FROM information_schema.tables
 WHERE table_schema = 'public' AND table_name IN ('magic_links', 'email_delivery_logs', 'login_audit_log');
 ```
 
@@ -100,7 +100,7 @@ WHERE table_schema = 'public' AND table_name IN ('magic_links', 'email_delivery_
 The admin monitoring endpoints require authentication. Set the admin email:
 
 1. In Railway project, click on **Settings** (gear icon)
-2. Click **Environment** 
+2. Click **Environment**
 3. Add new variable:
    ```
    ADMIN_EMAIL=your-email@example.com
@@ -164,6 +164,7 @@ curl -X POST http://localhost:8080/api/auth/send-magic-link \
 ```
 
 **Expected response:**
+
 ```json
 {
   "success": true,
@@ -177,7 +178,7 @@ curl -X POST http://localhost:8080/api/auth/send-magic-link \
 Query the database to verify email was logged:
 
 ```sql
-SELECT email_address, status, created_at FROM email_delivery_logs 
+SELECT email_address, status, created_at FROM email_delivery_logs
 ORDER BY created_at DESC LIMIT 5;
 ```
 
@@ -193,6 +194,7 @@ curl http://localhost:8080/api/admin/email-status/test@example.com \
 ```
 
 **Expected:**
+
 ```json
 {
   "email": "test@example.com",
@@ -217,20 +219,24 @@ curl http://localhost:8080/api/admin/email-status/test@example.com \
    - Click "Send Sign-In Link"
 
 2. **Check Email Logs**
+
    ```sql
-   SELECT * FROM email_delivery_logs 
-   WHERE email_address='test@example.com' 
+   SELECT * FROM email_delivery_logs
+   WHERE email_address='test@example.com'
    ORDER BY created_at DESC LIMIT 1;
    ```
+
    - Verify status is 'sent' or 'pending'
    - If 'failed', check error_message column
 
 3. **Check Magic Link Token**
+
    ```sql
-   SELECT token, expires_at, used FROM magic_links 
-   WHERE email='test@example.com' 
+   SELECT token, expires_at, used FROM magic_links
+   WHERE email='test@example.com'
    ORDER BY created_at DESC LIMIT 1;
    ```
+
    - Verify `used` is false
    - Verify `expires_at` is in the future
 
@@ -241,11 +247,13 @@ curl http://localhost:8080/api/admin/email-status/test@example.com \
    - Session should be created
 
 5. **Check Login Audit Log**
+
    ```sql
-   SELECT action, success FROM login_audit_log 
-   WHERE email='test@example.com' 
+   SELECT action, success FROM login_audit_log
+   WHERE email='test@example.com'
    ORDER BY created_at DESC LIMIT 5;
    ```
+
    - Should see: `login_successful` with success=true
 
 ---
@@ -281,16 +289,16 @@ Run these queries to verify system health:
 
 ```sql
 -- Email delivery success rate
-SELECT 
+SELECT
   COUNT(*) as total,
   SUM(CASE WHEN status='sent' THEN 1 ELSE 0 END) as sent,
   ROUND(100.0 * SUM(CASE WHEN status='sent' THEN 1 ELSE 0 END) / COUNT(*), 1) as success_rate_pct
-FROM email_delivery_logs 
+FROM email_delivery_logs
 WHERE created_at > NOW() - INTERVAL '24 hours';
 
 -- Failed emails (last 24h)
-SELECT email_address, error_message, attempt_count 
-FROM email_delivery_logs 
+SELECT email_address, error_message, attempt_count
+FROM email_delivery_logs
 WHERE status='failed' AND created_at > NOW() - INTERVAL '24 hours'
 ORDER BY created_at DESC;
 
@@ -301,9 +309,9 @@ WHERE success=false AND created_at > NOW() - INTERVAL '24 hours'
 ORDER BY created_at DESC;
 
 -- Pending emails (should be low)
-SELECT COUNT(*) as pending_count, 
+SELECT COUNT(*) as pending_count,
   MAX(last_attempted_at) as oldest_pending
-FROM email_delivery_logs 
+FROM email_delivery_logs
 WHERE status='pending';
 ```
 
@@ -326,19 +334,20 @@ WHERE status='pending';
 ### Issue: Users Not Receiving Emails
 
 **Debug Steps:**
+
 ```sql
 -- Check if email was logged
-SELECT * FROM email_delivery_logs 
-WHERE email_address='user@example.com' 
+SELECT * FROM email_delivery_logs
+WHERE email_address='user@example.com'
 ORDER BY created_at DESC LIMIT 5;
 
 -- If status='pending', retry manually
-SELECT * FROM email_delivery_logs 
+SELECT * FROM email_delivery_logs
 WHERE status='pending' AND last_attempted_at < NOW() - INTERVAL '1 minute'
 ORDER BY last_attempted_at ASC LIMIT 10;
 
 -- Check Resend API status
-SELECT resend_id, error_message FROM email_delivery_logs 
+SELECT resend_id, error_message FROM email_delivery_logs
 WHERE email_address='user@example.com' AND status='failed'
 ORDER BY created_at DESC LIMIT 1;
 ```
@@ -346,12 +355,13 @@ ORDER BY created_at DESC LIMIT 1;
 ### Issue: Magic Link Expired Immediately
 
 **Debug Steps:**
+
 ```sql
 -- Check token expiration
-SELECT token, expires_at, NOW(), 
+SELECT token, expires_at, NOW(),
   (expires_at - NOW()) as time_remaining
-FROM magic_links 
-WHERE email='user@example.com' 
+FROM magic_links
+WHERE email='user@example.com'
 ORDER BY created_at DESC LIMIT 1;
 
 -- If time_remaining is negative, token expired
@@ -361,6 +371,7 @@ ORDER BY created_at DESC LIMIT 1;
 ### Issue: Token Not Found After Clicking
 
 **Debug Steps:**
+
 ```sql
 -- Check if token exists
 SELECT * FROM magic_links WHERE token='TOKEN_HERE';
@@ -369,14 +380,15 @@ SELECT * FROM magic_links WHERE token='TOKEN_HERE';
 SELECT used, used_at FROM magic_links WHERE token='TOKEN_HERE';
 
 -- Check audit log for clues
-SELECT action, error_message FROM login_audit_log 
-WHERE email='user@example.com' 
+SELECT action, error_message FROM login_audit_log
+WHERE email='user@example.com'
 ORDER BY created_at DESC LIMIT 10;
 ```
 
 ### Issue: Admin Endpoints Return 403 Unauthorized
 
 **Debug Steps:**
+
 - Verify `ADMIN_EMAIL` environment variable is set correctly
 - Make sure you're logged in with that email
 - Check session cookie is being sent

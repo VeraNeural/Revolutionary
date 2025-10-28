@@ -8,6 +8,7 @@
 ## 📋 Endpoints Requiring Authentication
 
 ### 1. **GET /monitoring**
+
 - **Requires**: Bearer token in `Authorization` header
 - **Token**: Value of `MONITOR_KEY` env var (default: 'vera-monitor-key')
 - **Example**:
@@ -16,15 +17,18 @@
   ```
 
 ### 2. **POST /api/chat** (with restrictions)
+
 - **Status**: Generally public but may have rate limiting
 - **Authentication**: Optional (can send as guest)
 - **Requires**: Valid message in body
 
 ### 3. **POST /api/history**
+
 - **Status**: Protected if authenticated (checks req.session)
 - **Returns 401**: If accessing another user's history without permission
 
 ### 4. **GET /admin/leads**
+
 - **Status**: Admin protected
 - **Requires**: Admin authentication
 - **Returns 401**: If not admin user
@@ -55,6 +59,7 @@
    - Is it `/api/chat`? → Check message payload
 
 2. **For /monitoring endpoint**:
+
    ```bash
    # Test with correct token
    curl -H "Authorization: Bearer vera-monitor-key" \
@@ -75,12 +80,12 @@
 
 ## 🛠️ Common Issues
 
-| Error | Likely Cause | Solution |
-|-------|--------------|----------|
-| 401 on /monitoring | No/wrong Bearer token | Add correct `Authorization` header |
-| 401 on /api/chat | Rate limiting | Wait a moment and retry |
-| 401 on /admin/leads | Not admin | Use admin user credentials |
-| 401 on /api/history | Invalid session | Login with magic link first |
+| Error               | Likely Cause          | Solution                           |
+| ------------------- | --------------------- | ---------------------------------- |
+| 401 on /monitoring  | No/wrong Bearer token | Add correct `Authorization` header |
+| 401 on /api/chat    | Rate limiting         | Wait a moment and retry            |
+| 401 on /admin/leads | Not admin             | Use admin user credentials         |
+| 401 on /api/history | Invalid session       | Login with magic link first        |
 
 ---
 
@@ -94,6 +99,7 @@
 ---
 
 **Need more info?** Check:
+
 - `lib/rate-limiter.js` - Rate limiting rules
 - `server.js` line 1117 - /monitoring auth
 - `server.js` line 1739 - /api/auth/check

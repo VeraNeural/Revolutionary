@@ -3,6 +3,7 @@
 ## Quick Start
 
 ### 1. Database Migration
+
 Run this SQL to add trial tracking columns:
 
 ```sql
@@ -53,10 +54,10 @@ if (req.session.userEmail) {
     // Check trial expiration
     if (userSubscriptionStatus === 'trial' && user.trial_ends_at) {
       if (new Date() > new Date(user.trial_ends_at)) {
-        await db.query(
-          `UPDATE users SET subscription_status = $1 WHERE email = $2`,
-          ['free_tier', req.session.userEmail]
-        );
+        await db.query(`UPDATE users SET subscription_status = $1 WHERE email = $2`, [
+          'free_tier',
+          req.session.userEmail,
+        ]);
         userSubscriptionStatus = 'free_tier';
         trialDayCount = null;
       }
@@ -72,17 +73,17 @@ if (req.session.userEmail) {
           subscriptionError = {
             status: 429,
             error: 'Daily message limit reached',
-            message: 'You\'ve used your daily message on the free tier. Upgrade to VERA to continue.',
-            upgradeUrl: '/pricing'
+            message:
+              "You've used your daily message on the free tier. Upgrade to VERA to continue.",
+            upgradeUrl: '/pricing',
           };
         }
       }
 
       if (!subscriptionError) {
-        await db.query(
-          `UPDATE users SET last_free_message_date = NOW() WHERE email = $1`,
-          [req.session.userEmail]
-        );
+        await db.query(`UPDATE users SET last_free_message_date = NOW() WHERE email = $1`, [
+          req.session.userEmail,
+        ]);
       }
     }
   }
@@ -94,7 +95,7 @@ if (subscriptionError) {
     success: false,
     error: subscriptionError.error,
     message: subscriptionError.message,
-    upgradeUrl: subscriptionError.upgradeUrl
+    upgradeUrl: subscriptionError.upgradeUrl,
   });
 }
 ```
@@ -125,7 +126,7 @@ res.json({
     status: userSubscriptionStatus,
     trialDay: trialDayCount,
     isOnTrial: userSubscriptionStatus === 'trial' && trialDayCount !== null,
-  }
+  },
 });
 ```
 
@@ -137,13 +138,13 @@ res.json({
 
 ```javascript
 async function getVERAResponse(
-  userId, 
-  message, 
-  userName, 
-  pool, 
-  attachments = [], 
-  guestMessageCount = null, 
-  trialContext = {}  // <- NEW
+  userId,
+  message,
+  userName,
+  pool,
+  attachments = [],
+  guestMessageCount = null,
+  trialContext = {} // <- NEW
 ) {
   const { trialDayCount, userSubscriptionStatus } = trialContext;
   // ... rest of function
@@ -163,9 +164,11 @@ const contextData = {
     userSubscriptionStatus,
     isOnDay5: trialDayCount === 5,
     isOnDay7: trialDayCount === 7,
-    daysRemaining: trialDayCount ? (7 - trialDayCount) : null
+    daysRemaining: trialDayCount ? 7 - trialDayCount : null,
   },
-  presenceState: { /* ... */ }
+  presenceState: {
+    /* ... */
+  },
 };
 ```
 
@@ -175,7 +178,7 @@ const contextData = {
 // Add trial context if user is on trial
 if (contextData?.trialInfo?.trialDayCount) {
   prompt += `\n- User is on trial: Day ${contextData.trialInfo.trialDayCount} of 7`;
-  
+
   if (contextData.trialInfo.isOnDay5) {
     prompt += `\n- IMPORTANT: This is Day 5 of their trial. If it feels natural, gently acknowledge the choice point. Example: "*I'm sensing something shifting...* As we move into the last stretch of this trial, what's becoming clear about what you need?"`;
   }
@@ -239,7 +242,7 @@ if (contextData?.trialInfo?.trialDayCount) {
 
 .trial-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #9B8FD4 0%, #7B9EF0 100%);
+  background: linear-gradient(90deg, #9b8fd4 0%, #7b9ef0 100%);
   border-radius: 3px;
   transition: width 0.3s ease;
 }
@@ -266,15 +269,15 @@ if (contextData?.trialInfo?.trialDayCount) {
 ```html
 <!-- Trial Banner -->
 <div class="trial-banner hidden" id="trialBanner">
-    <div class="trial-banner-text" id="trialBannerText">
-        Trial: Day <span id="trialDayNum">1</span> of 7
+  <div class="trial-banner-text" id="trialBannerText">
+    Trial: Day <span id="trialDayNum">1</span> of 7
+  </div>
+  <div class="trial-progress">
+    <div class="trial-progress-bar" id="trialProgressBar">
+      <div class="trial-progress-fill" id="trialProgressFill" style="width: 14%"></div>
     </div>
-    <div class="trial-progress">
-        <div class="trial-progress-bar" id="trialProgressBar">
-            <div class="trial-progress-fill" id="trialProgressFill" style="width: 14%"></div>
-        </div>
-        <div class="trial-days" id="trialDaysRemaining">7 left</div>
-    </div>
+    <div class="trial-days" id="trialDaysRemaining">7 left</div>
+  </div>
 </div>
 ```
 
@@ -306,7 +309,7 @@ function updateTrialBanner(trialDay) {
     banner.classList.add('critical');
     progressBar.classList.add('critical');
     daysRemaining.classList.add('critical');
-    
+
     if (trialDay === 5) {
       bannerText.innerHTML = `<strong>⏰ 2 days left in your trial</strong>`;
     } else if (trialDay === 6) {
@@ -406,6 +409,7 @@ if (data && data.success && data.response) {
 ## Configuration Options
 
 ### Trial Duration
+
 **File:** `/auth` endpoint (when user created)
 
 ```javascript
@@ -418,20 +422,27 @@ const trialEndDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 ```
 
 ### Free Tier Limit
+
 **File:** `/api/chat` endpoint (subscription check)
 
 ```javascript
 // Current: 1 message per day
-if (!isDifferentDay) { /* block */ }
+if (!isDifferentDay) {
+  /* block */
+}
 
 // To change: Modify isDifferentDay logic
 // Example: 3 messages per day
 let messageCountToday = getMessageCountToday(userId); // implement
-if (messageCountToday >= 3) { /* block */ }
+if (messageCountToday >= 3) {
+  /* block */
+}
 ```
 
 ### Day 5 Critical Threshold
-**Files:** 
+
+**Files:**
+
 - `vera-ai.js` line 644: `if (contextData.trialInfo.isOnDay5)`
 - `chat.html` line 2660: `if (trialDay >= 5)`
 
@@ -439,7 +450,9 @@ if (messageCountToday >= 3) { /* block */ }
 // Current: Day 5+
 // To change: Update both files
 // Example: Day 3+
-if (trialDay >= 3) { /* apply critical styling */ }
+if (trialDay >= 3) {
+  /* apply critical styling */
+}
 ```
 
 ---
@@ -447,6 +460,7 @@ if (trialDay >= 3) { /* apply critical styling */ }
 ## Error Messages
 
 ### Free Tier Daily Limit
+
 ```json
 {
   "success": false,
@@ -459,7 +473,9 @@ if (trialDay >= 3) { /* apply critical styling */ }
 **HTTP Status:** 429 (Too Many Requests)
 
 ### Trial Auto-Downgrade
+
 No error shown to user, but:
+
 - `subscription_status` automatically updated to `free_tier`
 - Next message shows free tier limit
 - Banner disappears (new banner logic for free tier could be added)
@@ -469,30 +485,34 @@ No error shown to user, but:
 ## Database Queries
 
 ### Check Trial Status
+
 ```sql
-SELECT subscription_status, trial_starts_at, trial_ends_at 
-FROM users 
+SELECT subscription_status, trial_starts_at, trial_ends_at
+FROM users
 WHERE email = 'user@example.com';
 ```
 
 ### Auto-Downgrade Expired Trials
+
 ```sql
-UPDATE users 
-SET subscription_status = 'free_tier' 
-WHERE subscription_status = 'trial' 
+UPDATE users
+SET subscription_status = 'free_tier'
+WHERE subscription_status = 'trial'
 AND trial_ends_at < NOW();
 ```
 
 ### Check Free Tier Usage
+
 ```sql
-SELECT last_free_message_date 
-FROM users 
+SELECT last_free_message_date
+FROM users
 WHERE email = 'user@example.com';
 ```
 
 ### Get Trial Stats
+
 ```sql
-SELECT 
+SELECT
   COUNT(*) as total_users,
   COUNT(CASE WHEN subscription_status = 'trial' THEN 1 END) as on_trial,
   COUNT(CASE WHEN subscription_status = 'free_tier' THEN 1 END) as on_free_tier,
@@ -505,6 +525,7 @@ FROM users;
 ## Logging
 
 ### Backend Logs
+
 ```
 👤 Subscription check: { email, status, trialDay, hasError }
 ⏰ Trial expired for user: email
@@ -512,24 +533,26 @@ FROM users;
 ```
 
 ### Frontend Logs
+
 ```
 📅 Trial banner updated: Day X/7
 ```
 
 ### Database Logs
+
 Track all subscription status changes via triggers (optional).
 
 ---
 
 ## Performance Impact
 
-| Operation | Complexity | Notes |
-|-----------|-----------|-------|
-| Check subscription | O(1) | Indexed lookup |
-| Calculate trial day | O(1) | Simple math |
-| Check expiration | O(1) | Date comparison |
-| Free tier limiting | O(1) | Date comparison |
-| Update banner | O(1) | DOM manipulation |
+| Operation           | Complexity | Notes            |
+| ------------------- | ---------- | ---------------- |
+| Check subscription  | O(1)       | Indexed lookup   |
+| Calculate trial day | O(1)       | Simple math      |
+| Check expiration    | O(1)       | Date comparison  |
+| Free tier limiting  | O(1)       | Date comparison  |
+| Update banner       | O(1)       | DOM manipulation |
 
 **Total Impact:** < 50ms per message for subscription checks
 
@@ -551,5 +574,4 @@ Track all subscription status changes via triggers (optional).
 
 **Status:** ✅ Complete  
 **Last Updated:** October 27, 2025  
-**Commit:** e14c489  
-
+**Commit:** e14c489

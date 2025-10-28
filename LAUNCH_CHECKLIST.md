@@ -2,23 +2,24 @@
 
 ## WHAT'S DEPLOYED NOW
 
-| Component | Status | Location |
-|-----------|--------|----------|
-| Community Page (60d free) | ✅ LIVE | `/community` |
-| Professional Page (7d free) | ✅ LIVE | `/professional` |
-| Pricing Router | ✅ LIVE | `/community-pricing` |
-| Magic Link Auth | ✅ LIVE | `/api/auth/send-magic-link` |
-| Stripe Checkout | ✅ LIVE | `/api/create-checkout-session` |
-| Webhook Handler | ✅ LIVE | `POST /webhook` |
-| Chat Interface | ✅ LIVE | `/chat` |
-| Database | ✅ LIVE | PostgreSQL on Railway |
-| Sessions | ✅ LIVE | Server-side sessions |
+| Component                   | Status  | Location                       |
+| --------------------------- | ------- | ------------------------------ |
+| Community Page (60d free)   | ✅ LIVE | `/community`                   |
+| Professional Page (7d free) | ✅ LIVE | `/professional`                |
+| Pricing Router              | ✅ LIVE | `/community-pricing`           |
+| Magic Link Auth             | ✅ LIVE | `/api/auth/send-magic-link`    |
+| Stripe Checkout             | ✅ LIVE | `/api/create-checkout-session` |
+| Webhook Handler             | ✅ LIVE | `POST /webhook`                |
+| Chat Interface              | ✅ LIVE | `/chat`                        |
+| Database                    | ✅ LIVE | PostgreSQL on Railway          |
+| Sessions                    | ✅ LIVE | Server-side sessions           |
 
 ---
 
 ## TEST THESE THREE FLOWS
 
 ### Flow 1: Community Offer
+
 ```
 Visit: /community
 Expected: See "60 Days Free" page
@@ -29,6 +30,7 @@ Expected: Account created with 60-day trial
 ```
 
 ### Flow 2: Professional Offer
+
 ```
 Visit: /professional
 Expected: See "7 Days Free" page
@@ -39,6 +41,7 @@ Expected: Account created with 7-day trial
 ```
 
 ### Flow 3: Returning User
+
 ```
 Visit: /login.html
 Enter: Your email
@@ -53,6 +56,7 @@ Expected: See conversation history
 ## COMMANDS TO WATCH
 
 ### Check Deployment Status
+
 ```bash
 # Via Railway dashboard or:
 git log --oneline -5
@@ -60,6 +64,7 @@ git log --oneline -5
 ```
 
 ### Test Locally (if needed)
+
 ```bash
 npm start
 # Visit: http://localhost:8080/community
@@ -67,11 +72,13 @@ npm start
 ```
 
 ### View Stripe Test Events
+
 ```
 https://dashboard.stripe.com/test/events
 ```
 
 ### View Database Users
+
 ```bash
 psql <DATABASE_URL> -c "SELECT email, subscription_status, created_at FROM users ORDER BY created_at DESC LIMIT 10;"
 ```
@@ -82,20 +89,21 @@ psql <DATABASE_URL> -c "SELECT email, subscription_status, created_at FROM users
 
 After launch, monitor:
 
-| Metric | Target | Where |
-|--------|--------|-------|
-| /community page loads | < 2s | Server logs |
-| /professional page loads | < 2s | Server logs |
-| Stripe checkout creates | 100% | Stripe dashboard |
-| Magic links delivered | 100% | Email inbox |
-| Account creation | 100% | Database |
-| Webhook success rate | > 99% | Stripe webhooks |
+| Metric                   | Target | Where            |
+| ------------------------ | ------ | ---------------- |
+| /community page loads    | < 2s   | Server logs      |
+| /professional page loads | < 2s   | Server logs      |
+| Stripe checkout creates  | 100%   | Stripe dashboard |
+| Magic links delivered    | 100%   | Email inbox      |
+| Account creation         | 100%   | Database         |
+| Webhook success rate     | > 99%  | Stripe webhooks  |
 
 ---
 
 ## YOUR LAUNCH LINKS - READY TO SHARE
 
 ### Share These:
+
 ```
 Community (60 days free):
 https://app.veraneural.com/community
@@ -105,6 +113,7 @@ https://app.veraneural.com/professional
 ```
 
 Or go direct to pricing:
+
 ```
 price_1SMucpF8aJ0BDqA3asphVGOX (community)
 price_1SIgAtF8aJ0BDqA3WXVJsuVD (professional)
@@ -125,20 +134,20 @@ price_1SIgAtF8aJ0BDqA3WXVJsuVD (professional)
 ✅ User account created  
 ✅ User logged in  
 ✅ User sees VERA chat interface  
-✅ User can start chatting  
+✅ User can start chatting
 
 ---
 
 ## IF SOMETHING BREAKS
 
-| Issue | Check |
-|-------|-------|
-| Page won't load | Check Railway deployment status |
-| Stripe error | Check STRIPE_PRICE_ID in .env |
-| Email not sent | Check email provider settings |
-| Webhook failed | Check Stripe → Webhooks → Recent Deliveries |
-| User not created | Check database connection |
-| Chat won't authenticate | Check /api/auth/check endpoint |
+| Issue                   | Check                                       |
+| ----------------------- | ------------------------------------------- |
+| Page won't load         | Check Railway deployment status             |
+| Stripe error            | Check STRIPE_PRICE_ID in .env               |
+| Email not sent          | Check email provider settings               |
+| Webhook failed          | Check Stripe → Webhooks → Recent Deliveries |
+| User not created        | Check database connection                   |
+| Chat won't authenticate | Check /api/auth/check endpoint              |
 
 ---
 
@@ -147,6 +156,7 @@ price_1SIgAtF8aJ0BDqA3WXVJsuVD (professional)
 🟢 **99% CONFIDENT EVERYTHING WORKS**
 
 All components:
+
 - ✅ Tested locally
 - ✅ Deployed to Railway
 - ✅ Integrated end-to-end

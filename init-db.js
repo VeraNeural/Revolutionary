@@ -6,23 +6,23 @@ const path = require('path');
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false
-  }
+    rejectUnauthorized: false,
+  },
 });
 
 async function initializeDatabase() {
   try {
     console.log('🔄 Starting database initialization...');
-    
+
     // Read the schema file
     const schema = fs.readFileSync(path.join(__dirname, 'database-schema.sql'), 'utf8');
-    
+
     // Execute the schema
     await pool.query(schema);
-    
+
     console.log('✅ Database initialized successfully!');
     console.log('Checking tables...');
-    
+
     // Verify tables
     const tables = ['users', 'messages', 'crisis_alerts', 'session', 'subscription_history'];
     for (const table of tables) {
@@ -33,7 +33,6 @@ async function initializeDatabase() {
         console.error(`❌ Table ${table}: failed to verify - ${err.message}`);
       }
     }
-    
   } catch (err) {
     console.error('❌ Database initialization failed:', err);
     throw err;

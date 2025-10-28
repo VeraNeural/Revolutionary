@@ -9,6 +9,7 @@
 ## 🐛 What Was Wrong
 
 The session middleware (connect-pg-simple) needs direct access to the PostgreSQL pool to store/retrieve sessions. However:
+
 - The database manager kept the pool as a private property (`this.pool`)
 - server.js was trying to access `db.pool` directly
 - This could cause session creation to fail silently
@@ -19,6 +20,7 @@ The session middleware (connect-pg-simple) needs direct access to the PostgreSQL
 ## ✅ Solution Applied
 
 ### 1. **Added getPool() method to database-manager.js**
+
 ```javascript
 // Expose pool for session store and other direct pool access
 getPool() {
@@ -27,31 +29,34 @@ getPool() {
 ```
 
 ### 2. **Updated server.js to use getPool()**
+
 **Before**:
+
 ```javascript
 store: new pgSession({
-    pool: db.pool,  // ❌ Direct access to private property
-    tableName: 'session',
-})
+  pool: db.pool, // ❌ Direct access to private property
+  tableName: 'session',
+});
 ```
 
 **After**:
+
 ```javascript
 store: new pgSession({
-    pool: db.getPool(),  // ✅ Proper method access
-    tableName: 'session',
-})
+  pool: db.getPool(), // ✅ Proper method access
+  tableName: 'session',
+});
 ```
 
 ---
 
 ## 📊 Impact
 
-| Component | Before | After |
-|-----------|--------|-------|
-| Session Store | ❌ Broken pool access | ✅ Proper pool access |
-| User Auth | ❌ Sessions fail | ✅ Sessions work |
-| Unauthorized Errors | ❌ Likely | ✅ Fixed |
+| Component           | Before                | After                 |
+| ------------------- | --------------------- | --------------------- |
+| Session Store       | ❌ Broken pool access | ✅ Proper pool access |
+| User Auth           | ❌ Sessions fail      | ✅ Sessions work      |
+| Unauthorized Errors | ❌ Likely             | ✅ Fixed              |
 
 ---
 
@@ -66,6 +71,7 @@ store: new pgSession({
 ## ✅ Testing After Deployment
 
 1. **Test Authentication Flow**:
+
 ```bash
 # Send magic link
 curl -X POST https://app.veraneural.com/api/auth/send-magic-link \
@@ -77,6 +83,7 @@ curl https://app.veraneural.com/api/auth/check
 ```
 
 2. **Test Chat with Session**:
+
 ```bash
 curl -X POST https://app.veraneural.com/api/chat \
   -H "Content-Type: application/json" \
@@ -84,6 +91,7 @@ curl -X POST https://app.veraneural.com/api/chat \
 ```
 
 3. **Check Health**:
+
 ```bash
 curl https://app.veraneural.com/health
 ```
@@ -93,6 +101,7 @@ curl https://app.veraneural.com/health
 ## 🎯 Expected Behavior
 
 After Railway redeploys, you should see:
+
 - ✅ Sessions create successfully
 - ✅ Users can authenticate with magic links
 - ✅ Chat messages work for authenticated users

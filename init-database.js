@@ -5,7 +5,7 @@ const db = require('./lib/database-manager');
 async function initDatabase() {
   try {
     console.log('🔄 Connecting to database...');
-    
+
     // Create users table
     await db.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -62,7 +62,7 @@ async function initDatabase() {
     console.log('');
     console.log('🎉 Database initialized successfully!');
     console.log('VERA is ready to remember everything.');
-    
+
     await db.end();
     process.exit(0);
   } catch (error) {

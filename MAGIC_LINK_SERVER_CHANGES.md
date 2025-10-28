@@ -1,4 +1,5 @@
 # MAGIC LINK SERVER.JS CODE CHANGES
+
 ## Copy and paste these exact changes into server.js
 
 ### CHANGE 1: Add Magic Links Helper Functions (after sendEmail function, before graceful shutdown)
@@ -11,47 +12,52 @@ async function createMagicLink(email, emailType = 'magic_link') {
   try {
     // Normalize email
     const normalizedEmail = email.trim().toLowerCase();
-    
+
     // Generate secure token
     const crypto = require('crypto');
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-    
+
     console.log(`🔑 Generating magic link token for ${normalizedEmail}`);
-    
+
     // Store token in dedicated magic_links table
-    const tokenResult = await db.query(
-      `INSERT INTO magic_links (email, token, expires_at, created_at)
+    const tokenResult = await db
+      .query(
+        `INSERT INTO magic_links (email, token, expires_at, created_at)
        VALUES ($1, $2, $3, NOW())
        RETURNING id, token, expires_at`,
-      [normalizedEmail, token, expiresAt]
-    ).catch(error => {
-      // If table doesn't exist, create inline
-      if (error.message.includes('does not exist')) {
-        console.warn('⚠️ magic_links table not found, attempting to create...');
-        return null;
-      }
-      throw error;
-    });
-    
+        [normalizedEmail, token, expiresAt]
+      )
+      .catch((error) => {
+        // If table doesn't exist, create inline
+        if (error.message.includes('does not exist')) {
+          console.warn('⚠️ magic_links table not found, attempting to create...');
+          return null;
+        }
+        throw error;
+      });
+
     if (!tokenResult?.rows[0]) {
       throw new Error('Failed to create magic link token - table may not exist');
     }
-    
+
     const magicLinkRecord = tokenResult.rows[0];
-    
+
     // Log creation
-    await db.query(
-      `INSERT INTO login_audit_log (email, token_id, action, success)
-       VALUES ($1, $2, 'token_created', true)`,[normalizedEmail, magicLinkRecord.id]
-    ).catch(() => null); // Silently fail if table doesn't exist
-    
+    await db
+      .query(
+        `INSERT INTO login_audit_log (email, token_id, action, success)
+       VALUES ($1, $2, 'token_created', true)`,
+        [normalizedEmail, magicLinkRecord.id]
+      )
+      .catch(() => null); // Silently fail if table doesn't exist
+
     console.log(`✅ Magic link token created:`, {
       email: normalizedEmail,
       tokenId: magicLinkRecord.id,
-      expiresAt: magicLinkRecord.expires_at
+      expiresAt: magicLinkRecord.expires_at,
     });
-    
+
     return magicLinkRecord;
   } catch (error) {
     console.error(`❌ Failed to create magic link for ${email}:`, error);
@@ -70,51 +76,54 @@ Find this endpoint around line 2128 and replace the entire thing with:
 app.post('/api/auth/send-magic-link', async (req, res) => {
   const { email } = req.body;
   const clientIp = req.ip || req.connection.remoteAddress;
-  
+
   // ==================== INPUT VALIDATION ====================
   if (!email) {
     console.warn('❌ Magic link request missing email');
     Sentry?.captureMessage('Magic link request missing email', 'warning');
     return res.status(400).json({ error: 'Email is required' });
   }
-  
+
   // Normalize email
   const normalizedEmail = email.trim().toLowerCase();
-  
+
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(normalizedEmail)) {
     console.warn(`❌ Invalid email format: ${normalizedEmail}`);
     return res.status(400).json({ error: 'Please enter a valid email address' });
   }
-  
+
   try {
     // ==================== CHECK IF USER EXISTS ====================
     console.log(`🔍 Checking if user exists: ${normalizedEmail}`);
-    
+
     const userResult = await db.query(
       'SELECT id, email, subscription_status, created_at FROM users WHERE LOWER(email) = $1',
       [normalizedEmail]
     );
-    
+
     if (userResult.rows.length === 0) {
       console.warn(`⚠️ No user found for ${normalizedEmail}`);
-      
+
       // Log audit
-      await db.query(
-        `INSERT INTO login_audit_log (email, action, ip_address, success, error_message)
-         VALUES ($1, 'token_requested_user_not_found', $2, false, 'User does not exist')`,[normalizedEmail, clientIp]
-      ).catch(() => null);
-      
-      return res.status(404).json({ 
+      await db
+        .query(
+          `INSERT INTO login_audit_log (email, action, ip_address, success, error_message)
+         VALUES ($1, 'token_requested_user_not_found', $2, false, 'User does not exist')`,
+          [normalizedEmail, clientIp]
+        )
+        .catch(() => null);
+
+      return res.status(404).json({
         error: 'No account found with this email.',
-        suggestion: 'Please sign up first or check your email spelling.'
+        suggestion: 'Please sign up first or check your email spelling.',
       });
     }
-    
+
     const user = userResult.rows[0];
     console.log(`✅ User found: ${normalizedEmail} (ID: ${user.id})`);
-    
+
     // ==================== CREATE MAGIC LINK TOKEN ====================
     let magicLinkRecord;
     try {
@@ -123,16 +132,16 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
       console.error(`❌ Failed to create magic link token:`, error);
       return res.status(500).json({ error: 'Failed to generate sign-in link. Please try again.' });
     }
-    
+
     // ==================== BUILD MAGIC LINK URL ====================
     const baseUrl = process.env.APP_URL || 'http://localhost:8080';
     if (!baseUrl || baseUrl === 'http://localhost:8080') {
       console.warn(`⚠️ Using default baseUrl: ${baseUrl}`);
     }
-    
+
     const magicLink = `${baseUrl}/verify-magic-link?token=${magicLinkRecord.token}`;
     console.log(`🔗 Magic link URL: ${magicLink}`);
-    
+
     // ==================== SEND EMAIL ====================
     try {
       const emailResult = await sendEmail({
@@ -174,42 +183,45 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
           </body>
           </html>
         `,
-        emailType: 'magic_link'
+        emailType: 'magic_link',
       });
-      
+
       console.log(`✅ Magic link email queued for delivery:`, {
         to: normalizedEmail,
         emailLogId: emailResult.logId,
-        resendId: emailResult.id
+        resendId: emailResult.id,
       });
-      
+
       // Log success in audit
-      await db.query(
-        `INSERT INTO login_audit_log (email, token_id, action, ip_address, success)
-         VALUES ($1, $2, 'magic_link_email_sent', $3, true)`, [normalizedEmail, magicLinkRecord.id, clientIp]
-      ).catch(() => null);
-      
+      await db
+        .query(
+          `INSERT INTO login_audit_log (email, token_id, action, ip_address, success)
+         VALUES ($1, $2, 'magic_link_email_sent', $3, true)`,
+          [normalizedEmail, magicLinkRecord.id, clientIp]
+        )
+        .catch(() => null);
+
       return res.json({
         success: true,
         message: 'Check your email for the sign-in link. It expires in 15 minutes.',
-        logId: emailResult.logId
+        logId: emailResult.logId,
       });
-      
     } catch (emailError) {
       console.error(`❌ Email send failed for ${normalizedEmail}:`, emailError.message);
-      
-      await db.query(
-        `INSERT INTO login_audit_log (email, token_id, action, ip_address, success, error_message)
+
+      await db
+        .query(
+          `INSERT INTO login_audit_log (email, token_id, action, ip_address, success, error_message)
          VALUES ($1, $2, 'magic_link_email_failed', $3, false, $4)`,
-        [normalizedEmail, magicLinkRecord.id, clientIp, emailError.message.substring(0, 500)]
-      ).catch(() => null);
-      
+          [normalizedEmail, magicLinkRecord.id, clientIp, emailError.message.substring(0, 500)]
+        )
+        .catch(() => null);
+
       return res.status(500).json({
         error: 'Failed to send sign-in email. Please try again.',
-        debug: process.env.NODE_ENV === 'development' ? emailError.message : undefined
+        debug: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
       });
     }
-    
   } catch (error) {
     console.error('❌ Magic link endpoint error:', error);
     Sentry?.captureException(error, { tags: { endpoint: 'send-magic-link' } });
@@ -229,93 +241,105 @@ app.get('/verify-magic-link', async (req, res) => {
   const { token } = req.query;
   const clientIp = req.ip || req.connection.remoteAddress;
   const userAgent = req.get('user-agent');
-  
+
   console.log(`🔍 Verifying magic link token: ${token?.substring(0, 10)}...`);
-  
+
   // ==================== VALIDATE TOKEN ====================
   if (!token) {
     console.error('❌ No token provided');
-    await db.query(
-      `INSERT INTO login_audit_log (email, action, ip_address, success, error_message)
-       VALUES ($1, 'token_missing', $2, false, 'No token provided')`,[null, clientIp]
-    ).catch(() => null);
+    await db
+      .query(
+        `INSERT INTO login_audit_log (email, action, ip_address, success, error_message)
+       VALUES ($1, 'token_missing', $2, false, 'No token provided')`,
+        [null, clientIp]
+      )
+      .catch(() => null);
     return res.redirect('/login.html?error=invalid_token&msg=No%20sign-in%20link%20provided');
   }
-  
+
   try {
     // ==================== LOOK UP TOKEN ====================
     console.log(`🔑 Looking up token in database`);
-    
-    const tokenResult = await db.query(
-      `SELECT id, email, expires_at, used, used_at, created_at
+
+    const tokenResult = await db
+      .query(
+        `SELECT id, email, expires_at, used, used_at, created_at
        FROM magic_links
        WHERE token = $1`,
-      [token]
-    ).catch(error => {
-      if (error.message.includes('does not exist')) {
-        console.warn('⚠️ magic_links table does not exist');
-        return null;
-      }
-      throw error;
-    });
-    
+        [token]
+      )
+      .catch((error) => {
+        if (error.message.includes('does not exist')) {
+          console.warn('⚠️ magic_links table does not exist');
+          return null;
+        }
+        throw error;
+      });
+
     if (!tokenResult?.rows || tokenResult.rows.length === 0) {
       console.error(`❌ Token not found: ${token.substring(0, 10)}...`);
-      return res.redirect('/login.html?error=invalid_token&msg=This%20sign-in%20link%20is%20invalid');
+      return res.redirect(
+        '/login.html?error=invalid_token&msg=This%20sign-in%20link%20is%20invalid'
+      );
     }
-    
+
     const magicLink = tokenResult.rows[0];
     console.log(`✅ Token found for ${magicLink.email}`);
-    
+
     // ==================== CHECK IF ALREADY USED ====================
     if (magicLink.used) {
       console.error(`❌ Token already used: ${token.substring(0, 10)}...`);
-      return res.redirect('/login.html?error=token_used&msg=This%20link%20has%20already%20been%20used');
+      return res.redirect(
+        '/login.html?error=token_used&msg=This%20link%20has%20already%20been%20used'
+      );
     }
-    
+
     // ==================== CHECK IF EXPIRED ====================
     const now = new Date();
     const expiresAt = new Date(magicLink.expires_at);
-    
+
     if (now > expiresAt) {
       console.error(`❌ Token expired: ${token.substring(0, 10)}...`);
-      return res.redirect('/login.html?error=expired_token&msg=This%20link%20has%20expired.%20Please%20request%20a%20new%20one');
+      return res.redirect(
+        '/login.html?error=expired_token&msg=This%20link%20has%20expired.%20Please%20request%20a%20new%20one'
+      );
     }
-    
+
     console.log(`✅ Token is valid and not expired`);
-    
+
     // ==================== GET USER FROM DATABASE ====================
     console.log(`👤 Looking up user: ${magicLink.email}`);
-    
-    const userResult = await db.query(
-      'SELECT id, email FROM users WHERE LOWER(email) = $1',
-      [magicLink.email.toLowerCase()]
-    );
-    
+
+    const userResult = await db.query('SELECT id, email FROM users WHERE LOWER(email) = $1', [
+      magicLink.email.toLowerCase(),
+    ]);
+
     if (userResult.rows.length === 0) {
       console.error(`❌ User not found: ${magicLink.email}`);
       return res.redirect('/login.html?error=user_not_found&msg=User%20account%20not%20found');
     }
-    
+
     const user = userResult.rows[0];
     console.log(`✅ User found: ${user.email} (ID: ${user.id})`);
-    
+
     // ==================== MARK TOKEN AS USED ====================
     console.log(`🔒 Marking token as used`);
-    
-    await db.query(
-      `UPDATE magic_links
+
+    await db
+      .query(
+        `UPDATE magic_links
        SET used = true, used_at = NOW(), used_by_ip = $1
        WHERE id = $2`,
-      [clientIp, magicLink.id]
-    ).catch(() => null);
-    
+        [clientIp, magicLink.id]
+      )
+      .catch(() => null);
+
     // ==================== CREATE SESSION ====================
     console.log(`📝 Creating user session for ${user.email}`);
-    
+
     req.session.userId = user.id;
     req.session.userEmail = user.email;
-    
+
     // Ensure session is saved before redirecting
     await new Promise((resolve, reject) => {
       req.session.save((err) => {
@@ -323,24 +347,27 @@ app.get('/verify-magic-link', async (req, res) => {
         else resolve();
       });
     });
-    
+
     console.log(`✅ Session created successfully for ${user.email}`);
-    
+
     // ==================== LOG SUCCESSFUL LOGIN ====================
-    await db.query(
-      `INSERT INTO login_audit_log (email, token_id, action, ip_address, user_agent, success)
+    await db
+      .query(
+        `INSERT INTO login_audit_log (email, token_id, action, ip_address, user_agent, success)
        VALUES ($1, $2, 'login_successful', $3, $4, true)`,
-      [user.email, magicLink.id, clientIp, userAgent]
-    ).catch(() => null);
-    
+        [user.email, magicLink.id, clientIp, userAgent]
+      )
+      .catch(() => null);
+
     // ==================== REDIRECT TO APP ====================
     console.log(`🚀 Redirecting ${user.email} to /chat.html`);
     return res.redirect('/chat.html');
-    
   } catch (error) {
     console.error('❌ Magic link verification error:', error);
     Sentry?.captureException(error, { tags: { endpoint: 'verify-magic-link' } });
-    return res.redirect('/login.html?error=verification_failed&msg=An%20error%20occurred%20during%20sign-in');
+    return res.redirect(
+      '/login.html?error=verification_failed&msg=An%20error%20occurred%20during%20sign-in'
+    );
   }
 });
 ```
@@ -360,28 +387,34 @@ app.get('/api/admin/email-status/:email', async (req, res) => {
     if (!process.env.ADMIN_EMAIL || req.session.userEmail !== process.env.ADMIN_EMAIL) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
-    
+
     const email = req.params.email.toLowerCase();
-    
-    const logs = await db.query(
-      `SELECT id, email_address, email_type, status, attempt_count, error_message, sent_at, created_at
+
+    const logs = await db
+      .query(
+        `SELECT id, email_address, email_type, status, attempt_count, error_message, sent_at, created_at
        FROM email_delivery_logs
        WHERE LOWER(email_address) = $1
        ORDER BY created_at DESC
        LIMIT 50`,
-      [email]
-    ).catch(() => ({ rows: [] }));
-    
+        [email]
+      )
+      .catch(() => ({ rows: [] }));
+
     const stats = {
       totalEmails: logs.rows.length,
-      sentCount: logs.rows.filter(l => l.status === 'sent').length,
-      failedCount: logs.rows.filter(l => l.status === 'failed').length,
-      pendingCount: logs.rows.filter(l => l.status === 'pending').length,
-      successRate: logs.rows.length > 0 
-        ? ((logs.rows.filter(l => l.status === 'sent').length / logs.rows.length) * 100).toFixed(1) + '%'
-        : 'N/A'
+      sentCount: logs.rows.filter((l) => l.status === 'sent').length,
+      failedCount: logs.rows.filter((l) => l.status === 'failed').length,
+      pendingCount: logs.rows.filter((l) => l.status === 'pending').length,
+      successRate:
+        logs.rows.length > 0
+          ? (
+              (logs.rows.filter((l) => l.status === 'sent').length / logs.rows.length) *
+              100
+            ).toFixed(1) + '%'
+          : 'N/A',
     };
-    
+
     res.json({ email, stats, logs: logs.rows });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -394,18 +427,20 @@ app.get('/api/admin/user-login-history/:email', async (req, res) => {
     if (!process.env.ADMIN_EMAIL || req.session.userEmail !== process.env.ADMIN_EMAIL) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
-    
+
     const email = req.params.email.toLowerCase();
-    
-    const logs = await db.query(
-      `SELECT id, email, token_id, action, ip_address, success, error_message, created_at
+
+    const logs = await db
+      .query(
+        `SELECT id, email, token_id, action, ip_address, success, error_message, created_at
        FROM login_audit_log
        WHERE LOWER(email) = $1
        ORDER BY created_at DESC
        LIMIT 100`,
-      [email]
-    ).catch(() => ({ rows: [] }));
-    
+        [email]
+      )
+      .catch(() => ({ rows: [] }));
+
     res.json({ email, logs: logs.rows });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -418,44 +453,43 @@ app.post('/api/admin/resend-magic-link', async (req, res) => {
     if (!process.env.ADMIN_EMAIL || req.session.userEmail !== process.env.ADMIN_EMAIL) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
-    
+
     const { email } = req.body;
     if (!email) {
       return res.status(400).json({ error: 'Email required' });
     }
-    
+
     const normalizedEmail = email.trim().toLowerCase();
-    
+
     // Check user exists
-    const userResult = await db.query(
-      'SELECT id, email FROM users WHERE LOWER(email) = $1',
-      [normalizedEmail]
-    );
-    
+    const userResult = await db.query('SELECT id, email FROM users WHERE LOWER(email) = $1', [
+      normalizedEmail,
+    ]);
+
     if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+
     // Create new magic link
     const magicLinkRecord = await createMagicLink(normalizedEmail, 'manual_resend');
-    
+
     const baseUrl = process.env.APP_URL || 'http://localhost:8080';
     const magicLink = `${baseUrl}/verify-magic-link?token=${magicLinkRecord.token}`;
-    
+
     // Send email
     const emailResult = await sendEmail({
       to: normalizedEmail,
       subject: '[MANUAL RESEND] Your VERA Sign-In Link',
       html: `<p>Admin-initiated sign-in link: <a href="${magicLink}">Click here to sign in</a></p><p>Link: ${magicLink}</p>`,
-      emailType: 'manual_resend'
+      emailType: 'manual_resend',
     });
-    
+
     console.log(`✅ Admin manually resent magic link to ${normalizedEmail}`);
-    
+
     res.json({
       success: true,
       message: `Magic link resent to ${normalizedEmail}`,
-      magicLink: process.env.NODE_ENV === 'development' ? magicLink : undefined
+      magicLink: process.env.NODE_ENV === 'development' ? magicLink : undefined,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -482,7 +516,7 @@ CREATE TABLE IF NOT EXISTS magic_links (
   used_by_ip VARCHAR(50)
 );
 
--- Create email_delivery_logs table if it doesn't exist  
+-- Create email_delivery_logs table if it doesn't exist
 CREATE TABLE IF NOT EXISTS email_delivery_logs (
   id SERIAL PRIMARY KEY,
   email_address VARCHAR(255) NOT NULL,

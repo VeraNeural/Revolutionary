@@ -1,6 +1,7 @@
 # Guest-to-Email Collection Flow Implementation
 
 ## Overview
+
 This document outlines the complete implementation of the guest-to-email conversion feature, which triggers an email collection modal after a guest user sends 4 messages to VERA.
 
 **Objective**: Convert free guest users into email-subscribed users at a natural conversation endpoint.
@@ -14,17 +15,19 @@ This document outlines the complete implementation of the guest-to-email convers
 ### 1. Frontend: Message Count Tracking (public/chat.html)
 
 #### Location: Lines 2305-2310
+
 **Change**: Pass `guestMessageCount` to backend in API request payload
 
 ```javascript
 // In sendMessage() function
 const requestBody = {
-    // ... other fields
-    guestMessageCount: localStorage.getItem('veraIsGuest') === 'true' ? guestMessageCount : null
+  // ... other fields
+  guestMessageCount: localStorage.getItem('veraIsGuest') === 'true' ? guestMessageCount : null,
 };
 ```
 
 **How it works**:
+
 - Existing `guestMessageCount` variable is incremented after each user message
 - Only sent when user is identified as guest (veraIsGuest === 'true')
 - Backend receives count to detect when message count equals 4
@@ -34,20 +37,34 @@ const requestBody = {
 ### 2. Backend: Message Count Detection (server.js)
 
 #### Location 1: Line 1926 - Request destructuring
+
 **Change**: Extract `guestMessageCount` from request body
 
 ```javascript
-const { message, email, userName, anonId, debug, attachments = [], 
-        conversationId, guestMessageCount } = req.body;
+const {
+  message,
+  email,
+  userName,
+  anonId,
+  debug,
+  attachments = [],
+  conversationId,
+  guestMessageCount,
+} = req.body;
 ```
 
 #### Location 2: Lines 2046-2052 - Function call
+
 **Change**: Pass `guestMessageCount` to VERA AI function
 
 ```javascript
 const veraResult = await getVERAResponse(
-    userId, message, userName || 'friend', db.pool, 
-    attachments, guestMessageCount  // ← New 6th parameter
+  userId,
+  message,
+  userName || 'friend',
+  db.pool,
+  attachments,
+  guestMessageCount // ← New 6th parameter
 );
 ```
 
@@ -56,14 +73,16 @@ const veraResult = await getVERAResponse(
 ### 3. AI Layer: 4th Message Detection (lib/vera-ai.js)
 
 #### Location 1: Line 689 - Function signature
+
 **Change**: Accept `guestMessageCount` parameter
 
 ```javascript
-async function getVERAResponse(userId, message, userName, pool, attachments = [], 
+async function getVERAResponse(userId, message, userName, pool, attachments = [],
                                 guestMessageCount = null)
 ```
 
 #### Location 2: Line 694 - Message 4 detection
+
 **Change**: Detect when guest reaches 4th message
 
 ```javascript
@@ -71,12 +90,14 @@ const isGuestMessage4 = guestMessageCount === 4;
 ```
 
 #### Location 3: Lines 1005-1021 - Response payload
+
 **Change**: Add email collection prompt and flag to response
 
 ```javascript
 let specialPrompt = null;
 if (isGuestMessage4) {
-  specialPrompt = '\n\n---\n\n[Email Collection Prompt] I\'d love to remember you. If you\'d like to continue our conversation next time, share your email and I\'ll pick up right where we left off.';
+  specialPrompt =
+    "\n\n---\n\n[Email Collection Prompt] I'd love to remember you. If you'd like to continue our conversation next time, share your email and I'll pick up right where we left off.";
 }
 
 return {
@@ -88,7 +109,7 @@ return {
   processingTime,
   model: ANTHROPIC_MODEL,
   fallback: false,
-  isGuestMessage4,  // ← New flag in response
+  isGuestMessage4, // ← New flag in response
 };
 ```
 
@@ -97,7 +118,9 @@ return {
 ### 4. Frontend: Email Collection Modal UI (public/chat.html)
 
 #### CSS Styling: Lines 1300-1388
+
 **Features**:
+
 - Purple/blue gradient background matching VERA aesthetic
 - Glassmorphic input field with blur effects
 - Smooth animations and responsive design
@@ -111,7 +134,7 @@ return {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, rgba(155,89,182,0.95), rgba(100,181,246,0.95));
+  background: linear-gradient(135deg, rgba(155, 89, 182, 0.95), rgba(100, 181, 246, 0.95));
   backdrop-filter: blur(20px);
   z-index: 2001;
   display: none;
@@ -123,7 +146,9 @@ return {
 ```
 
 #### HTML Element: Lines 1962-1971
+
 **Structure**:
+
 - Modal container with close button
 - "Remember Me?" heading
 - Explanatory paragraph
@@ -147,35 +172,38 @@ return {
 ### 5. Frontend: JavaScript Functions (public/chat.html)
 
 #### Function 1: showEmailCollectionModal() - Lines 2332-2341
+
 ```javascript
 function showEmailCollectionModal() {
   const modal = document.getElementById('emailCollectionModal');
   if (modal) {
-    modal.style.display = 'flex';  // Show modal
+    modal.style.display = 'flex'; // Show modal
     const emailInput = document.getElementById('emailInput');
     if (emailInput) {
-      setTimeout(() => emailInput.focus(), 300);  // Auto-focus input
+      setTimeout(() => emailInput.focus(), 300); // Auto-focus input
     }
   }
 }
 ```
 
 #### Function 2: closeEmailModal() - Lines 2343-2348
+
 ```javascript
 function closeEmailModal() {
   const modal = document.getElementById('emailCollectionModal');
   if (modal) {
-    modal.style.display = 'none';  // Hide modal
+    modal.style.display = 'none'; // Hide modal
   }
 }
 ```
 
 #### Function 3: handleEmailCollection(event) - Lines 2350-2378
+
 ```javascript
 async function handleEmailCollection(event) {
   event.preventDefault();
   const email = document.getElementById('emailInput').value.trim();
-  
+
   if (!email) {
     alert('Please enter your email');
     return;
@@ -184,14 +212,14 @@ async function handleEmailCollection(event) {
   try {
     const response = await safeJsonFetch('/api/guest-email', {
       method: 'POST',
-      body: JSON.stringify({ email, anonId, userName })
+      body: JSON.stringify({ email, anonId, userName }),
     });
 
     if (response.success) {
       localStorage.setItem('veraGuestEmailCollected', 'true');
       localStorage.setItem('veraGuestEmail', email);
       closeEmailModal();
-      addMessage('vera', 'Beautiful. I\'ve got your email. I\'ll remember you. 💜');
+      addMessage('vera', "Beautiful. I've got your email. I'll remember you. 💜");
     } else {
       throw new Error(response.error || 'Failed to save email');
     }
@@ -207,12 +235,13 @@ async function handleEmailCollection(event) {
 ### 6. Frontend: Modal Trigger in Response Handler (public/chat.html)
 
 #### Location: Lines 2509-2513
+
 **When VERA's response arrives**, check for `isGuestMessage4` flag:
 
 ```javascript
 if (data && data.success && data.response) {
   const veraMsg = addMessage('vera', data.response);
-  
+
   // Add shimmer effect
   setTimeout(() => {
     veraMsg.querySelector('.message-bubble').classList.add('shimmer');
@@ -222,7 +251,7 @@ if (data && data.success && data.response) {
   if (data.isGuestMessage4) {
     setTimeout(() => {
       showEmailCollectionModal();
-    }, 1000);  // Wait 1 second for shimmer effect
+    }, 1000); // Wait 1 second for shimmer effect
   }
 }
 ```
@@ -232,6 +261,7 @@ if (data && data.success && data.response) {
 ### 7. Backend: Guest Email Storage Endpoint (server.js)
 
 #### Location: Lines 2118-2170
+
 **New POST endpoint**: `/api/guest-email`
 
 ```javascript
@@ -243,7 +273,7 @@ app.post('/api/guest-email', async (req, res) => {
     if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid email format'
+        error: 'Invalid email format',
       });
     }
 
@@ -251,20 +281,17 @@ app.post('/api/guest-email', async (req, res) => {
     if (!anonId || !anonId.match(/^anon_[a-z0-9_]+$/i)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid session'
+        error: 'Invalid session',
       });
     }
 
     // Check if email already collected for this anonId
-    const checkResult = await db.query(
-      'SELECT id FROM guest_emails WHERE anon_id = $1',
-      [anonId]
-    );
+    const checkResult = await db.query('SELECT id FROM guest_emails WHERE anon_id = $1', [anonId]);
 
     if (checkResult.rows.length > 0) {
       return res.json({
         success: true,
-        message: 'Email already on file'
+        message: 'Email already on file',
       });
     }
 
@@ -278,19 +305,20 @@ app.post('/api/guest-email', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Email saved successfully'
+      message: 'Email saved successfully',
     });
   } catch (error) {
     console.error('❌ Guest email collection error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to save email'
+      error: 'Failed to save email',
     });
   }
 });
 ```
 
 **Features**:
+
 - Email format validation (regex check)
 - Anonymous ID validation (anon_XXXXXXXX format)
 - Duplicate prevention (check if email already collected)
@@ -302,6 +330,7 @@ app.post('/api/guest-email', async (req, res) => {
 ### 8. Database Schema Update (database-schema.sql)
 
 #### New Table: guest_emails
+
 **Added at end of schema file** (before UPDATE TRIGGER section)
 
 ```sql
@@ -320,6 +349,7 @@ CREATE INDEX idx_guest_emails_email ON guest_emails(email);
 ```
 
 **Schema Details**:
+
 - `id`: Primary key, auto-increment
 - `anon_id`: Unique anonymous user ID (UNIQUE constraint prevents duplicates)
 - `email`: Guest's email address (NOT NULL)
@@ -462,6 +492,7 @@ Frontend: shows confirmation message: "Beautiful. I've got your email. I'll reme
 ## Deployment Notes
 
 1. Run migrations to create `guest_emails` table:
+
    ```sql
    psql < database-schema.sql
    ```
@@ -484,6 +515,7 @@ Frontend: shows confirmation message: "Beautiful. I've got your email. I'll reme
 ## Status: ✅ IMPLEMENTATION COMPLETE
 
 All components are in place and integrated:
+
 - ✅ Frontend message tracking and modal UI
 - ✅ Backend detection and email endpoint
 - ✅ Database schema for email storage

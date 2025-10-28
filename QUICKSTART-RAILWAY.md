@@ -43,12 +43,14 @@ NODE_ENV=production
 ## Step 5: Point Your Domain (Optional)
 
 Railway dashboard → **Settings** → **Custom Domain**:
+
 - Add `app.veraneural.com`
 - Railway gives you CNAME target
 
 In your DNS:
+
 - **Type:** CNAME
-- **Name:** `app` 
+- **Name:** `app`
 - **Value:** `your-app.railway.app`
 
 ---
@@ -84,6 +86,7 @@ git push origin main
 Railway dashboard → your project → **Deployments** → Latest → **View Logs**
 
 Look for:
+
 - `✅ DATABASE CONNECTED SUCCESSFULLY`
 - `🧠 Calling getVERAResponse...`
 - `✅ VERA result: ...`
@@ -93,6 +96,7 @@ Look for:
 ## Need More Details?
 
 See **`RAILWAY-DEPLOYMENT.md`** for:
+
 - Full environment variable reference
 - Alternative: Render deployment
 - Custom domain setup

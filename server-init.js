@@ -22,10 +22,10 @@ async function initializeServer(app) {
   // Graceful shutdown handler
   process.on('SIGTERM', async () => {
     logger.info('SIGTERM received, shutting down gracefully...');
-    
+
     // Stop session cleanup
     sessionCleaner.stop();
-    
+
     // Close database connections and other cleanup
     try {
       await require('./lib/database-manager').end();

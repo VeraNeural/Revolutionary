@@ -12,12 +12,12 @@ const { createCanvas } = require('canvas');
 const sizes = [
   { name: 'apple-touch-icon.png', size: 180, desc: 'Apple Touch Icon' },
   { name: 'android-chrome-192x192.png', size: 192, desc: 'Android Chrome 192x192' },
-  { name: 'android-chrome-512x512.png', size: 512, desc: 'Android Chrome 512x512' }
+  { name: 'android-chrome-512x512.png', size: 512, desc: 'Android Chrome 512x512' },
 ];
 
 // VERA's purple gradient colors
-const gradientStart = '#667eea';  // Light purple
-const gradientEnd = '#764ba2';    // Dark purple
+const gradientStart = '#667eea'; // Light purple
+const gradientEnd = '#764ba2'; // Dark purple
 
 function createGradientOrb(size) {
   const canvas = createCanvas(size, size);
@@ -25,12 +25,16 @@ function createGradientOrb(size) {
 
   // Create circular gradient from light to dark purple
   const gradient = ctx.createRadialGradient(
-    size / 2, size / 2, 0,              // Inner circle center
-    size / 2, size / 2, size / 2        // Outer circle center and radius
+    size / 2,
+    size / 2,
+    0, // Inner circle center
+    size / 2,
+    size / 2,
+    size / 2 // Outer circle center and radius
   );
 
-  gradient.addColorStop(0, gradientStart);   // Light purple at center
-  gradient.addColorStop(1, gradientEnd);     // Dark purple at edges
+  gradient.addColorStop(0, gradientStart); // Light purple at center
+  gradient.addColorStop(1, gradientEnd); // Dark purple at edges
 
   // Fill the entire canvas with the gradient
   ctx.fillStyle = gradient;
@@ -38,8 +42,12 @@ function createGradientOrb(size) {
 
   // Add subtle shimmer/shine effect
   const shineGradient = ctx.createRadialGradient(
-    size * 0.3, size * 0.3, 0,
-    size / 2, size / 2, size / 2
+    size * 0.3,
+    size * 0.3,
+    0,
+    size / 2,
+    size / 2,
+    size / 2
   );
   shineGradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
   shineGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
@@ -79,13 +87,13 @@ async function generateIcons() {
 
   console.log('✨ Icon generation complete!');
   console.log('\nIcons created in public/ directory:');
-  sizes.forEach(icon => {
+  sizes.forEach((icon) => {
     console.log(`  - ${icon.name}`);
   });
 }
 
 // Run generation
-generateIcons().catch(error => {
+generateIcons().catch((error) => {
   console.error('Fatal error:', error);
   process.exit(1);
 });

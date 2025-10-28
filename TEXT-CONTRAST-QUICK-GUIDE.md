@@ -9,6 +9,7 @@ The landing page had poor contrast with light text on a dark gradient background
 ### Solution: Darker Colors + Text Shadows + Bolder Fonts
 
 All form labels and titles now have:
+
 - ✅ Darker/brighter colors (higher opacity white)
 - ✅ Text-shadow for depth and readability
 - ✅ Bolder font-weights where appropriate
@@ -17,22 +18,23 @@ All form labels and titles now have:
 
 ## Changes at a Glance
 
-| Element | Before | After | Result |
-|---------|--------|-------|--------|
-| **"I am VERA"** | Light gradient, 200wt | Bold gradient (600wt) + strong shadow | 🟢 Crystal clear |
-| **"Your AI Companion"** | Soft white (0.88) | Bright white (0.98) + shadow | 🟢 Nearly white |
-| **"What should I call you?"** | White text, no shadow | White + shadow + bold | 🟢 Stands out |
-| **Input placeholder** | Very faint (0.6) | Visible white (0.7) | 🟢 Clear placeholder |
-| **"Your nervous system..."** | Faint gray, no shadow | White + shadow + bold | 🟢 Prominent |
-| **Disclaimer (italic)** | Very faint (0.6) | Bright gray (0.88) + shadow | 🟢 Readable |
-| **"WELCOME HOME"** | Thin gradient (300wt) | Bold gradient (500wt) + strong shadow | 🟢 Bold & striking |
-| **"Already subscribed?"** | Pale purple, no style | Purple + shadow + hover effect | 🟢 Clear CTA |
+| Element                       | Before                | After                                 | Result               |
+| ----------------------------- | --------------------- | ------------------------------------- | -------------------- |
+| **"I am VERA"**               | Light gradient, 200wt | Bold gradient (600wt) + strong shadow | 🟢 Crystal clear     |
+| **"Your AI Companion"**       | Soft white (0.88)     | Bright white (0.98) + shadow          | 🟢 Nearly white      |
+| **"What should I call you?"** | White text, no shadow | White + shadow + bold                 | 🟢 Stands out        |
+| **Input placeholder**         | Very faint (0.6)      | Visible white (0.7)                   | 🟢 Clear placeholder |
+| **"Your nervous system..."**  | Faint gray, no shadow | White + shadow + bold                 | 🟢 Prominent         |
+| **Disclaimer (italic)**       | Very faint (0.6)      | Bright gray (0.88) + shadow           | 🟢 Readable          |
+| **"WELCOME HOME"**            | Thin gradient (300wt) | Bold gradient (500wt) + strong shadow | 🟢 Bold & striking   |
+| **"Already subscribed?"**     | Pale purple, no style | Purple + shadow + hover effect        | 🟢 Clear CTA         |
 
 ---
 
 ## CSS Quick Reference
 
 ### Font-Weight Increases
+
 ```css
 .welcome-title { font-weight: 200 → 600; }
 .welcome-home { font-weight: 300 → 500; }
@@ -41,27 +43,55 @@ All form labels and titles now have:
 ```
 
 ### Color Brightness Increases
+
 ```css
-.welcome-message { color: var(--text-soft) → var(--text-primary); }
-.welcome-secondary-question { color: var(--text-soft) → var(--text-primary); }
-.name-input::placeholder { color: text-muted (0.6) → rgba(255,255,255,0.7); }
-.welcome-disclaimer { color: text-muted (0.6) → text-soft (0.88); }
+.welcome-message {
+  color: var(--text-soft) → var(--text-primary);
+}
+.welcome-secondary-question {
+  color: var(--text-soft) → var(--text-primary);
+}
+.name-input::placeholder {
+  color: text-muted (0.6) → rgba(255, 255, 255, 0.7);
+}
+.welcome-disclaimer {
+  color: text-muted (0.6) → text-soft (0.88);
+}
 ```
 
 ### Text-Shadows Added
+
 ```css
 /* Strong shadows for titles */
-.welcome-title { text-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3); }
-.welcome-home { text-shadow: 0 4px 16px rgba(0,0,0,0.6), 0 2px 6px rgba(0,0,0,0.4); }
+.welcome-title {
+  text-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+}
+.welcome-home {
+  text-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.6),
+    0 2px 6px rgba(0, 0, 0, 0.4);
+}
 
 /* Medium shadows for labels */
-.welcome-message { text-shadow: 0 2px 6px rgba(0,0,0,0.3); }
-.welcome-question { text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-.welcome-secondary-question { text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-.signin-link { text-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+.welcome-message {
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.welcome-question {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+.welcome-secondary-question {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+.signin-link {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
 
 /* Subtle shadow for italic text */
-.welcome-disclaimer { text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+.welcome-disclaimer {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
 ```
 
 ---
@@ -77,10 +107,10 @@ All form labels and titles now have:
 
 ## Commits
 
-| Commit | Message |
-|--------|---------|
+| Commit    | Message                                                                       |
+| --------- | ----------------------------------------------------------------------------- |
 | `032c853` | Enhance landing page text contrast: Darker titles, bolder fonts, text shadows |
-| `041232c` | Add comprehensive documentation for landing page contrast improvements |
+| `041232c` | Add comprehensive documentation for landing page contrast improvements        |
 
 **Status**: ✅ Live on GitHub main branch
 
@@ -89,18 +119,21 @@ All form labels and titles now have:
 ## Visual Examples
 
 ### "I am VERA" Title
+
 ```
 BEFORE: 𝘐 𝘢𝘮 𝘝𝘌𝘙𝘈 (thin, faint gradient)
 AFTER:  I am VERA (bold, strong gradient with shadow)
 ```
 
 ### "Your AI Companion"
+
 ```
 BEFORE: Your AI Companion. (faint gray, hard to read)
 AFTER:  Your AI Companion. (bright white, clear shadow)
 ```
 
 ### "WELCOME HOME"
+
 ```
 BEFORE: 𝘞𝘌𝘓𝘊𝘖𝘔𝘌 𝘏𝘖𝘔𝘌 (thin, barely visible)
 AFTER:  WELCOME HOME (bold, strong shadow, striking)
@@ -124,13 +157,13 @@ AFTER:  WELCOME HOME (bold, strong shadow, striking)
 **Before**: Many elements failed WCAG contrast requirements
 **After**: Most elements now meet or exceed WCAG AA (4.5:1) standards
 
-| Element | Before | After | Status |
-|---------|--------|-------|--------|
-| welcome-title | ~3:1 | ~5:1+ | ✅ PASS |
-| welcome-message | ~3:1 | ~5:1+ | ✅ PASS |
-| secondary-question | ~3:1 | ~5:1+ | ✅ PASS |
-| welcome-home | ~2:1 | ~5:1+ | ✅ PASS |
-| signin-link | ~2.5:1 | ~4:1+ | ✅ PASS |
+| Element            | Before | After | Status  |
+| ------------------ | ------ | ----- | ------- |
+| welcome-title      | ~3:1   | ~5:1+ | ✅ PASS |
+| welcome-message    | ~3:1   | ~5:1+ | ✅ PASS |
+| secondary-question | ~3:1   | ~5:1+ | ✅ PASS |
+| welcome-home       | ~2:1   | ~5:1+ | ✅ PASS |
+| signin-link        | ~2.5:1 | ~4:1+ | ✅ PASS |
 
 ---
 

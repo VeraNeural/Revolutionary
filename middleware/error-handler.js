@@ -21,13 +21,13 @@ class ErrorHandler {
   middleware() {
     return async (error, req, res, next) => {
       const errorId = require('crypto').randomBytes(4).toString('hex');
-      
+
       logger.error('Request error', {
         errorId,
         path: req.path,
         method: req.method,
         error: error.stack,
-        body: this.sanitizeRequestBody(req.body)
+        body: this.sanitizeRequestBody(req.body),
       });
 
       // Alert if needed
@@ -36,7 +36,7 @@ class ErrorHandler {
           errorId,
           message: error.message,
           stack: error.stack,
-          path: req.path
+          path: req.path,
         });
       }
 
@@ -44,7 +44,7 @@ class ErrorHandler {
       res.status(error.status || 500).json({
         error: this.getSafeErrorMessage(error),
         errorId,
-        success: false
+        success: false,
       });
     };
   }
@@ -52,21 +52,18 @@ class ErrorHandler {
   handleFatalError(type, error) {
     logger.error(`Fatal Error: ${type}`, {
       error: error.stack,
-      type
+      type,
     });
 
-    monitor.alertError(`Fatal Error: ${type}`, error)
-      .finally(() => {
-        // Wait briefly for alert to send before exiting
-        setTimeout(() => process.exit(1), 1000);
-      });
+    monitor.alertError(`Fatal Error: ${type}`, error).finally(() => {
+      // Wait briefly for alert to send before exiting
+      setTimeout(() => process.exit(1), 1000);
+    });
   }
 
   shouldAlert(error) {
     // Alert on all 500s and specific error types
-    return error.status === 500 || 
-           error.name === 'DatabaseError' ||
-           error.code === 'ECONNREFUSED';
+    return error.status === 500 || error.name === 'DatabaseError' || error.code === 'ECONNREFUSED';
   }
 
   getSafeErrorMessage(error) {
@@ -79,11 +76,11 @@ class ErrorHandler {
 
   sanitizeRequestBody(body) {
     if (!body) return null;
-    
+
     // Deep clone and sanitize sensitive fields
     const sanitized = JSON.parse(JSON.stringify(body));
     const sensitiveFields = ['password', 'token', 'key'];
-    
+
     const sanitizeObj = (obj) => {
       for (const key of Object.keys(obj)) {
         if (sensitiveFields.includes(key.toLowerCase())) {

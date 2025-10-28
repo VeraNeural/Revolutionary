@@ -11,6 +11,7 @@
 The database-manager.js was looking for `DATABASE_URL` on Railway, but Railway provides `DATABASE_PUBLIC_URL`.
 
 **Error Log**:
+
 ```
 🚂 Using Railway internal connection
 ❌ No database URL configured!
@@ -19,6 +20,7 @@ Error: Database configuration missing
 ```
 
 **Why it happened**:
+
 - The code checked for `DATABASE_URL` when `RAILWAY_ENVIRONMENT` was set
 - Railway provides `DATABASE_PUBLIC_URL` instead
 - This caused the app to fail at startup
@@ -30,34 +32,37 @@ Error: Database configuration missing
 ### Changed database-manager.js:
 
 **OLD CODE** (Lines 15-26):
+
 ```javascript
 // In Railway environment, prefer internal URL
 if (process.env.RAILWAY_ENVIRONMENT) {
-    connectionUrl = process.env.DATABASE_URL;
-    console.log('🚂 Using Railway internal connection');
-} 
+  connectionUrl = process.env.DATABASE_URL;
+  console.log('🚂 Using Railway internal connection');
+}
 // In development or other environments, use public URL
 else {
-    connectionUrl = process.env.DATABASE_PUBLIC_URL;
-    console.log('🌐 Using public database connection');
+  connectionUrl = process.env.DATABASE_PUBLIC_URL;
+  console.log('🌐 Using public database connection');
 }
 ```
 
 **NEW CODE**:
+
 ```javascript
 // Prefer PUBLIC URL (more reliable on Railway)
 if (process.env.DATABASE_PUBLIC_URL) {
-    connectionUrl = process.env.DATABASE_PUBLIC_URL;
-    console.log('🌐 Using public database connection (Railway proxy)');
-} 
+  connectionUrl = process.env.DATABASE_PUBLIC_URL;
+  console.log('🌐 Using public database connection (Railway proxy)');
+}
 // Fallback to internal URL
 else if (process.env.DATABASE_URL) {
-    connectionUrl = process.env.DATABASE_URL;
-    console.log('🚂 Using internal database connection');
+  connectionUrl = process.env.DATABASE_URL;
+  console.log('🚂 Using internal database connection');
 }
 ```
 
 ### SSL Configuration:
+
 - Changed to **always enable SSL** for public connections
 - Railway's public proxy (ballast.proxy.rlwy.net) requires SSL
 - Removed environment-based SSL toggle
@@ -66,12 +71,12 @@ else if (process.env.DATABASE_URL) {
 
 ## 📊 What Changed
 
-| Aspect | Before | After |
-|--------|--------|-------|
-| URL Priority | DATABASE_URL first | DATABASE_PUBLIC_URL first |
-| SSL Config | Environment-based | Always enabled |
-| Railway Support | ❌ Broken | ✅ Working |
-| Connection Type | Internal (unreliable) | Public proxy (reliable) |
+| Aspect          | Before                | After                     |
+| --------------- | --------------------- | ------------------------- |
+| URL Priority    | DATABASE_URL first    | DATABASE_PUBLIC_URL first |
+| SSL Config      | Environment-based     | Always enabled            |
+| Railway Support | ❌ Broken             | ✅ Working                |
+| Connection Type | Internal (unreliable) | Public proxy (reliable)   |
 
 ---
 
@@ -80,6 +85,7 @@ else if (process.env.DATABASE_URL) {
 **Commit**: `a66e2f8`
 
 Files changed:
+
 - ✅ lib/database-manager.js - Fixed URL logic and SSL
 - ✅ Added diagnostic reports (3 files)
 
@@ -108,16 +114,19 @@ After Railway redeploys, you should see:
 Once Railway redeploys (2-5 minutes):
 
 1. **Health Check**:
+
 ```bash
 curl https://app.veraneural.com/health
 ```
 
 2. **Database Status**:
+
 ```bash
 curl https://app.veraneural.com/monitoring
 ```
 
 3. **API Test**:
+
 ```bash
 curl https://app.veraneural.com/api/auth/check
 ```
@@ -127,11 +136,13 @@ curl https://app.veraneural.com/api/auth/check
 ## 📝 Technical Details
 
 **Railway Environment Variables**:
+
 - `RAILWAY_ENVIRONMENT` - Set by Railway
 - `DATABASE_PUBLIC_URL` - Public proxy URL (ballast.proxy.rlwy.net:37630)
 - `DATABASE_URL` - Internal URL (postgres.railway.internal)
 
 **Connection Logic**:
+
 1. Check if `DATABASE_PUBLIC_URL` exists → Use it with SSL
 2. Else check if `DATABASE_URL` exists → Use it with SSL
 3. Else throw error

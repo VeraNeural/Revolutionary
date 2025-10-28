@@ -5,11 +5,13 @@
 **Issue**: Messages are being saved on desktop but not on mobile.
 
 **Root Causes Identified**:
+
 1. ❌ **sessionStorage clearing on mobile** - When the app goes to background or tab closes, sessionStorage is wiped on many mobile browsers
 2. ❌ **Missing mobile visibility handlers** - No detection of app background/foreground transitions
 3. ❌ **No debug logging for mobile-specific flows** - Unable to track where failures occur on mobile
 
 **Solutions Implemented**:
+
 1. ✅ Switched from `sessionStorage` to `localStorage` for anonId persistence
 2. ✅ Added `visibilitychange` event listener to detect mobile app lifecycle
 3. ✅ Added comprehensive `[MOBILE DEBUG]` console logging throughout the message flow
@@ -23,25 +25,28 @@
 **Location**: `chat.html` line ~2010 in `getOrCreateAnonId()`
 
 **What was happening**:
+
 ```javascript
 // OLD CODE - BROKEN ON MOBILE
 function getOrCreateAnonId() {
-    let id = sessionStorage.getItem('vera_anon_id');  // ❌ PROBLEM!
-    if (!id) {
-        id = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        sessionStorage.setItem('vera_anon_id', id);
-    }
-    return id;
+  let id = sessionStorage.getItem('vera_anon_id'); // ❌ PROBLEM!
+  if (!id) {
+    id = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    sessionStorage.setItem('vera_anon_id', id);
+  }
+  return id;
 }
 ```
 
 **Why it failed on mobile**:
+
 - **Safari on iOS**: sessionStorage is cleared when tab is closed or app goes to background
 - **Chrome on Android**: sessionStorage survives tab close but can be cleared by memory pressure
 - **In-app browsers**: Many apps use embedded browsers that handle sessionStorage differently
 - **PWA mode**: Progressive Web Apps on mobile may not persist sessionStorage
 
-**Result**: 
+**Result**:
+
 - Mobile user sends message 1 ✅ (anonId = `anon_123_abc`)
 - App goes to background or user switches tabs
 - sessionStorage cleared ⚠️
@@ -55,12 +60,14 @@ function getOrCreateAnonId() {
 **Location**: `chat.html` DOMContentLoaded initialization
 
 **What was missing**:
+
 ```javascript
 // NO EVENT LISTENER FOR MOBILE BACKGROUND/FOREGROUND
 // When app goes to background, we had no way to know or react
 ```
 
 **Why it mattered**:
+
 - No warning when anonId might have changed
 - No opportunity to resync data when returning to foreground
 - Silent failures that user never sees
@@ -70,16 +77,18 @@ function getOrCreateAnonId() {
 **Location**: `sendMessage()` function and `loadHistory()`
 
 **What was missing**:
+
 ```javascript
 // OLD CODE - NO DEBUG INFO FOR MOBILE
 async function sendMessage() {
-    // No console.log about which identifiers are being sent
-    // No logging of API response status
-    // No tracking of where failures occur
+  // No console.log about which identifiers are being sent
+  // No logging of API response status
+  // No tracking of where failures occur
 }
 ```
 
 **Why it mattered**:
+
 - When messages didn't save on mobile, we couldn't trace WHY
 - Was it the anonId changing?
 - Was the API call failing?
@@ -95,35 +104,38 @@ async function sendMessage() {
 **File**: `public/chat.html` line ~2005
 
 **Before**:
+
 ```javascript
 function getOrCreateAnonId() {
-    let id = sessionStorage.getItem('vera_anon_id');
-    if (!id) {
-        id = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        sessionStorage.setItem('vera_anon_id', id);
-    }
-    return id;
+  let id = sessionStorage.getItem('vera_anon_id');
+  if (!id) {
+    id = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    sessionStorage.setItem('vera_anon_id', id);
+  }
+  return id;
 }
 ```
 
 **After**:
+
 ```javascript
 function getOrCreateAnonId() {
-    // Use localStorage instead of sessionStorage - on mobile, sessionStorage is cleared
-    // when app goes to background or tab closes, causing message save failures
-    let id = localStorage.getItem('vera_anon_id');
-    if (!id) {
-        id = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('vera_anon_id', id);
-        console.log('🆔 Generated new anonId for guest:', id);
-    } else {
-        console.log('🆔 Loaded existing anonId:', id);
-    }
-    return id;
+  // Use localStorage instead of sessionStorage - on mobile, sessionStorage is cleared
+  // when app goes to background or tab closes, causing message save failures
+  let id = localStorage.getItem('vera_anon_id');
+  if (!id) {
+    id = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('vera_anon_id', id);
+    console.log('🆔 Generated new anonId for guest:', id);
+  } else {
+    console.log('🆔 Loaded existing anonId:', id);
+  }
+  return id;
 }
 ```
 
 **Benefits**:
+
 - localStorage persists until user explicitly clears browser data
 - Survives app background/foreground cycles on iOS & Android
 - Survives browser tab close
@@ -136,25 +148,27 @@ function getOrCreateAnonId() {
 **File**: `public/chat.html` line ~2130 in DOMContentLoaded
 
 **Added**:
+
 ```javascript
 // 📱 MOBILE FIX: Detect app background/foreground
 // On mobile, these events help us detect connection issues and unsaved messages
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        console.log('📱 [MOBILE] App entering background - current anonId:', anonId);
-    } else {
-        console.log('📱 [MOBILE] App returning to foreground - verifying anonId:', anonId);
-        // Verify anonId is still set (sessionStorage clears on some mobile browsers)
-        const currentAnonId = getOrCreateAnonId();
-        if (currentAnonId !== anonId) {
-            console.warn('⚠️ [MOBILE] anonId changed! Old:', anonId, 'New:', currentAnonId);
-            anonId = currentAnonId;
-        }
+  if (document.hidden) {
+    console.log('📱 [MOBILE] App entering background - current anonId:', anonId);
+  } else {
+    console.log('📱 [MOBILE] App returning to foreground - verifying anonId:', anonId);
+    // Verify anonId is still set (sessionStorage clears on some mobile browsers)
+    const currentAnonId = getOrCreateAnonId();
+    if (currentAnonId !== anonId) {
+      console.warn('⚠️ [MOBILE] anonId changed! Old:', anonId, 'New:', currentAnonId);
+      anonId = currentAnonId;
     }
+  }
 });
 ```
 
 **Benefits**:
+
 - Detects when app goes to background
 - Verifies anonId is still valid when app returns
 - Logs warnings if anonId somehow changes
@@ -171,29 +185,30 @@ document.addEventListener('visibilitychange', () => {
 ```javascript
 // 📱 MOBILE DEBUG: Log all identifiers
 console.log('📱 [MOBILE DEBUG] sendMessage called with:', {
-    messageLength: message.length,
-    userEmail: userEmail,
-    anonId: anonId,
-    isAuthenticated: isAuthenticated,
-    currentConversationId: currentConversationId,
-    timestamp: new Date().toISOString()
+  messageLength: message.length,
+  userEmail: userEmail,
+  anonId: anonId,
+  isAuthenticated: isAuthenticated,
+  currentConversationId: currentConversationId,
+  timestamp: new Date().toISOString(),
 });
 
 console.log('📤 [MOBILE DEBUG] Sending API request to /api/chat:', requestBody);
 
 // After API response:
 console.log('📥 [MOBILE DEBUG] API response received:', {
-    success: data?.success,
-    responseLength: data?.response?.length,
-    conversationId: data?.conversationId,
-    hasError: !!data?.error,
-    errorMessage: data?.error
+  success: data?.success,
+  responseLength: data?.response?.length,
+  conversationId: data?.conversationId,
+  hasError: !!data?.error,
+  errorMessage: data?.error,
 });
 
 console.log('✅ [MOBILE DEBUG] Message saved successfully, veraMsg added to DOM');
 ```
 
 **What gets logged**:
+
 - All identifiers being sent: userEmail, anonId, conversationId
 - API request body
 - API response success/failure
@@ -204,21 +219,22 @@ console.log('✅ [MOBILE DEBUG] Message saved successfully, veraMsg added to DOM
 
 ```javascript
 console.log('📖 [MOBILE DEBUG] Loading history from:', url, {
-    userEmail: userEmail,
-    anonId: anonId
+  userEmail: userEmail,
+  anonId: anonId,
 });
 
 console.log('📖 [MOBILE DEBUG] History loaded:', {
-    messageCount: data?.messages?.length,
-    hasMessages: Array.isArray(data?.messages),
-    firstMessageRole: data?.messages?.[0]?.role,
-    lastMessageRole: data?.messages?.[data.messages.length - 1]?.role
+  messageCount: data?.messages?.length,
+  hasMessages: Array.isArray(data?.messages),
+  firstMessageRole: data?.messages?.[0]?.role,
+  lastMessageRole: data?.messages?.[data.messages.length - 1]?.role,
 });
 
 console.log(`✅ [MOBILE DEBUG] Loaded ${data.messages.length} messages from history`);
 ```
 
 **What gets logged**:
+
 - Which URL is being called and which identifiers
 - Count of messages loaded
 - First and last message roles (user/assistant)
@@ -231,6 +247,7 @@ console.log(`✅ [MOBILE DEBUG] Loaded ${data.messages.length} messages from his
 ### Step 1: Enable Browser Dev Tools on Mobile
 
 **iOS Safari**:
+
 1. Open Settings → Safari → Advanced
 2. Enable "Web Inspector"
 3. Connect Mac with USB
@@ -239,6 +256,7 @@ console.log(`✅ [MOBILE DEBUG] Loaded ${data.messages.length} messages from his
 6. Open Web Inspector console
 
 **Android Chrome**:
+
 1. Enable USB Debugging in Developer Options
 2. Connect Android with USB
 3. Open Chrome on Android
@@ -322,29 +340,32 @@ After returning from background, you should see:
 ### Issue: anonId Changes on Mobile
 
 **Symptom**: In console, you see:
+
 ```
 ⚠️ [MOBILE] anonId changed! Old: anon_123_abc New: anon_456_def
 ```
 
 **Causes & Fixes**:
 
-| Cause | Fix |
-|-------|-----|
-| localStorage cleared by user | Ask user to check Settings → [Browser] → Clear browsing data |
-| Browser memory pressure | Use authenticated login instead of guest (localStorage more stable) |
-| Private/Incognito mode | localStorage doesn't persist in private browsing on iOS Safari |
+| Cause                        | Fix                                                                 |
+| ---------------------------- | ------------------------------------------------------------------- |
+| localStorage cleared by user | Ask user to check Settings → [Browser] → Clear browsing data        |
+| Browser memory pressure      | Use authenticated login instead of guest (localStorage more stable) |
+| Private/Incognito mode       | localStorage doesn't persist in private browsing on iOS Safari      |
 
 ---
 
 ### Issue: API Response Returns Error
 
 **Symptom**: In console, you see:
+
 ```
 hasError: true,
 errorMessage: "VERA consciousness temporarily offline. Please try again."
 ```
 
 **Checks**:
+
 1. Is anonId being sent? Check `anonId: "anon_..."` in request log
 2. Is userEmail present? Check if authenticated
 3. Is message non-empty? Check `messageLength: > 0`
@@ -354,6 +375,7 @@ errorMessage: "VERA consciousness temporarily offline. Please try again."
 ### Issue: Messages Don't Load on Reload
 
 **Symptom**: Console shows:
+
 ```
 📖 [MOBILE DEBUG] History loaded: {
   messageCount: 0,
@@ -364,6 +386,7 @@ errorMessage: "VERA consciousness temporarily offline. Please try again."
 ```
 
 **Checks**:
+
 1. Is anonId the same as when messages were sent? Compare anonId values
 2. Check server logs: Are messages being saved to database?
 3. Is the API call to `/api/history` completing? Check network tab
@@ -380,6 +403,7 @@ tail -f /path/to/vera-project/logs/*.log | grep MOBILE
 ```
 
 **Expected server logs for message save**:
+
 ```
 💬 VERA receiving: {
   userId: "anon_1729947600000_a1b2c3def",
@@ -415,6 +439,7 @@ These debug logging changes have **negligible performance impact**:
 ## Next Steps if Issues Continue
 
 1. **Enable persistent logging** by adding this to localStorage:
+
 ```javascript
 // In console on mobile:
 localStorage.setItem('veraDebugLogging', '1');
@@ -426,7 +451,6 @@ localStorage.getItem('veraDebugLog');
 2. **Test with authenticated user** instead of guest:
    - Authenticated users use `userEmail` instead of `anonId`
    - Less prone to mobile-specific issues
-   
 3. **Test in PWA mode** on mobile:
    - Add to home screen on iOS/Android
    - Run app in fullscreen mode
@@ -441,6 +465,7 @@ localStorage.getItem('veraDebugLog');
 **Commit**: `63316e8` - "Fix mobile message saving issues with enhanced debugging"
 
 **Changes**:
+
 1. `getOrCreateAnonId()`: localStorage instead of sessionStorage (+6 lines)
 2. `sendMessage()`: Added mobile debug logging (+25 lines)
 3. `loadHistory()`: Added mobile debug logging (+15 lines)

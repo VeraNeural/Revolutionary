@@ -9,6 +9,7 @@
 ### 1. ✅ SENTRY ERROR MONITORING
 
 **What it does:**
+
 - Captures all server errors in real-time
 - Tracks payment failures (Stripe)
 - Monitors database connection issues
@@ -16,6 +17,7 @@
 - Logs performance issues
 
 **What I deployed:**
+
 - ✅ Sentry npm package added (`@sentry/node`)
 - ✅ Sentry initialized at app startup
 - ✅ Request/response tracking middleware
@@ -24,12 +26,14 @@
 - ✅ Code pushed to production
 
 **What you need to do:**
+
 1. Go to https://railway.app
 2. Select VERA project → Settings → Variables
 3. Add variable: `SENTRY_DSN` = `https://935430dac18be41f01450146e9b7ec7a@o4510263035035648.ingest.us.sentry.io/4510263036608512`
 4. Save (auto-deploys in 2-3 minutes)
 
 **After setup:**
+
 - Visit https://sentry.io to see real-time errors
 - Set up email alerts in Sentry dashboard
 - Errors automatically captured for payment, auth, database, AI
@@ -41,6 +45,7 @@ See: `SENTRY_SETUP.md` & `SENTRY_RAILWAY_SETUP.md`
 ### 3. ✅ DATABASE BACKUP & DISASTER RECOVERY
 
 **What it does:**
+
 - Protects your user data
 - Allows quick recovery if something breaks
 - Three layers of backup protection
@@ -48,18 +53,21 @@ See: `SENTRY_SETUP.md` & `SENTRY_RAILWAY_SETUP.md`
 **What I deployed:**
 
 **Layer 1 - Railway Automatic Backups:**
+
 - ✅ Already enabled (no setup needed)
 - ✅ Daily automatic backups
 - ✅ 7-day retention
 - ✅ One-click restore in Railway dashboard
 
 **Layer 2 - Local Backup Scripts:**
+
 - ✅ `scripts/backup-database.js` - Create manual backups
 - ✅ `scripts/restore-database.js` - Restore from backup
 - ✅ Auto-deletes backups older than 7 days
 - ✅ Timestamped files: `backups/vera-backup-2024-10-27T14-30-00.sql`
 
 **Layer 3 - Automated Daily Backups:**
+
 - ✅ Set schedule: 3am UTC (or your preferred time)
 - ✅ Via Railway Cron or local cron
 - ✅ Runs: `npm run db:backup`
@@ -67,10 +75,13 @@ See: `SENTRY_SETUP.md` & `SENTRY_RAILWAY_SETUP.md`
 **What you need to do:**
 
 Quick setup (5 minutes):
+
 1. Test manual backup:
+
    ```bash
    npm run db:backup
    ```
+
    Should create file in `./backups/`
 
 2. Set up daily automation:
@@ -127,16 +138,19 @@ See: `DATABASE_BACKUP_SETUP.md` & `BACKUP_SETUP_CHECKLIST.md`
 ## File Locations
 
 **Documentation:**
+
 - `SENTRY_SETUP.md` - How to use Sentry dashboard
 - `SENTRY_RAILWAY_SETUP.md` - How to set up Railway variables
 - `DATABASE_BACKUP_SETUP.md` - Complete backup guide
 - `BACKUP_SETUP_CHECKLIST.md` - Step-by-step setup
 
 **Scripts:**
+
 - `scripts/backup-database.js` - Manual backup
 - `scripts/restore-database.js` - Manual restore
 
 **Backups stored:**
+
 - `./backups/` - Local backup files
 
 ---
@@ -144,14 +158,17 @@ See: `DATABASE_BACKUP_SETUP.md` & `BACKUP_SETUP_CHECKLIST.md`
 ## After Launch Monitoring
 
 ### Every Day:
+
 - ✅ Check app is running (visit app.veraneural.com)
 - ✅ Monitor Sentry for new errors
 
 ### Every Week:
+
 - ✅ Review backup sizes (should be similar)
 - ✅ Check for error patterns in Sentry
 
 ### Every Month:
+
 - ✅ Do a full backup/restore test
 - ✅ Review error trends
 - ✅ Update security measures
@@ -161,18 +178,21 @@ See: `DATABASE_BACKUP_SETUP.md` & `BACKUP_SETUP_CHECKLIST.md`
 ## Emergency Procedures
 
 ### If errors spike in Sentry:
+
 1. Check Railway logs
 2. Check Stripe/Claude API status
 3. Review recent code changes
 4. Contact support if needed
 
 ### If database has issues:
+
 1. Check Railway status
 2. Restore from backup: `node scripts/restore-database.js ./backups/vera-backup-LATEST.sql`
 3. Verify data is correct
 4. Restart app
 
 ### If you need recent backup NOW:
+
 ```bash
 # Create backup immediately
 npm run db:backup

@@ -1,4 +1,5 @@
 # VERA LAUNCH - COMPREHENSIVE STATUS REPORT
+
 **Date:** October 27, 2025  
 **Project:** VERA - Nervous System Companion SaaS
 
@@ -9,6 +10,7 @@
 ✅ **95% READY FOR LAUNCH**
 
 Your platform has all core functionality built. What remains:
+
 1. Create 2 announcement pages (community & professional)
 2. Wire them to /community-pricing with correct priceIds
 3. Test the full end-to-end flow
@@ -21,6 +23,7 @@ Your platform has all core functionality built. What remains:
 ### ✅ WORKING & VERIFIED
 
 #### 1. **Authentication System**
+
 - ✅ `/api/auth/send-magic-link` - Sends email with sign-in link
 - ✅ `/verify-magic-link` - Validates and logs user in
 - ✅ `/api/auth/check` - Checks if user is authenticated + subscription status
@@ -33,6 +36,7 @@ Your platform has all core functionality built. What remains:
 ---
 
 #### 2. **Stripe Payment Integration**
+
 - ✅ `/api/create-checkout-session` - Creates Stripe checkout
 - ✅ Accepts custom `priceId` parameter (NEW - just added)
 - ✅ Accepts custom `source` parameter for tracking (NEW - just added)
@@ -44,6 +48,7 @@ Your platform has all core functionality built. What remains:
 - ✅ Duplicate prevention logic (checks email + customer ID)
 
 **Supported Price IDs:**
+
 - ✅ `price_1SMucpF8aJ0BDqA3asphVGOX` (60-day free trial - COMMUNITY)
 - ✅ `price_1SIgAtF8aJ0BDqA3WXVJsuVD` (7-day free + $19/month - PROFESSIONAL)
 
@@ -52,6 +57,7 @@ Your platform has all core functionality built. What remains:
 ---
 
 #### 3. **Routing & Pages**
+
 - ✅ `/` - Serves `index.html` (landing page with orb)
 - ✅ `/intro` - Serves `intro.html` (intro sequence)
 - ✅ `/chat` - Serves `chat.html` (main chat interface)
@@ -66,6 +72,7 @@ Your platform has all core functionality built. What remains:
 ---
 
 #### 4. **Chat Interface**
+
 - ✅ `chat.html` - Full VERA chat UI
 - ✅ Captures user name
 - ✅ Captures `priceId` and `source` from URL (NEW - just added)
@@ -77,6 +84,7 @@ Your platform has all core functionality built. What remains:
 - ✅ Mobile responsive
 
 **Authorization Check:**
+
 - ✅ `/api/auth/check` verifies login + subscription before chat
 - ✅ Non-authenticated users get redirected
 
@@ -85,6 +93,7 @@ Your platform has all core functionality built. What remains:
 ---
 
 #### 5. **Community Pricing System**
+
 - ✅ `/community-pricing?priceId=XXX&source=YYY` endpoint created
 - ✅ Reads priceId from URL query parameter
 - ✅ Validates priceId exists (error: missing_price)
@@ -99,6 +108,7 @@ Your platform has all core functionality built. What remains:
 ---
 
 #### 6. **Webhook System**
+
 - ✅ Stripe webhook endpoint: `POST /webhook`
 - ✅ Signature verification ✅
 - ✅ Handles `checkout.session.completed`
@@ -118,9 +128,11 @@ Your platform has all core functionality built. What remains:
 ### ⚠️ NEEDS TO BE CREATED
 
 #### 1. **Community Announcement Page** (SIMPLE TO CREATE)
+
 **File to create:** `/public/community.html`
 
 **What it needs:**
+
 - Header with "60 DAYS FREE" offer
 - Video or content about community
 - "Start Free" button → `/community-pricing?priceId=price_1SMucpF8aJ0BDqA3asphVGOX&source=community`
@@ -131,9 +143,11 @@ Your platform has all core functionality built. What remains:
 ---
 
 #### 2. **Professional Announcement Page** (SIMPLE TO CREATE)
+
 **File to create:** `/public/professional.html`
 
 **What it needs:**
+
 - Header with "7 DAYS FREE + $19/month" offer
 - Video or content about professional features
 - "Start Trial" button → `/community-pricing?priceId=price_1SIgAtF8aJ0BDqA3WXVJsuVD&source=professional`
@@ -144,9 +158,11 @@ Your platform has all core functionality built. What remains:
 ---
 
 #### 3. **Routing for /community and /professional** (ALREADY PARTIALLY DONE)
+
 **Location:** `server.js`
 
 **Need to add:**
+
 ```javascript
 app.get('/community', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'community.html'));
@@ -222,6 +238,7 @@ User sees VERA chat with 60-day trial active
 ## QUICK REFERENCE: API ENDPOINTS
 
 ### Authentication
+
 ```
 POST   /api/auth/send-magic-link      Send login link via email
 GET    /verify-magic-link?token=XXX   Validate link and login
@@ -230,6 +247,7 @@ POST   /api/auth/logout               Sign user out
 ```
 
 ### Payments
+
 ```
 POST   /api/create-checkout-session   Create Stripe checkout (SUPPORTS priceId parameter)
 GET    /api/subscription-status       Check subscription status
@@ -237,11 +255,13 @@ POST   /webhook                       Stripe webhook handler
 ```
 
 ### Community Pricing
+
 ```
 GET    /community-pricing?priceId=XXX&source=YYY   Smart router for pricing offers
 ```
 
 ### Chat & History
+
 ```
 POST   /api/chat                      Send message to VERA
 GET    /api/history                   Get message history
@@ -250,6 +270,7 @@ POST   /api/conversations             Create new conversation
 ```
 
 ### Pages
+
 ```
 GET    /                     Index/landing page
 GET    /intro                Intro sequence
@@ -266,6 +287,7 @@ GET    /create-account       Post-checkout flow
 ## WHAT'S VERIFIED WORKING
 
 ### ✅ Email Magic Link Flow
+
 1. User enters email on login page
 2. Server sends email with magic link
 3. Link contains secure token (32-byte random)
@@ -278,6 +300,7 @@ GET    /create-account       Post-checkout flow
 ---
 
 ### ✅ Stripe Checkout - Price ID Support
+
 1. Server accepts `priceId` in POST body
 2. Falls back to default if not provided
 3. Creates session with provided price ID
@@ -290,6 +313,7 @@ GET    /create-account       Post-checkout flow
 ---
 
 ### ✅ Community Pricing Router
+
 1. Reads `priceId` from URL query parameters
 2. Routes based on authentication status
 3. Preserves priceId through redirects
@@ -300,6 +324,7 @@ GET    /create-account       Post-checkout flow
 ---
 
 ### ✅ Webhook System
+
 1. Stripe sends events to `/webhook`
 2. Signature verified for security
 3. Creates user on `checkout.session.completed`
@@ -331,18 +356,21 @@ GET    /create-account       Post-checkout flow
 ## NEXT STEPS
 
 ### Immediate (Today)
+
 1. Create the two announcement pages
 2. Add the two GET routes
 3. Test locally with both price IDs
 4. Verify end-to-end flow
 
 ### Before Launch
+
 1. Configure email templates (if needed)
 2. Set up Stripe test mode
 3. Get community/professional landing page designs
 4. Create social media graphics for links
 
 ### Launch
+
 1. Deploy to Railway
 2. Enable Stripe live mode
 3. Share announcement links
@@ -352,17 +380,17 @@ GET    /create-account       Post-checkout flow
 
 ## KEY FEATURES SUMMARY
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Magic link email auth | ✅ Working | 15-min expiry, one-time use |
-| Stripe payments | ✅ Working | Both price IDs supported |
-| Custom pricing links | ✅ Working | `/community-pricing?priceId=XXX` |
-| Dual offers | ✅ Ready | Community (60d) + Professional (7d) |
-| Webhook handling | ✅ Working | All events covered |
-| Duplicate prevention | ✅ Working | Refunds issued automatically |
-| Chat interface | ✅ Working | Full conversation history |
-| Session management | ✅ Working | Secure, HttpOnly cookies |
-| Error handling | ✅ Working | Graceful fallbacks |
+| Feature               | Status     | Notes                               |
+| --------------------- | ---------- | ----------------------------------- |
+| Magic link email auth | ✅ Working | 15-min expiry, one-time use         |
+| Stripe payments       | ✅ Working | Both price IDs supported            |
+| Custom pricing links  | ✅ Working | `/community-pricing?priceId=XXX`    |
+| Dual offers           | ✅ Ready   | Community (60d) + Professional (7d) |
+| Webhook handling      | ✅ Working | All events covered                  |
+| Duplicate prevention  | ✅ Working | Refunds issued automatically        |
+| Chat interface        | ✅ Working | Full conversation history           |
+| Session management    | ✅ Working | Secure, HttpOnly cookies            |
+| Error handling        | ✅ Working | Graceful fallbacks                  |
 
 ---
 
@@ -387,6 +415,7 @@ OVERALL:               ✅ 98% READY FOR LAUNCH
 ## WHAT TO DO RIGHT NOW
 
 **Option 1: Build Announcement Pages (Recommended)**
+
 ```
 1. Create /public/community.html (copy from index.html, modify for offer)
 2. Create /public/professional.html (copy from index.html, modify for offer)
@@ -396,6 +425,7 @@ OVERALL:               ✅ 98% READY FOR LAUNCH
 ```
 
 **Option 2: Start with Plain Links**
+
 ```
 1. Skip announcement pages for now
 2. Use these direct links:
@@ -414,6 +444,7 @@ OVERALL:               ✅ 98% READY FOR LAUNCH
 Everything is tested, integrated, and ready. The only missing pieces are two announcement HTML pages, which are just presentation.
 
 Your core tech stack is solid:
+
 - ✅ Express.js backend
 - ✅ PostgreSQL database
 - ✅ Stripe integration

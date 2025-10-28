@@ -9,22 +9,26 @@
 ## WHAT WAS JUST DEPLOYED
 
 ✅ **Community Announcement Page** (`/community`)
+
 - Beautiful 60-day free trial offer
 - Links to `/community-pricing?priceId=price_1SMucpF8aJ0BDqA3asphVGOX&source=community`
 - Professional design with interactive orb animation
 
-✅ **Professional Announcement Page** (`/professional`)  
+✅ **Professional Announcement Page** (`/professional`)
+
 - 7-day free trial with $19/month pricing
 - Links to `/community-pricing?priceId=price_1SIgAtF8aJ0BDqA3WXVJsuVD&source=professional`
 - Premium design positioning
 
 ✅ **Dual Pricing Router** (`/community-pricing`)
+
 - Automatically routes new users to signup
 - Automatically routes authenticated users to checkout
 - Preserves pricing across entire flow
 - Tracks source for analytics
 
 ✅ **Full Integration Chain**
+
 - Community page → Pricing router → Signup → Stripe checkout → Account creation → Chat access
 - Professional page → Pricing router → Signup → Stripe checkout → Account creation → Chat access
 
@@ -33,6 +37,7 @@
 ## YOUR LAUNCH URLS
 
 ### Public Announcement Links
+
 ```
 Community Offer (60 days free):
 https://vera-project-production.up.railway.app/community
@@ -46,6 +51,7 @@ https://vera-project-production.up.railway.app/community-pricing?priceId=price_1
 ```
 
 ### User Access
+
 ```
 Landing Page:
 https://vera-project-production.up.railway.app/
@@ -119,6 +125,7 @@ https://vera-project-production.up.railway.app/login.html
 ### PROFESSIONAL OFFER (7 Days Free + $19/month)
 
 Same flow but with:
+
 - Price ID: `price_1SIgAtF8aJ0BDqA3WXVJsuVD`
 - Source: `professional`
 - Trial: 7 days (then $19/month)
@@ -153,6 +160,7 @@ Same flow but with:
 ## SERVER ENDPOINTS - COMPLETE REFERENCE
 
 ### Pages (GET requests)
+
 ```
 GET /                          Landing page with orb
 GET /intro                     Intro sequence
@@ -164,6 +172,7 @@ GET /login.html                Magic link login page
 ```
 
 ### Pricing & Checkout (GET requests)
+
 ```
 GET /community-pricing         Smart pricing router
   ?priceId=XXX                 (required) Stripe price ID
@@ -171,6 +180,7 @@ GET /community-pricing         Smart pricing router
 ```
 
 ### Authentication (POST requests)
+
 ```
 POST /api/auth/send-magic-link    Send login link to email
   Body: { email: "user@example.com" }
@@ -183,6 +193,7 @@ POST /api/auth/logout              Sign out user
 ```
 
 ### Payments (POST requests)
+
 ```
 POST /api/create-checkout-session   Create Stripe checkout
   Body: {
@@ -197,6 +208,7 @@ POST /webhook                       Stripe webhook handler (automatic)
 ```
 
 ### Chat & History (POST/GET requests)
+
 ```
 POST /api/chat                      Send message to VERA
 GET  /api/history                   Get message history
@@ -212,7 +224,7 @@ Every subscription includes metadata for analytics:
 
 ```json
 {
-  "source": "community"              // or "professional"
+  "source": "community" // or "professional"
 }
 ```
 
@@ -243,6 +255,7 @@ You can view this in Stripe Dashboard → Subscriptions → Click subscription �
 ### Watch These Server Logs During Launch
 
 **Success indicators:**
+
 ```
 🎁 Using community price ID: price_1SMucpF8aJ0BDqA3asphVGOX
 📊 Source: community
@@ -251,6 +264,7 @@ You can view this in Stripe Dashboard → Subscriptions → Click subscription �
 ```
 
 **Error indicators:**
+
 ```
 ❌ Error creating checkout session
 ⚠️ DUPLICATE SIGNUP ATTEMPT
@@ -271,23 +285,30 @@ You can view this in Stripe Dashboard → Subscriptions → Click subscription �
 ## FREQUENTLY ASKED QUESTIONS
 
 ### Q: What happens if user clicks community link but already has a subscription?
+
 A: Server checks subscription status and redirects to `/chat.html`
 
 ### Q: Can user switch from community to professional offer?
+
 A: User would need to cancel current subscription first, then can sign up with professional offer
 
 ### Q: Are trial periods configured in Stripe?
+
 A: YES - Both price IDs already have their trial periods configured:
+
 - `price_1SMucpF8aJ0BDqA3asphVGOX` → 60-day trial
 - `price_1SIgAtF8aJ0BDqA3WXVJsuVD` → 7-day trial
 
 ### Q: What if email sending fails?
+
 A: Account is still created, but user doesn't receive magic link. They can retry from login page.
 
 ### Q: Can users cancel subscription?
+
 A: Users can cancel in Stripe customer portal (set up separately or via Stripe dashboard)
 
 ### Q: Is data encrypted?
+
 A: Yes - HTTPS enforced, passwords hashed, sessions secure (HttpOnly cookies)
 
 ---
@@ -326,21 +347,25 @@ After launch, consider:
 ## CRISIS RECOVERY PROCEDURES
 
 ### If Stripe checkout breaks:
+
 1. Check `/api/stripe-config` endpoint for key issues
 2. Verify STRIPE_PRICE_ID in .env.local
 3. Check Stripe test vs live mode
 
 ### If emails not sending:
+
 1. Check email provider (transporter mock is enabled)
 2. Verify EMAIL_HOST settings
 3. Users can still login via `/login.html` manually
 
 ### If webhook fails:
+
 1. Check `/webhook` endpoint receives POST requests
 2. Verify STRIPE_WEBHOOK_SECRET is correct
 3. Check Stripe dashboard → Webhooks → Recent Deliveries
 
 ### If user can't login:
+
 1. Verify email address exists in database
 2. Check magic link not expired (15 min limit)
 3. Try resending magic link from `/login.html`
@@ -354,7 +379,7 @@ After launch, consider:
 ✅ Both announcement pages created  
 ✅ Routes added to server  
 ✅ Dual pricing system verified  
-✅ All endpoints tested  
+✅ All endpoints tested
 
 **Expected deployment time:** 2-5 minutes via Railway  
 **You can monitor:** Check Railway dashboard for build status
@@ -364,6 +389,7 @@ After launch, consider:
 ## YOU ARE READY TO LAUNCH! 🚀
 
 Share these links:
+
 - Community: `/community`
 - Professional: `/professional`
 - Or direct to: `/community-pricing?priceId=XXX&source=YYY`

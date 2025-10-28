@@ -3,25 +3,27 @@
 ## What Changed
 
 ### ✅ Unified Server (`server.js`)
+
 - **Added endpoints** from Netlify Functions:
   - `/api/check-history` - Check if user has conversation history
   - `/api/register` - Register user before Stripe checkout
   - `/api/portal` - Open Stripe billing portal
   - `/api/subscription-status` - Check active subscription
   - `/api/test` - Health check for VERA brain
-  
 - **Updated AI logic** to use modular `getVERAResponse()`:
   - Supports image/document attachments (Claude vision)
   - Cleaner, maintainable code
   - Same revolutionary consciousness as before
 
 ### ✅ Updated Frontend (`public/chat.html`)
+
 - **All API calls now use `/api/*`** instead of `/.netlify/functions/server/api/*`
 - Works with both:
   - Local development: `http://localhost:8080/api/*`
   - Production: `https://app.veraneural.com/api/*`
 
 ### ✅ Cleanup
+
 - **Removed duplicate files**:
   - Root `chat.html` ❌ (use `public/chat.html`)
   - Root `index.html` ❌ (use `public/index.html`)
@@ -66,6 +68,7 @@ npm start
 Visit: http://localhost:8080
 
 Test endpoints:
+
 ```powershell
 curl http://localhost:8080/health
 curl http://localhost:8080/api/test
@@ -78,6 +81,7 @@ curl http://localhost:8080/api/test
 Once Railway is live and working:
 
 ### Option A: Full migration (recommended)
+
 ```powershell
 # Remove Netlify entirely
 Remove-Item -Recurse -Force .\netlify\
@@ -88,7 +92,9 @@ git push origin main
 ```
 
 ### Option B: Keep Netlify for static only
+
 Edit `netlify.toml`:
+
 ```toml
 [build]
   publish = "public"

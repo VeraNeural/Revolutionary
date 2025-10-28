@@ -3,6 +3,7 @@
 ## 🎯 What We Fixed
 
 Your `server.js` had these issues:
+
 1. ✅ **Duplicate handling** - Already good, but could cause race conditions
 2. ❌ **Webhook signature** - Easy to misconfigure
 3. ❌ **Return URLs** - Users get lost after payment
@@ -33,7 +34,7 @@ Your `server.js` had these issues:
 2. Fill in:
    - **Name:** VERA Monthly Subscription
    - **Description:** Your nervous system companion - $19/month
-   - **Pricing:** 
+   - **Pricing:**
      - ✅ Recurring
      - Price: $19.00
      - Billing period: Monthly
@@ -45,7 +46,7 @@ Your `server.js` had these issues:
 
 1. Stripe Dashboard → Developers → Webhooks
 2. Click "Add endpoint"
-3. **Endpoint URL:** 
+3. **Endpoint URL:**
    - Local testing: Use Stripe CLI (see below)
    - Production: `https://your-railway-app.up.railway.app/webhook`
 4. **Events to listen for:**
@@ -79,27 +80,30 @@ DOMAIN=http://localhost:8080  # For local testing
 ### **Option A: Stripe CLI (Recommended)**
 
 1. **Install Stripe CLI:**
+
    ```bash
    # Mac
    brew install stripe/stripe-cli/stripe
-   
+
    # Windows
    scoop install stripe
-   
+
    # Linux
    # Download from: https://github.com/stripe/stripe-cli/releases
    ```
 
 2. **Login:**
+
    ```bash
    stripe login
    ```
 
 3. **Forward webhooks to local server:**
+
    ```bash
    # In one terminal, run your server:
    npm start
-   
+
    # In another terminal, forward webhooks:
    stripe listen --forward-to localhost:8080/webhook
    ```
@@ -110,6 +114,7 @@ DOMAIN=http://localhost:8080  # For local testing
 ### **Option B: Skip Webhooks (Quick Test)**
 
 Just test the checkout flow without webhooks:
+
 1. User pays
 2. Manually check Stripe dashboard for payment
 3. Manually mark user as subscribed in database
@@ -119,6 +124,7 @@ Just test the checkout flow without webhooks:
 ## 🎭 Test Cards
 
 **Successful Payment:**
+
 ```
 Card: 4242 4242 4242 4242
 Expiry: Any future date
@@ -127,16 +133,19 @@ ZIP: Any 5 digits
 ```
 
 **Payment Requires Authentication (3D Secure):**
+
 ```
 Card: 4000 0025 0000 3155
 ```
 
 **Card Declined:**
+
 ```
 Card: 4000 0000 0000 0002
 ```
 
 **Insufficient Funds:**
+
 ```
 Card: 4000 0000 0000 9995
 ```
@@ -146,11 +155,13 @@ Card: 4000 0000 0000 9995
 ## 🔄 Complete User Flow Test
 
 ### **Step 1: User Arrives**
+
 1. Open: `http://localhost:8080`
 2. Should see: Landing page with orb intro
 3. Click through to chat
 
 ### **Step 2: Free Messages**
+
 1. Send message 1: ✅ VERA responds
 2. Send message 2: ✅ VERA responds
 3. Send message 3: ✅ VERA responds
@@ -158,12 +169,14 @@ Card: 4000 0000 0000 9995
 5. Send message 5: ✅ VERA responds
 
 ### **Step 3: Subscription Prompt**
+
 1. Try to send message 6
 2. Should see: VERA's message about subscription
 3. Button appears: "Continue with VERA"
 4. Message counter shows: "5/5 messages used"
 
 ### **Step 4: Stripe Checkout**
+
 1. Click "Continue with VERA"
 2. Redirects to Stripe checkout page
 3. Should show:
@@ -174,7 +187,9 @@ Card: 4000 0000 0000 9995
 5. Click "Subscribe"
 
 ### **Step 5: Webhook Processing**
+
 Watch your server logs:
+
 ```
 🔔 Webhook received: checkout.session.completed
 💳 Checkout completed for session: cs_test_xxxxx
@@ -182,6 +197,7 @@ Watch your server logs:
 ```
 
 ### **Step 6: Return to Chat**
+
 1. User redirected back to: `chat.html?session_id=cs_xxxxx&success=true`
 2. Should see: "Welcome back! You're all set."
 3. Try sending message 6: ✅ VERA responds
@@ -194,11 +210,13 @@ Watch your server logs:
 ### **Issue 1: Webhook Not Firing**
 
 **Symptoms:**
+
 - User pays successfully
 - Stripe shows payment in dashboard
 - But user still can't chat (not marked as subscribed)
 
 **Fix:**
+
 ```bash
 # Check webhook secret is correct
 echo $STRIPE_WEBHOOK_SECRET
@@ -212,18 +230,21 @@ stripe listen --forward-to localhost:8080/webhook
 ### **Issue 2: Duplicate Accounts**
 
 **Symptoms:**
+
 - User pays twice
 - Multiple Stripe customers for same email
 - Charges happen twice
 
 **Fix:**
 Your `server.js` already handles this! It will:
+
 1. Detect duplicate
 2. Cancel duplicate subscription
 3. Refund if charged
 4. Use existing account
 
 **To test it works:**
+
 - Pay with same email twice
 - Check logs: Should see "DUPLICATE DETECTED"
 - Check Stripe: Second subscription should be cancelled
@@ -231,11 +252,13 @@ Your `server.js` already handles this! It will:
 ### **Issue 3: User Lost After Payment**
 
 **Symptoms:**
+
 - Payment succeeds
 - User redirected to chat
 - But shows "not subscribed"
 
 **Fix:**
+
 - Check `success_url` in stripe-config.js includes session_id
 - Check chat.html detects `?success=true` in URL
 - Verify webhook completed BEFORE redirect
@@ -243,11 +266,13 @@ Your `server.js` already handles this! It will:
 ### **Issue 4: Session Expires**
 
 **Symptoms:**
+
 - User pays
 - Returns to chat
 - Gets logged out
 
 **Fix:**
+
 ```javascript
 // In server.js, make session permanent after payment
 req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -256,10 +281,12 @@ req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
 ### **Issue 5: Trial Not Working**
 
 **Symptoms:**
+
 - User charged immediately
 - No trial period
 
 **Fix:**
+
 - Check stripe-config.js has `trial_period_days: 7`
 - Verify in Stripe dashboard: Subscription shows "Trialing"
 - Check invoice: Should be scheduled 7 days out
@@ -325,6 +352,7 @@ req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
 ### **3. Test with Real Card**
 
 **IMPORTANT:** Test with your OWN card first!
+
 - Subscribe yourself
 - Verify everything works
 - Cancel immediately if needed
@@ -332,6 +360,7 @@ req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
 ### **4. Monitor First Week**
 
 Watch for:
+
 - Successful subscriptions
 - Trial conversions
 - Payment failures
@@ -346,6 +375,7 @@ Stripe automatically sends receipt emails. You don't need to!
 
 **2. Customer Portal:**
 Use `stripe-config.js → createPortalSession()` to let users:
+
 - Update payment method
 - Cancel subscription
 - View invoices
@@ -357,10 +387,11 @@ Stripe automatically retries failed payments. You're covered!
 If user upgrades/downgrades, Stripe handles it automatically.
 
 **5. Refunds:**
+
 ```javascript
 // In server.js
 const refund = await stripe.refunds.create({
-  payment_intent: 'pi_xxxxx'
+  payment_intent: 'pi_xxxxx',
 });
 ```
 
@@ -388,12 +419,14 @@ const refund = await stripe.refunds.create({
 If Stripe still causes headaches:
 
 **Check these files:**
+
 1. `stripe-config.js` - Exports all functions correctly?
 2. `server.js` - Imports stripe-config and uses it?
 3. `.env.local` - All 4 Stripe variables set?
 4. `chat.html` - Calls `/api/create-checkout` endpoint?
 
 **Check these logs:**
+
 1. Server console - Any red errors?
 2. Stripe dashboard → Logs - API calls succeeding?
 3. Stripe dashboard → Webhooks - Deliveries successful?
@@ -404,6 +437,7 @@ If Stripe still causes headaches:
 ## 🌟 You Got This!
 
 Stripe is now:
+
 - ✅ Configured correctly
 - ✅ Easy to test
 - ✅ Bulletproof for production

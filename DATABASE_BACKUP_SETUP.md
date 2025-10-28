@@ -13,12 +13,14 @@ Your VERA database is protected by **three layers of backup**:
 ## LAYER 1: Railway's Built-In Backups
 
 ### How It Works:
+
 - Railway automatically backs up your PostgreSQL database **every 24 hours**
 - Keeps backups for **7 days**
 - Stored on Railway's secure servers
 - **Zero configuration needed**
 
 ### Where to Find Them:
+
 1. Go to **https://railway.app**
 2. Select your VERA project
 3. Click on **PostgreSQL** plugin (not main deployment)
@@ -26,6 +28,7 @@ Your VERA database is protected by **three layers of backup**:
 5. Look for **Backups** section
 
 ### How to Restore from Railway:
+
 1. In Railway PostgreSQL settings
 2. Click **Restore from backup**
 3. Select the date you want
@@ -33,12 +36,13 @@ Your VERA database is protected by **three layers of backup**:
 5. Wait 5-10 minutes for restore to complete
 
 ### Pros & Cons:
-| Pro | Con |
-|-----|-----|
-| Automatic, no setup | Limited to 7 days |
-| Always available | No local copy |
-| Easy one-click restore | Can't preview data |
-| Included with Railway | Requires Railway access |
+
+| Pro                    | Con                     |
+| ---------------------- | ----------------------- |
+| Automatic, no setup    | Limited to 7 days       |
+| Always available       | No local copy           |
+| Easy one-click restore | Can't preview data      |
+| Included with Railway  | Requires Railway access |
 
 ---
 
@@ -47,16 +51,19 @@ Your VERA database is protected by **three layers of backup**:
 ### Creating Manual Backups:
 
 **Run this command:**
+
 ```bash
 npm run db:backup
 ```
 
 Or directly:
+
 ```bash
 node scripts/backup-database.js
 ```
 
 **What happens:**
+
 1. Creates a timestamped SQL file: `backups/vera-backup-2024-10-27T14-30-00.sql`
 2. Includes ALL tables, data, indexes
 3. File size: ~1-5 MB (compressed data)
@@ -67,6 +74,7 @@ node scripts/backup-database.js
 #### Option A: Using Node-Cron (Recommended)
 
 Create `scripts/scheduled-backups.js`:
+
 ```javascript
 const cron = require('node-cron');
 const { spawn } = require('child_process');
@@ -81,6 +89,7 @@ console.log('✅ Scheduled backup running (daily at 3am UTC)');
 ```
 
 Run with:
+
 ```bash
 node scripts/scheduled-backups.js
 ```
@@ -99,6 +108,7 @@ Or add to Railway's Cron Jobs (see below).
 #### Option C: External Cron Service
 
 Use a service like **EasyCron** or **cron-job.org**:
+
 1. Create new scheduled job
 2. URL: `https://app.veraneural.com/api/backup`
 3. Run at: `0 3 * * *`
@@ -111,6 +121,7 @@ ls -lh backups/
 ```
 
 Shows:
+
 ```
 vera-backup-2024-10-27T14-30-00.sql    2.3M    Oct 27
 vera-backup-2024-10-26T03-00-00.sql    2.2M    Oct 26
@@ -134,23 +145,27 @@ vera-backup-2024-10-25T03-00-00.sql    2.1M    Oct 25
 ### How to Restore:
 
 **Step 1: Stop your app**
+
 ```bash
 # On Railway, pause the deployment
 # Or locally: Ctrl+C to stop server
 ```
 
 **Step 2: Run restore script**
+
 ```bash
 node scripts/restore-database.js ./backups/vera-backup-2024-10-27T14-30-00.sql
 ```
 
 **Step 3: Answer confirmation prompts**
+
 ```
 Are you ABSOLUTELY SURE? (yes/no): yes
 Last chance! Type "yes" again: yes
 ```
 
 **Step 4: Wait for restore to complete**
+
 ```
 🔄 Starting database restore...
 📁 Backup file: ./backups/vera-backup-2024-10-27T14-30-00.sql
@@ -159,12 +174,14 @@ Last chance! Type "yes" again: yes
 ```
 
 **Step 5: Restart your app**
+
 ```bash
 npm start
 # Or redeploy on Railway
 ```
 
 **Step 6: Verify data**
+
 - Check user accounts exist
 - Verify recent messages
 - Test key features
@@ -174,6 +191,7 @@ npm start
 ## What Gets Backed Up
 
 ✅ **Backed up:**
+
 - All users and authentication data
 - All conversations and messages
 - Stripe subscription records
@@ -182,6 +200,7 @@ npm start
 - All tables and indexes
 
 ❌ **NOT backed up:**
+
 - Environment variables (.env.local)
 - Uploaded files (if any)
 - Code (use Git for that)
@@ -194,7 +213,7 @@ npm start
 ### Scenario 1: Accidental Data Deletion
 
 1. **When:** Just discovered data deleted
-2. **Action:** 
+2. **Action:**
    - Backup most recent backup: `backups/vera-backup-2024-10-27T03-00-00.sql`
    - Restore immediately
 3. **Time to restore:** 5-15 minutes
@@ -249,21 +268,25 @@ This ensures backups actually work when you need them!
 ## Best Practices
 
 ### Daily Checklist:
+
 - ✅ Monitor app is running
 - ✅ Check for errors in Sentry
 - ✅ Verify backups are created
 
 ### Weekly:
+
 - ✅ Review backup sizes (should be similar)
 - ✅ Test one restore to staging
 - ✅ Check Railway backup logs
 
 ### Monthly:
+
 - ✅ Full backup and restore test
 - ✅ Document any issues
 - ✅ Update disaster recovery plan
 
 ### Quarterly:
+
 - ✅ Review and update this documentation
 - ✅ Test with larger backups
 - ✅ Train team on restore procedures
@@ -275,6 +298,7 @@ This ensures backups actually work when you need them!
 ### Backup fails with "pg_dump not found"
 
 PostgreSQL tools aren't installed:
+
 ```bash
 # macOS
 brew install postgresql
@@ -289,6 +313,7 @@ sudo apt-get install postgresql-client
 ### Restore fails: "Role does not exist"
 
 The backup includes role data that conflicts. Solution:
+
 1. Edit the backup SQL file
 2. Find and remove `CREATE ROLE` commands
 3. Try restore again
@@ -296,6 +321,7 @@ The backup includes role data that conflicts. Solution:
 ### Backup file is huge (>100MB)
 
 Probably has lots of message history. This is normal. To compress:
+
 ```bash
 gzip backups/vera-backup-*.sql
 ```
@@ -320,6 +346,7 @@ For VERA: 1x daily is probably fine for launch phase.
    - Anthropic: Check their status page
 
 2. **Access logs:**
+
    ```bash
    npm run logs
    # Shows Railway dashboard links

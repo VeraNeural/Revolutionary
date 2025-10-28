@@ -14,14 +14,17 @@ Two critical improvements have been made to the VERA demo section on `index.html
 ## Issue #1: Slow Down Demo Animation
 
 ### Problem
+
 The demo section messages were appearing too quickly (0.5-2.5 seconds total), making it feel rushed and unnatural.
 
 ### Solution
+
 Increased animation delays to create 3-4 second spacing between each message, with a 4-second pause before the CTA button appears.
 
 ### Changes Made
 
 **Old Timing**:
+
 ```javascript
 Message 1 (User):  animation-delay: 0.3s
 Message 2 (VERA):  animation-delay: 0.8s  (0.5s after msg 1)
@@ -33,6 +36,7 @@ Total Duration: ~3.1 seconds (too fast!)
 ```
 
 **New Timing**:
+
 ```javascript
 Message 1 (User):  animation-delay: 0.5s
 Message 2 (VERA):  animation-delay: 3.5s  (3.0s after msg 1) ⏱
@@ -61,6 +65,7 @@ Timeline (seconds)
 ```
 
 ### Result
+
 - ✅ Feels like a natural conversation flow
 - ✅ Gives user time to read each message
 - ✅ Creates compelling pause before call-to-action
@@ -71,41 +76,45 @@ Timeline (seconds)
 ## Issue #2: Fix "WELCOME HOME" Text Visibility
 
 ### Problem
+
 The "WELCOME HOME" text uses a gradient fill (`-webkit-text-fill-color: transparent` with background gradient) against a purple gradient background, making it nearly invisible - too light and blends into the background.
 
 ### Solution
+
 Added a dark text-shadow to provide contrast and improve readability without changing the gradient effect.
 
 ### Changes Made
 
 **Old CSS**:
+
 ```css
 .welcome-home {
-    font-size: 1.8rem;
-    font-weight: 300;
-    letter-spacing: 0.15em;
-    background: linear-gradient(135deg, var(--vera-lavender), var(--vera-neural-blue));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 2rem;
-    opacity: 0;
-    animation: fadeInUp 1s 2.1s forwards;
+  font-size: 1.8rem;
+  font-weight: 300;
+  letter-spacing: 0.15em;
+  background: linear-gradient(135deg, var(--vera-lavender), var(--vera-neural-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 2rem;
+  opacity: 0;
+  animation: fadeInUp 1s 2.1s forwards;
 }
 ```
 
 **New CSS**:
+
 ```css
 .welcome-home {
-    font-size: 1.8rem;
-    font-weight: 300;
-    letter-spacing: 0.15em;
-    background: linear-gradient(135deg, var(--vera-lavender), var(--vera-neural-blue));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);  /* NEW: Dark shadow for contrast */
-    margin-bottom: 2rem;
-    opacity: 0;
-    animation: fadeInUp 1s 2.1s forwards;
+  font-size: 1.8rem;
+  font-weight: 300;
+  letter-spacing: 0.15em;
+  background: linear-gradient(135deg, var(--vera-lavender), var(--vera-neural-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); /* NEW: Dark shadow for contrast */
+  margin-bottom: 2rem;
+  opacity: 0;
+  animation: fadeInUp 1s 2.1s forwards;
 }
 ```
 
@@ -121,6 +130,7 @@ text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 ```
 
 ### Result
+
 - ✅ Text now clearly visible against purple gradient
 - ✅ Maintains gradient aesthetic (doesn't override it)
 - ✅ Soft shadow looks professional and polished
@@ -132,24 +142,28 @@ text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 ## Visual Comparison
 
 ### Before Animation Changes
+
 - Messages appeared in rapid succession (0-2.5 seconds)
 - Felt rushed and unnatural
 - Gave insufficient time to read VERA's responses
 - CTA button appeared too quickly
 
 ### After Animation Changes
+
 - Natural 3-4 second spacing between messages
 - Feels like real-time conversation
 - User has adequate time to absorb each response
 - 4-second pause creates anticipation for CTA
 
 ### Before Text Visibility Fix
+
 - "WELCOME HOME" text barely visible
 - Blended into purple gradient background
 - Low contrast, poor accessibility
 - Appeared to be broken/missing to some users
 
 ### After Text Visibility Fix
+
 - "WELCOME HOME" text crisp and readable
 - Dark shadow creates definition against background
 - Strong contrast (WCAG AA compliant)
@@ -164,6 +178,7 @@ text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 **Why 3-4 seconds between messages?**
 
 Research on conversation dynamics suggests:
+
 - **0.3-0.5s**: Too fast - feels like machine responses
 - **1-2s**: Still rushed - doesn't feel like human thinking time
 - **3-4s**: Natural pauses - feels like real contemplation
@@ -194,6 +209,7 @@ The 3-4 second spacing creates a "human-like" conversation feel while maintainin
 **File**: `public/index.html`
 
 **Changes**:
+
 1. **Animation delays** (4 message delays + 1 button delay): Lines 1320-1355
    - Before: 0.3s, 0.8s, 1.3s, 1.8s, 2.5s
    - After: 0.5s, 3.5s, 7.0s, 10.5s, 14.5s
@@ -238,6 +254,7 @@ The 3-4 second spacing creates a "human-like" conversation feel while maintainin
 ## Browser Support
 
 ✅ **Fully Supported**:
+
 - Chrome 90+
 - Firefox 88+
 - Safari 14+ (including iOS Safari)
@@ -245,6 +262,7 @@ The 3-4 second spacing creates a "human-like" conversation feel while maintainin
 - Mobile browsers (iOS Safari, Chrome Android)
 
 ✅ **Graceful Degradation**:
+
 - Older browsers: Text-shadow may not render but text is still visible
 - IE11: Text may appear without shadow but remains functional
 
@@ -266,16 +284,19 @@ Potential improvements for future iterations:
 ## Summary
 
 ### ✅ Animation Timing
+
 - **Before**: 3.1 second total duration (rushed)
 - **After**: 15.1 second total duration (natural pacing)
 - **Result**: Feels like real conversation
 
 ### ✅ Text Visibility
+
 - **Before**: Low contrast, hard to read
 - **After**: Clear with subtle shadow
 - **Result**: Professional and accessible
 
 ### ✅ Deployment
+
 - Changes committed: Commit `b3d7b4e`
 - Status: Live on GitHub main branch
 - Impact: Ready for production

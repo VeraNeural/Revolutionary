@@ -5,22 +5,22 @@
 ✅ **Automated migrations** - Run automatically on Railway deployment  
 ✅ **Manual script** - Can run anytime: `node run-migrations.js`  
 ✅ **No psql needed** - Everything is Node.js  
-✅ **Zero manual steps** - Just `git push`  
+✅ **Zero manual steps** - Just `git push`
 
 ---
 
 ## Files Created
 
-| File | Purpose |
-|------|---------|
-| `run-migrations.js` | Standalone script to run all migrations |
-| `MIGRATION_SCRIPT_GUIDE.md` | Complete documentation |
-| `MIGRATION_SYSTEM_SUMMARY.md` | Overview and guide |
+| File                          | Purpose                                 |
+| ----------------------------- | --------------------------------------- |
+| `run-migrations.js`           | Standalone script to run all migrations |
+| `MIGRATION_SCRIPT_GUIDE.md`   | Complete documentation                  |
+| `MIGRATION_SYSTEM_SUMMARY.md` | Overview and guide                      |
 
 ## Files Modified
 
-| File | Change |
-|------|--------|
+| File        | Change                           |
+| ----------- | -------------------------------- |
 | `server.js` | Added automatic migration runner |
 
 ---
@@ -40,16 +40,19 @@ Done. Migrations run automatically.
 ## To Deploy Your Magic Link Fix
 
 ### Step 1: Push Code
+
 ```bash
 git push origin main
 ```
 
 ### Step 2: Watch Deployment
+
 - Railway dashboard → Deployments
 - Look for: `🔄 Running database migrations...`
 - Look for: `✅ Migrations complete:`
 
 ### Step 3: Verify
+
 - Go to Railway database console
 - Run: `SELECT COUNT(*) FROM magic_links;`
 - Should return: `(1 row)`
@@ -76,6 +79,7 @@ node run-migrations.js
 ## How It Works
 
 **On Deployment:**
+
 1. `git push` → Railway builds
 2. `server.js` starts
 3. Detects `DATABASE_URL` is set (production)
@@ -86,6 +90,7 @@ node run-migrations.js
 8. Ready to accept requests
 
 **In Development:**
+
 1. `DATABASE_URL` not set
 2. Migrations skipped
 3. Server starts normally

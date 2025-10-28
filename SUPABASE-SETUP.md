@@ -63,6 +63,7 @@ npm start
 ```
 
 You should see:
+
 ```
 ✅ VERA REVOLUTIONARY SYSTEM ONLINE
 ✨ Server listening on port 8080
@@ -70,6 +71,7 @@ You should see:
 ```
 
 If you see errors about database connection, check:
+
 - Password is correct in DATABASE_URL
 - Connection string copied correctly
 - Supabase project is running (check dashboard)
@@ -79,6 +81,7 @@ If you see errors about database connection, check:
 ## 📊 View Your Data
 
 Anytime you want to see your database:
+
 1. Go to Supabase dashboard
 2. Click "Table Editor" (left menu)
 3. See all your tables: users, messages, crisis_alerts, etc.
@@ -88,6 +91,7 @@ Anytime you want to see your database:
 ## 🔒 Security Notes
 
 **Your DATABASE_URL contains sensitive info:**
+
 - Never commit to git (it's in .gitignore already ✅)
 - Never share publicly
 - Each environment (local, production) should have its own
@@ -97,6 +101,7 @@ Anytime you want to see your database:
 ## 🚀 For Production (Railway)
 
 When you deploy to Railway:
+
 1. Go to Railway project
 2. Click "Variables"
 3. Add: `DATABASE_URL = your_supabase_connection_string`
@@ -105,6 +110,7 @@ When you deploy to Railway:
 Railway will use Supabase as the database.
 
 **Alternative:** Railway can also create its own PostgreSQL database. Choose one:
+
 - **Supabase:** Better dashboard, more features
 - **Railway PostgreSQL:** All-in-one, simpler
 
@@ -113,15 +119,18 @@ Railway will use Supabase as the database.
 ## 💡 Pro Tips
 
 **Backup your database:**
+
 - Supabase dashboard → Database → Backups
 - Free tier: 7-day backups included
 
 **Monitor usage:**
+
 - Dashboard → Reports
 - See API calls, database size, bandwidth
 
 **Connection pooling:**
 If you get "too many connections" errors later:
+
 - Supabase dashboard → Database → Connection pooling
 - Use the "Connection pooling" URI instead
 
@@ -146,6 +155,7 @@ If you get "too many connections" errors later:
 ## ✅ You're Ready!
 
 Database is set up. Now VERA can:
+
 - Store user accounts
 - Save conversation history
 - Track subscriptions

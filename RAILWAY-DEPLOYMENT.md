@@ -3,6 +3,7 @@
 ## Your server is ready for deployment! 🚀
 
 Your `server.js` now:
+
 - ✅ Serves static files from `public/`
 - ✅ Has all API endpoints (`/api/chat`, `/api/subscription-status`, `/api/portal`, etc.)
 - ✅ Uses the modular `getVERAResponse` with attachment support
@@ -10,6 +11,7 @@ Your `server.js` now:
 - ✅ Integrates with Stripe
 
 Your frontend (`public/chat.html`):
+
 - ✅ Updated to call `/api/*` endpoints (no more Netlify paths)
 
 ---
@@ -54,6 +56,7 @@ NODE_ENV=production
 ```
 
 **Get your Railway URL:**
+
 - Railway assigns a URL like `vera-project-production-abc123.up.railway.app`
 - Copy this and set `APP_URL` to it
 
@@ -75,11 +78,13 @@ NODE_ENV=production
 ### Step 5: Point Your Domain
 
 In Railway:
+
 1. Go to **Settings** → **Domains**
 2. Click **"Generate Domain"** or **"Custom Domain"**
 3. Add `app.veraneural.com`
 
 In your DNS (Namecheap/Cloudflare):
+
 1. Add a **CNAME** record:
    - **Host:** `app` (or `@` for root domain)
    - **Value:** `your-app.railway.app` (from Railway)
@@ -137,6 +142,7 @@ NODE_ENV=production
 ### Step 4: Custom Domain
 
 In Render:
+
 1. Go to **Settings** → **Custom Domain**
 2. Add `app.veraneural.com`
 3. Follow DNS instructions (similar to Railway)
@@ -160,17 +166,17 @@ git push origin main
 
 ## Environment Variables Reference
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | Neon PostgreSQL connection string | `postgresql://user:pass@ep-...neon.tech/db?sslmode=require` |
-| `STRIPE_SECRET_KEY` | Stripe secret API key | `sk_live_...` |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | `whsec_...` |
-| `ANTHROPIC_API_KEY` | Claude API key | `sk-ant-...` |
-| `OPENAI_API_KEY` | Optional GPT-4 key | `sk-...` |
-| `SESSION_SECRET` | Express session secret | Random 32+ char string |
-| `APP_URL` | Your production URL | `https://app.veraneural.com` |
-| `PORT` | Server port (usually 8080) | `8080` |
-| `NODE_ENV` | Environment mode | `production` |
+| Variable                | Description                       | Example                                                     |
+| ----------------------- | --------------------------------- | ----------------------------------------------------------- |
+| `DATABASE_URL`          | Neon PostgreSQL connection string | `postgresql://user:pass@ep-...neon.tech/db?sslmode=require` |
+| `STRIPE_SECRET_KEY`     | Stripe secret API key             | `sk_live_...`                                               |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret     | `whsec_...`                                                 |
+| `ANTHROPIC_API_KEY`     | Claude API key                    | `sk-ant-...`                                                |
+| `OPENAI_API_KEY`        | Optional GPT-4 key                | `sk-...`                                                    |
+| `SESSION_SECRET`        | Express session secret            | Random 32+ char string                                      |
+| `APP_URL`               | Your production URL               | `https://app.veraneural.com`                                |
+| `PORT`                  | Server port (usually 8080)        | `8080`                                                      |
+| `NODE_ENV`              | Environment mode                  | `production`                                                |
 
 ---
 
@@ -179,14 +185,17 @@ git push origin main
 You have two choices:
 
 ### Option A: Retire Netlify Completely
+
 - Point `app.veraneural.com` to Railway/Render
 - Your server handles both static files AND API
 - Delete `netlify/` folder and `netlify.toml`
 
 ### Option B: Keep Netlify for Static + Proxy to Railway API
+
 If you want to keep Netlify hosting the static files:
 
 1. Update `netlify.toml`:
+
 ```toml
 [build]
   publish = "public"
@@ -227,12 +236,15 @@ After deployment:
 ## Monitoring & Logs
 
 **Railway:**
+
 - Dashboard → your project → **Deployments** → Click latest build → **View Logs**
 
 **Render:**
+
 - Dashboard → your service → **Logs** tab
 
 Watch for:
+
 - `✅ DATABASE CONNECTED SUCCESSFULLY`
 - `🧠 Calling getVERAResponse...`
 - `✅ VERA result: ...`

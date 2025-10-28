@@ -8,7 +8,7 @@ class PerformanceMonitor {
       requestTimes: new Map(),
       dbQueryTimes: new Map(),
       apiCallTimes: new Map(),
-      memoryUsage: []
+      memoryUsage: [],
     };
 
     // Sample memory usage every minute
@@ -29,7 +29,7 @@ class PerformanceMonitor {
         this.recordMetric('requestDuration', duration, {
           path: req.path,
           method: req.method,
-          status: res.statusCode
+          status: res.statusCode,
         });
       });
 
@@ -43,18 +43,18 @@ class PerformanceMonitor {
     try {
       const result = await callback();
       const duration = performance.now() - start;
-      
+
       this.recordMetric('dbQueryDuration', duration, {
         query: this.sanitizeQuery(query),
-        paramCount: params?.length
+        paramCount: params?.length,
       });
-      
+
       return result;
     } catch (error) {
       const duration = performance.now() - start;
       this.recordMetric('dbQueryError', duration, {
         query: this.sanitizeQuery(query),
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -66,17 +66,17 @@ class PerformanceMonitor {
     try {
       const result = await callback();
       const duration = performance.now() - start;
-      
+
       this.recordMetric('apiCallDuration', duration, {
-        name
+        name,
       });
-      
+
       return result;
     } catch (error) {
       const duration = performance.now() - start;
       this.recordMetric('apiCallError', duration, {
         name,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -89,14 +89,14 @@ class PerformanceMonitor {
     if (name === 'requestDuration' && value > 1000) {
       logger.warn('Slow request detected', {
         duration: value,
-        ...meta
+        ...meta,
       });
     }
-    
+
     if (name === 'dbQueryDuration' && value > 100) {
       logger.warn('Slow query detected', {
         duration: value,
-        ...meta
+        ...meta,
       });
     }
   }
@@ -105,21 +105,22 @@ class PerformanceMonitor {
     const usage = process.memoryUsage();
     this.metrics.memoryUsage.push({
       timestamp: new Date(),
-      ...usage
+      ...usage,
     });
 
     // Keep last hour of samples
-    const hourAgo = Date.now() - (60 * 60 * 1000);
+    const hourAgo = Date.now() - 60 * 60 * 1000;
     this.metrics.memoryUsage = this.metrics.memoryUsage.filter(
-      sample => sample.timestamp.getTime() > hourAgo
+      (sample) => sample.timestamp.getTime() > hourAgo
     );
 
     // Alert on high memory usage
     const heapUsed = usage.heapUsed / 1024 / 1024;
-    if (heapUsed > 512) { // Alert if over 512MB
+    if (heapUsed > 512) {
+      // Alert if over 512MB
       monitor.alertError('High memory usage', {
         heapUsed: `${Math.round(heapUsed)}MB`,
-        ...usage
+        ...usage,
       });
     }
   }
@@ -132,7 +133,7 @@ class PerformanceMonitor {
   getMetrics() {
     return {
       ...this.metrics,
-      currentMemoryUsage: process.memoryUsage()
+      currentMemoryUsage: process.memoryUsage(),
     };
   }
 }
