@@ -362,6 +362,81 @@
             margin: 2rem 0;
             text-shadow: 0 0 60px rgba(155, 89, 182, 0.4);
         }
+
+        /* CTA Button */
+        .cta-button {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 1rem 3rem;
+            background: linear-gradient(135deg, #9B59B6 0%, #7B2FBE 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(155, 89, 182, 0.4);
+            border: none;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(155, 89, 182, 0.6);
+            background: linear-gradient(135deg, #7B2FBE 0%, #6B1FB6 100%);
+        }
+
+        .cta-button:active {
+            transform: translateY(-1px);
+        }
+
+        /* Contact section */
+        .contact-section {
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+
+        .contact-section h2 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #C8BEF0 0%, #9B59B6 50%, #64B5F6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .contact-section p {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            color: rgba(200, 190, 240, 0.9);
+        }
+
+        .contact-links {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        .contact-link {
+            display: inline-block;
+            padding: 0.75rem 2rem;
+            background: rgba(155, 89, 182, 0.15);
+            border: 1px solid rgba(155, 89, 182, 0.4);
+            border-radius: 50px;
+            color: #C8BEF0;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .contact-link:hover {
+            background: rgba(155, 89, 182, 0.3);
+            box-shadow: 0 10px 30px rgba(155, 89, 182, 0.3);
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -472,6 +547,26 @@
                 Not in your head.<br>
                 <strong>In your body.</strong>
             </p>
+            <a href="/promo" class="cta-button">Start Your 48-Hour Free Trial</a>
+        </div>
+
+        <!-- Section 7: Contact Us -->
+        <div class="section" data-section="6">
+            <div class="contact-section">
+                <h2>Get in Touch</h2>
+                <p>Interested in VERA VR? Have questions about our vision?</p>
+                <p style="color: rgba(200, 190, 240, 0.7); font-size: 1rem;">
+                    We'd love to hear from you.
+                </p>
+                <div class="contact-links">
+                    <a href="mailto:hello@veraneural.com" class="contact-link">📧 Email Us</a>
+                    <a href="https://twitter.com/veraneural" class="contact-link" target="_blank">𝕏 Twitter</a>
+                    <a href="/promo" class="contact-link">🚀 Join Beta</a>
+                </div>
+                <p style="margin-top: 3rem; font-size: 0.9rem; color: rgba(200, 190, 240, 0.5);">
+                    © 2025 VERA Neural. Building the future of embodied AI.
+                </p>
+            </div>
         </div>
     </div>
 
@@ -483,6 +578,7 @@
         <div class="nav-dot" data-nav="3"></div>
         <div class="nav-dot" data-nav="4"></div>
         <div class="nav-dot" data-nav="5"></div>
+        <div class="nav-dot" data-nav="6"></div>
     </div>
 
     <div class="continue-hint">SCROLL OR CLICK TO CONTINUE</div>
