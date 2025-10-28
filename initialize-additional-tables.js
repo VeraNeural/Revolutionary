@@ -2,18 +2,18 @@ require('dotenv').config({ path: '.env.local' });
 const { Pool } = require('pg');
 
 const dbConfig = {
-    connectionString: process.env.DATABASE_PUBLIC_URL,
-    ssl: { rejectUnauthorized: false }
+  connectionString: process.env.DATABASE_PUBLIC_URL,
+  ssl: { rejectUnauthorized: false },
 };
 
 const pool = new Pool(dbConfig);
 
 async function initializeAdditionalTables() {
-    try {
-        console.log('🔄 Starting additional tables initialization...');
+  try {
+    console.log('🔄 Starting additional tables initialization...');
 
-        // Somatic Tracking Tables
-        await pool.query(`
+    // Somatic Tracking Tables
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS nervous_system_states (
                 id SERIAL PRIMARY KEY,
                 user_id VARCHAR(255) NOT NULL,
@@ -26,9 +26,9 @@ async function initializeAdditionalTables() {
                 emotions TEXT[]
             )
         `);
-        console.log('✅ Nervous system states table initialized');
+    console.log('✅ Nervous system states table initialized');
 
-        await pool.query(`
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS somatic_patterns (
                 id SERIAL PRIMARY KEY,
                 user_id VARCHAR(255) NOT NULL,
@@ -41,9 +41,9 @@ async function initializeAdditionalTables() {
                 coping_strategies TEXT[]
             )
         `);
-        console.log('✅ Somatic patterns table initialized');
+    console.log('✅ Somatic patterns table initialized');
 
-        await pool.query(`
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS breakthrough_moments (
                 id SERIAL PRIMARY KEY,
                 user_id VARCHAR(255) NOT NULL,
@@ -56,10 +56,10 @@ async function initializeAdditionalTables() {
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
         `);
-        console.log('✅ Breakthrough moments table initialized');
+    console.log('✅ Breakthrough moments table initialized');
 
-        // Tracking Evolution Tables
-        await pool.query(`
+    // Tracking Evolution Tables
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS outdated_threat_patterns (
                 id SERIAL PRIMARY KEY,
                 user_id VARCHAR(255) NOT NULL,
@@ -72,9 +72,9 @@ async function initializeAdditionalTables() {
                 notes TEXT
             )
         `);
-        console.log('✅ Outdated threat patterns table initialized');
+    console.log('✅ Outdated threat patterns table initialized');
 
-        await pool.query(`
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS regulation_capacity (
                 id SERIAL PRIMARY KEY,
                 user_id VARCHAR(255) NOT NULL,
@@ -86,9 +86,9 @@ async function initializeAdditionalTables() {
                 notes TEXT
             )
         `);
-        console.log('✅ Regulation capacity table initialized');
+    console.log('✅ Regulation capacity table initialized');
 
-        await pool.query(`
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS ascension_markers (
                 id SERIAL PRIMARY KEY,
                 user_id VARCHAR(255) NOT NULL,
@@ -100,10 +100,10 @@ async function initializeAdditionalTables() {
                 impact_areas TEXT[]
             )
         `);
-        console.log('✅ Ascension markers table initialized');
+    console.log('✅ Ascension markers table initialized');
 
-        // Additional Tracking Tables
-        await pool.query(`
+    // Additional Tracking Tables
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS regulation_evidence (
                 id SERIAL PRIMARY KEY,
                 user_id VARCHAR(255) NOT NULL,
@@ -116,9 +116,9 @@ async function initializeAdditionalTables() {
                 effectiveness_rating INTEGER CHECK (effectiveness_rating >= 0 AND effectiveness_rating <= 10)
             )
         `);
-        console.log('✅ Regulation evidence table initialized');
+    console.log('✅ Regulation evidence table initialized');
 
-        await pool.query(`
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS pattern_detections (
                 id SERIAL PRIMARY KEY,
                 user_id VARCHAR(255) NOT NULL,
@@ -128,9 +128,9 @@ async function initializeAdditionalTables() {
                 supporting_evidence TEXT[]
             )
         `);
-        console.log('✅ Pattern detections table initialized');
+    console.log('✅ Pattern detections table initialized');
 
-        await pool.query(`
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS consciousness_states (
                 id SERIAL PRIMARY KEY,
                 user_id VARCHAR(255) NOT NULL,
@@ -141,9 +141,9 @@ async function initializeAdditionalTables() {
                 triggers TEXT[]
             )
         `);
-        console.log('✅ Consciousness states table initialized');
+    console.log('✅ Consciousness states table initialized');
 
-        await pool.query(`
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS adaptive_code_detections (
                 id SERIAL PRIMARY KEY,
                 user_id VARCHAR(255) NOT NULL,
@@ -153,10 +153,10 @@ async function initializeAdditionalTables() {
                 evidence TEXT[]
             )
         `);
-        console.log('✅ Adaptive code detections table initialized');
+    console.log('✅ Adaptive code detections table initialized');
 
-        // Now let's verify all tables
-        const tables = await pool.query(`
+    // Now let's verify all tables
+    const tables = await pool.query(`
             SELECT table_name, 
                    (SELECT count(*) FROM information_schema.columns WHERE table_name = t.table_name) as column_count
             FROM information_schema.tables t
@@ -164,18 +164,18 @@ async function initializeAdditionalTables() {
             ORDER BY table_name;
         `);
 
-        console.log('\n📊 Current database tables:');
-        tables.rows.forEach(table => {
-            console.log(`➡️ ${table.table_name} (${table.column_count} columns)`);
-        });
+    console.log('\n📊 Current database tables:');
+    tables.rows.forEach((table) => {
+      console.log(`➡️ ${table.table_name} (${table.column_count} columns)`);
+    });
 
-        console.log('\n✅ Additional tables initialization complete!');
-    } catch (error) {
-        console.error('❌ Database initialization error:', error);
-        console.error('Error details:', error.message);
-    } finally {
-        await pool.end();
-    }
+    console.log('\n✅ Additional tables initialization complete!');
+  } catch (error) {
+    console.error('❌ Database initialization error:', error);
+    console.error('Error details:', error.message);
+  } finally {
+    await pool.end();
+  }
 }
 
 initializeAdditionalTables();

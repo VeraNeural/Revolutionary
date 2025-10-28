@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
  * Database Backup Script for VERA
- * 
+ *
  * Usage:
  *   - Manual: node scripts/backup-database.js
  *   - Scheduled: Add to cron or Railway task
- * 
+ *
  * Creates timestamped SQL backup file in ./backups/ directory
  */
 
@@ -42,15 +42,15 @@ async function createBackup() {
     const pgDump = spawn('pg_dump', [
       '--verbose',
       '--no-password',
-      '--clean',           // Drop objects before recreating
-      '--if-exists',       // Drop if exists
-      '--format=plain',    // SQL text format
-      '--compress=0',      // No compression (easier to restore)
-      '--no-acl',          // Don't backup permissions
+      '--clean', // Drop objects before recreating
+      '--if-exists', // Drop if exists
+      '--format=plain', // SQL text format
+      '--compress=0', // No compression (easier to restore)
+      '--no-acl', // Don't backup permissions
       DB_URL,
     ]);
 
-    let output = '';
+    const output = '';
     let errorOutput = '';
 
     pgDump.stdout.pipe(backupStream);
@@ -124,11 +124,11 @@ async function cleanupOldBackups() {
 async function verifyBackup() {
   try {
     const content = fs.readFileSync(BACKUP_FILE, 'utf8');
-    
+
     // Check for required SQL statements
     const hasCreateTable = content.includes('CREATE TABLE');
     const hasInsert = content.includes('INSERT INTO') || content.includes('COPY');
-    
+
     if (hasCreateTable) {
       console.log('✅ Backup verified: Contains table definitions');
       return true;

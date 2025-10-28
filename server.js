@@ -104,21 +104,20 @@ async function sendEmail({ to, subject, html, emailType = 'transactional' }) {
 
   try {
     console.log('📤 Calling Resend API...');
-    
+
     const result = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'VERA <onboarding@resend.dev>',
       to: to,
       subject: subject,
-      html: html
+      html: html,
     });
-    
+
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('✅ EMAIL SENT SUCCESSFULLY');
     console.log('Resend ID:', result.id);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
+
     return { success: true, id: result.id };
-    
   } catch (error) {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.error('❌ EMAIL SEND FAILED');
@@ -126,15 +125,18 @@ async function sendEmail({ to, subject, html, emailType = 'transactional' }) {
     console.error('Error Name:', error.name);
     console.error('Error Code:', error.code);
     console.error('Status Code:', error.statusCode);
-    
+
     if (error.response) {
       console.error('Response Status:', error.response.status);
       console.error('Response Data:', JSON.stringify(error.response.data, null, 2));
     }
-    
-    console.error('Full Error Object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+
+    console.error(
+      'Full Error Object:',
+      JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+    );
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
+
     throw error;
   }
 }
@@ -143,14 +145,16 @@ async function sendEmail({ to, subject, html, emailType = 'transactional' }) {
 async function retryFailedEmails() {
   try {
     // Find emails that failed and haven't hit max retries
-    const failedEmails = await db.query(
-      `SELECT id, email_address, subject, html, email_type, attempt_count 
+    const failedEmails = await db
+      .query(
+        `SELECT id, email_address, subject, html, email_type, attempt_count 
        FROM email_logs 
        WHERE status = 'failed' 
        AND attempt_count < max_retries 
        AND last_attempted < NOW() - INTERVAL '5 minutes'
        LIMIT 10`
-    ).catch(() => ({ rows: [] })); // Silently fail if table doesn't exist
+      )
+      .catch(() => ({ rows: [] })); // Silently fail if table doesn't exist
 
     if (!failedEmails.rows || failedEmails.rows.length === 0) {
       return { retried: 0, message: 'No failed emails to retry' };
@@ -169,31 +173,41 @@ async function retryFailedEmails() {
         });
 
         // Update to success
-        await db.query(
-          `UPDATE email_logs 
+        await db
+          .query(
+            `UPDATE email_logs 
            SET status = $1, resend_id = $2, sent_at = NOW(), attempt_count = attempt_count + 1, updated_at = NOW()
            WHERE id = $3`,
-          ['sent', result.id, failedEmail.id]
-        ).catch(() => null);
+            ['sent', result.id, failedEmail.id]
+          )
+          .catch(() => null);
 
         successCount++;
         console.log('✅ Email retry successful:', failedEmail.email_address);
       } catch (retryError) {
         // Update attempt count
-        await db.query(
-          `UPDATE email_logs 
+        await db
+          .query(
+            `UPDATE email_logs 
            SET attempt_count = attempt_count + 1, last_attempted = NOW(), error_message = $1, updated_at = NOW()
            WHERE id = $2`,
-          [retryError.message.substring(0, 1000), failedEmail.id]
-        ).catch(() => null);
+            [retryError.message.substring(0, 1000), failedEmail.id]
+          )
+          .catch(() => null);
 
         stillFailedCount++;
         console.log('❌ Email retry still failed:', failedEmail.email_address);
       }
     }
 
-    const result = { retried: failedEmails.rows.length, successful: successCount, failed: stillFailedCount };
-    console.log(`📊 Email retry results: ${successCount} succeeded, ${stillFailedCount} still failed`);
+    const result = {
+      retried: failedEmails.rows.length,
+      successful: successCount,
+      failed: stillFailedCount,
+    };
+    console.log(
+      `📊 Email retry results: ${successCount} succeeded, ${stillFailedCount} still failed`
+    );
     return result;
   } catch (error) {
     console.error('❌ Retry system error:', error.message);
@@ -205,57 +219,64 @@ async function retryFailedEmails() {
 }
 
 // Run retry system every 5 minutes (only if table exists)
-setInterval(() => {
-  retryFailedEmails().catch(err => console.error('Retry interval error:', err));
-}, 5 * 60 * 1000);
+setInterval(
+  () => {
+    retryFailedEmails().catch((err) => console.error('Retry interval error:', err));
+  },
+  5 * 60 * 1000
+);
 
 // ==================== MAGIC LINK TOKEN CREATION ====================
 async function createMagicLink(email, emailType = 'magic_link') {
   try {
     // Normalize email
     const normalizedEmail = email.trim().toLowerCase();
-    
+
     // Generate secure token
     const crypto = require('crypto');
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-    
+
     console.log(`🔑 Generating magic link token for ${normalizedEmail}`);
-    
+
     // Store token in dedicated magic_links table
-    const tokenResult = await db.query(
-      `INSERT INTO magic_links (email, token, expires_at, created_at)
+    const tokenResult = await db
+      .query(
+        `INSERT INTO magic_links (email, token, expires_at, created_at)
        VALUES ($1, $2, $3, NOW())
        RETURNING id, token, expires_at`,
-      [normalizedEmail, token, expiresAt]
-    ).catch(error => {
-      // If table doesn't exist, create inline
-      if (error.message.includes('does not exist')) {
-        console.warn('⚠️ magic_links table not found, attempting to create...');
-        return null;
-      }
-      throw error;
-    });
-    
+        [normalizedEmail, token, expiresAt]
+      )
+      .catch((error) => {
+        // If table doesn't exist, create inline
+        if (error.message.includes('does not exist')) {
+          console.warn('⚠️ magic_links table not found, attempting to create...');
+          return null;
+        }
+        throw error;
+      });
+
     if (!tokenResult?.rows[0]) {
       throw new Error('Failed to create magic link token - table may not exist');
     }
-    
+
     const magicLinkRecord = tokenResult.rows[0];
-    
+
     // Log creation
-    await db.query(
-      `INSERT INTO login_audit_log (email, token_id, action, success)
+    await db
+      .query(
+        `INSERT INTO login_audit_log (email, token_id, action, success)
        VALUES ($1, $2, 'token_created', true)`,
-      [normalizedEmail, magicLinkRecord.id]
-    ).catch(() => null); // Silently fail if table doesn't exist
-    
-    console.log(`✅ Magic link token created:`, {
+        [normalizedEmail, magicLinkRecord.id]
+      )
+      .catch(() => null); // Silently fail if table doesn't exist
+
+    console.log('✅ Magic link token created:', {
       email: normalizedEmail,
       tokenId: magicLinkRecord.id,
-      expiresAt: magicLinkRecord.expires_at
+      expiresAt: magicLinkRecord.expires_at,
     });
-    
+
     return magicLinkRecord;
   } catch (error) {
     console.error(`❌ Failed to create magic link for ${email}:`, error);
@@ -277,8 +298,8 @@ process.on('SIGINT', () => {
 // ==================== DATABASE MIGRATIONS ====================
 // Run migrations automatically on startup (production only)
 async function runDatabaseMigrations() {
-  const DATABASE_URL = process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;;
-  
+  const DATABASE_URL = process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;
+
   // Only run migrations if DATABASE_URL is set (production environment)
   if (!DATABASE_URL) {
     console.log('⏭️  Skipping migrations (DATABASE_URL not set - development mode)');
@@ -289,15 +310,15 @@ async function runDatabaseMigrations() {
 
   try {
     const { runMigrations } = require('./run-migrations');
-    
+
     // Create a temporary pool for migrations
     const { Pool } = require('pg');
     const pool = new Pool({
-     connectionString: DATABASE_URL,
-  statement_timeout: 30000,
-  ssl: {
-    rejectUnauthorized: false
-  }
+      connectionString: DATABASE_URL,
+      statement_timeout: 30000,
+      ssl: {
+        rejectUnauthorized: false,
+      },
     });
 
     let successCount = 0;
@@ -307,16 +328,16 @@ async function runDatabaseMigrations() {
       const client = await pool.connect();
       const fs = require('fs');
       const path = require('path');
-      
+
       // Read and parse migrations file
       const migrationsFile = path.join(__dirname, 'DATABASE_MIGRATIONS.sql');
       const migrationContent = fs.readFileSync(migrationsFile, 'utf8');
-      
+
       // Split by semicolon (simple but effective)
       const statements = migrationContent
         .split(';')
-        .map(stmt => stmt.trim())
-        .filter(stmt => stmt.length > 0);
+        .map((stmt) => stmt.trim())
+        .filter((stmt) => stmt.length > 0);
 
       console.log(`  📋 Parsed ${statements.length} migration statements`);
 
@@ -327,7 +348,11 @@ async function runDatabaseMigrations() {
           successCount++;
         } catch (error) {
           // Silently skip "already exists" errors
-          if (error.code === '42P07' || error.code === '42P15' || error.message.includes('already exists')) {
+          if (
+            error.code === '42P07' ||
+            error.code === '42P15' ||
+            error.message.includes('already exists')
+          ) {
             skipCount++;
           } else {
             // Log actual errors but don't fail startup
@@ -350,7 +375,7 @@ async function runDatabaseMigrations() {
 }
 
 // Run migrations before starting server
-runDatabaseMigrations().catch(err => {
+runDatabaseMigrations().catch((err) => {
   console.warn(`⚠️  Migration startup error (non-blocking): ${err.message}`);
 });
 
@@ -364,90 +389,92 @@ app.use(Sentry.Handlers.tracingHandler());
 
 // ==================== STRIPE WEBHOOK ====================
 // CRITICAL: This MUST come BEFORE express.json() middleware for raw body access
-app.post(
-  '/api/webhooks/stripe',
-  express.raw({ type: 'application/json' }),
-  async (req, res) => {
-    const sig = req.headers['stripe-signature'];
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-    if (!webhookSecret) {
-      console.error('❌ STRIPE_WEBHOOK_SECRET not configured');
-      return res.status(500).json({ error: 'Webhook secret not configured' });
-    }
-
-    let event;
-    try {
-      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-      console.log('✅ Webhook verified:', event.type);
-    } catch (err) {
-      console.error('❌ Webhook signature failed:', err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-
-    try {
-      if (event.type === 'checkout.session.completed') {
-        const session = event.data.object;
-        const customerEmail = session.customer_email || session.customer_details?.email;
-        
-        if (!customerEmail) {
-          console.error('❌ No email in checkout session');
-          return res.json({ received: true });
-        }
-
-        const subscriptionId = session.subscription;
-        if (!subscriptionId) {
-          console.error('❌ No subscription ID');
-          return res.json({ received: true });
-        }
-
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        const existingUser = await db.query('SELECT id FROM users WHERE email = $1', [customerEmail]);
-
-        if (existingUser.rows.length > 0) {
-          await db.query(
-            'UPDATE users SET subscription_status = $1, stripe_customer_id = $2, stripe_subscription_id = $3, updated_at = NOW() WHERE email = $4',
-            [subscription.status, session.customer, subscriptionId, customerEmail]
-          );
-          console.log('✅ Updated user:', customerEmail);
-        } else {
-
-          const trialEndsAt = new Date();
-trialEndsAt.setDate(trialEndsAt.getDate() + 7);
-
-          await db.query(
-  'INSERT INTO users (email, name, stripe_customer_id, stripe_subscription_id, subscription_status, trial_ends_at, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())',
-  [customerEmail, customerEmail.split('@')[0], session.customer, subscriptionId, subscription.status, trialEndsAt]
-);
-          console.log('✅ Created user:', customerEmail);
-        }
-      }
-
-      if (event.type === 'customer.subscription.updated') {
-        const subscription = event.data.object;
-        await db.query(
-          'UPDATE users SET subscription_status = $1, updated_at = NOW() WHERE stripe_subscription_id = $2',
-          [subscription.status, subscription.id]
-        );
-        console.log('✅ Subscription updated');
-      }
-
-      if (event.type === 'customer.subscription.deleted') {
-        const subscription = event.data.object;
-        await db.query(
-          'UPDATE users SET subscription_status = $1, updated_at = NOW() WHERE stripe_subscription_id = $2',
-          ['cancelled', subscription.id]
-        );
-        console.log('✅ Subscription cancelled');
-      }
-
-      res.json({ received: true });
-    } catch (err) {
-      console.error('❌ Webhook error:', err);
-      res.status(500).json({ error: 'Webhook failed' });
-    }
+  if (!webhookSecret) {
+    console.error('❌ STRIPE_WEBHOOK_SECRET not configured');
+    return res.status(500).json({ error: 'Webhook secret not configured' });
   }
-);
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    console.log('✅ Webhook verified:', event.type);
+  } catch (err) {
+    console.error('❌ Webhook signature failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  try {
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      const customerEmail = session.customer_email || session.customer_details?.email;
+
+      if (!customerEmail) {
+        console.error('❌ No email in checkout session');
+        return res.json({ received: true });
+      }
+
+      const subscriptionId = session.subscription;
+      if (!subscriptionId) {
+        console.error('❌ No subscription ID');
+        return res.json({ received: true });
+      }
+
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      const existingUser = await db.query('SELECT id FROM users WHERE email = $1', [customerEmail]);
+
+      if (existingUser.rows.length > 0) {
+        await db.query(
+          'UPDATE users SET subscription_status = $1, stripe_customer_id = $2, stripe_subscription_id = $3, updated_at = NOW() WHERE email = $4',
+          [subscription.status, session.customer, subscriptionId, customerEmail]
+        );
+        console.log('✅ Updated user:', customerEmail);
+      } else {
+        const trialEndsAt = new Date();
+        trialEndsAt.setDate(trialEndsAt.getDate() + 7);
+
+        await db.query(
+          'INSERT INTO users (email, name, stripe_customer_id, stripe_subscription_id, subscription_status, trial_ends_at, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())',
+          [
+            customerEmail,
+            customerEmail.split('@')[0],
+            session.customer,
+            subscriptionId,
+            subscription.status,
+            trialEndsAt,
+          ]
+        );
+        console.log('✅ Created user:', customerEmail);
+      }
+    }
+
+    if (event.type === 'customer.subscription.updated') {
+      const subscription = event.data.object;
+      await db.query(
+        'UPDATE users SET subscription_status = $1, updated_at = NOW() WHERE stripe_subscription_id = $2',
+        [subscription.status, subscription.id]
+      );
+      console.log('✅ Subscription updated');
+    }
+
+    if (event.type === 'customer.subscription.deleted') {
+      const subscription = event.data.object;
+      await db.query(
+        'UPDATE users SET subscription_status = $1, updated_at = NOW() WHERE stripe_subscription_id = $2',
+        ['cancelled', subscription.id]
+      );
+      console.log('✅ Subscription cancelled');
+    }
+
+    res.json({ received: true });
+  } catch (err) {
+    console.error('❌ Webhook error:', err);
+    res.status(500).json({ error: 'Webhook failed' });
+  }
+});
 
 // ==================== MIDDLEWARE ====================
 // Body parsing middleware must come first
@@ -684,7 +711,8 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
 async function handleCheckoutCompleted(session) {
   console.log('💳 Checkout completed for session:', session.id);
 
-  let customerEmail = session.customer_email || session.customer_details?.email || session.metadata?.customer_email;
+  let customerEmail =
+    session.customer_email || session.customer_details?.email || session.metadata?.customer_email;
   const customerId = session.customer;
   const subscriptionId = session.subscription;
 
@@ -1011,7 +1039,9 @@ async function initializeDatabase() {
 
     // Ensure users table has an updated_at column (schema may vary between environments)
     try {
-      await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+      await db.query(
+        'ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+      );
     } catch (e) {
       console.warn('⚠️ Could not ensure users.updated_at column exists:', e.message);
     }
@@ -1059,11 +1089,17 @@ async function initializeDatabase() {
     // Create indexes used by the schema (non-critical but helpful)
     try {
       await db.query('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');
-      await db.query('CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON users(stripe_customer_id)');
-      await db.query('CREATE INDEX IF NOT EXISTS idx_users_stripe_subscription ON users(stripe_subscription_id)');
+      await db.query(
+        'CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON users(stripe_customer_id)'
+      );
+      await db.query(
+        'CREATE INDEX IF NOT EXISTS idx_users_stripe_subscription ON users(stripe_subscription_id)'
+      );
       await db.query('CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id)');
       await db.query('CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at)');
-      await db.query('CREATE INDEX IF NOT EXISTS idx_subscription_history_user ON subscription_history(user_id)');
+      await db.query(
+        'CREATE INDEX IF NOT EXISTS idx_subscription_history_user ON subscription_history(user_id)'
+      );
     } catch (e) {
       console.warn('⚠️ Could not create some indexes:', e.message);
     }
@@ -1102,7 +1138,7 @@ async function initializeDatabase() {
 }
 
 // Initialize database on startup (don't block, but errors are logged)
-initializeDatabase().catch(error => {
+initializeDatabase().catch((error) => {
   console.error('❌ Fatal: Database initialization failed:', error);
 });
 
@@ -1285,7 +1321,7 @@ app.get('/create-account', async (req, res) => {
     req.session.userEmail = customerEmail;
     await req.session.save();
 
-// Send welcome email
+    // Send welcome email
     try {
       await sendEmail({
         to: customerEmail,
@@ -1460,9 +1496,9 @@ app.post('/api/save-lead', async (req, res) => {
 // ==================== EMBEDDED STRIPE CHECKOUT ENDPOINT ====================
 app.post('/api/create-checkout-session', async (req, res) => {
   const { email, priceId, source } = req.body;
-  
+
   // Set Sentry context for payment tracking
-  Sentry.withScope(scope => {
+  Sentry.withScope((scope) => {
     scope.setContext('payment', { email, priceId, source });
     scope.setTag('endpoint', 'create-checkout-session');
   });
@@ -1504,7 +1540,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
           console.log('♻️ Reusing existing Stripe customer:', user.stripe_customer_id);
 
           // Use provided priceId or fallback to default
-          const selectedPriceId = priceId || process.env.STRIPE_PRICE_ID || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD';
+          const selectedPriceId =
+            priceId || process.env.STRIPE_PRICE_ID || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD';
 
           const session = await stripe.checkout.sessions.create({
             customer: user.stripe_customer_id, // REUSE existing customer
@@ -1565,7 +1602,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
         console.log('♻️ Reusing existing Stripe customer for new subscription');
 
         // Use provided priceId or fallback to default
-        const selectedPriceId = priceId || process.env.STRIPE_PRICE_ID || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD';
+        const selectedPriceId =
+          priceId || process.env.STRIPE_PRICE_ID || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD';
 
         const session = await stripe.checkout.sessions.create({
           customer: existingCustomer.id, // REUSE existing customer
@@ -1598,7 +1636,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
     console.log('🆕 Creating new customer checkout session');
 
     // Use provided priceId or fallback to default
-    const selectedPriceId = priceId || process.env.STRIPE_PRICE_ID || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD';
+    const selectedPriceId =
+      priceId || process.env.STRIPE_PRICE_ID || 'price_1SIgAtF8aJ0BDqA3WXVJsuVD';
     console.log('💰 Using price ID:', selectedPriceId);
 
     const sessionConfig = {
@@ -1642,7 +1681,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
 // ==================== COMMUNITY PRICING LINK HANDLER ====================
 app.get('/community-pricing', async (req, res) => {
   const { priceId, source } = req.query;
-  
+
   if (!priceId) {
     return res.redirect('/?error=missing_price');
   }
@@ -1651,22 +1690,21 @@ app.get('/community-pricing', async (req, res) => {
     // Check if user is authenticated
     if (req.session.userEmail) {
       console.log('✅ Authenticated user visiting community pricing');
-      
+
       // Check subscription status
-      const userResult = await db.query(
-        'SELECT subscription_status FROM users WHERE email = $1',
-        [req.session.userEmail]
-      );
+      const userResult = await db.query('SELECT subscription_status FROM users WHERE email = $1', [
+        req.session.userEmail,
+      ]);
 
       if (userResult.rows.length > 0) {
         const subscription = userResult.rows[0].subscription_status;
-        
+
         if (subscription === 'active' || subscription === 'trialing') {
           console.log('⚠️ User already has active subscription');
           return res.redirect('/chat.html');
         }
       }
-      
+
       // User is logged in but no active subscription - show checkout with community pricing
       console.log('🎁 Showing community pricing checkout to returning user');
       return res.redirect(`/checkout.html?priceId=${priceId}&source=${source || 'community'}`);
@@ -1675,7 +1713,6 @@ app.get('/community-pricing', async (req, res) => {
     // User is NOT logged in - redirect to signup with community pricing params
     console.log('🎁 Redirecting to signup with community pricing params');
     res.redirect(`/chat.html?priceId=${priceId}&source=${source || 'community'}`);
-
   } catch (error) {
     console.error('❌ Community pricing error:', error);
     res.redirect('/?error=pricing_error');
@@ -1840,23 +1877,23 @@ app.post('/api/auth/logout', (req, res) => {
   console.log('🚪 LOGOUT REQUEST');
   console.log('   User Email:', req.session?.userEmail);
   console.log('   Session ID:', req.sessionID);
-  
+
   req.session.destroy((err) => {
     if (err) {
       console.error('❌ Session destroy error:', err);
       return res.status(500).json({ error: 'Logout failed' });
     }
-    
+
     console.log('✅ Session destroyed successfully');
-    
+
     // Clear session cookie
     res.clearCookie('connect.sid');
     console.log('✅ Session cookie cleared');
-    
+
     // Clear any other auth-related cookies
     res.clearCookie('auth_token');
     res.clearCookie('remember_me');
-    
+
     console.log('✅ LOGOUT COMPLETE - User session cleared');
     res.json({ success: true });
   });
@@ -1884,9 +1921,9 @@ app.post('/api/auth/login-link', async (req, res) => {
     );
 
     if (userResult.rows.length === 0) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'No account found with this email',
-        suggestion: 'Please sign up first or check your email spelling'
+        suggestion: 'Please sign up first or check your email spelling',
       });
     }
 
@@ -1972,9 +2009,9 @@ app.post('/api/auth/login-link', async (req, res) => {
     } catch (emailError) {
       console.error('❌ Magic link email send failed:', emailError.message);
       // Still return 500 but provide debugging info
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to send login link. Please try again or contact support.',
-        debugInfo: process.env.NODE_ENV === 'development' ? emailError.message : undefined
+        debugInfo: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
       });
     }
   } catch (error) {
@@ -2309,7 +2346,9 @@ app.post('/api/auth/signup', async (req, res) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     // Check if user already exists (case-insensitive)
-    const existing = await db.query('SELECT id FROM users WHERE LOWER(email) = $1', [normalizedEmail]);
+    const existing = await db.query('SELECT id FROM users WHERE LOWER(email) = $1', [
+      normalizedEmail,
+    ]);
     if (existing.rows.length > 0) {
       return res.status(400).json({ error: 'Email already registered' });
     }
@@ -2348,7 +2387,9 @@ app.post('/api/auth/login', async (req, res) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     // Find user (case-insensitive)
-    const result = await db.query('SELECT id, password FROM users WHERE LOWER(email) = $1', [normalizedEmail]);
+    const result = await db.query('SELECT id, password FROM users WHERE LOWER(email) = $1', [
+      normalizedEmail,
+    ]);
     if (result.rows.length === 0) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
@@ -2383,40 +2424,40 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/auth/send-magic-link', async (req, res) => {
   const { email } = req.body;
   const clientIp = req.ip || req.connection.remoteAddress;
-  
+
   // ==================== INPUT VALIDATION ====================
   if (!email) {
     console.warn('❌ Magic link request missing email');
     Sentry?.captureMessage('Magic link request missing email', 'warning');
     return res.status(400).json({ error: 'Email is required' });
   }
-  
+
   // Normalize email
   const normalizedEmail = email.trim().toLowerCase();
-  
+
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(normalizedEmail)) {
     console.warn(`❌ Invalid email format: ${normalizedEmail}`);
     return res.status(400).json({ error: 'Please enter a valid email address' });
   }
-  
+
   try {
     // ==================== CHECK IF USER EXISTS ====================
     console.log(`🔍 Checking if user exists: ${normalizedEmail}`);
-    
+
     const userResult = await db.query(
       'SELECT id, email, subscription_status, created_at FROM users WHERE LOWER(email) = $1',
       [normalizedEmail]
     );
-    
+
     let user;
-    
+
     if (userResult.rows.length === 0) {
       // NEW USER - Create account automatically
       console.log(`🆕 New user detected: ${normalizedEmail}`);
       console.log('📝 Creating new user account...');
-      
+
       try {
         const newUserResult = await db.query(
           `INSERT INTO users (email, subscription_status, created_at, trial_ends_at)
@@ -2424,59 +2465,59 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
            RETURNING id, email, subscription_status, created_at, trial_ends_at`,
           [normalizedEmail]
         );
-        
+
         user = newUserResult.rows[0];
-        
-        console.log(`✅ New user created successfully:`, {
+
+        console.log('✅ New user created successfully:', {
           id: user.id,
           email: user.email,
           status: user.subscription_status,
-          trialEnds: user.trial_ends_at
+          trialEnds: user.trial_ends_at,
         });
-        
+
         // Log audit trail for new signup
-        await db.query(
-          `INSERT INTO login_audit_log (email, action, ip_address, success)
+        await db
+          .query(
+            `INSERT INTO login_audit_log (email, action, ip_address, success)
            VALUES ($1, 'new_user_created_via_magic_link', $2, true)`,
-          [normalizedEmail, clientIp]
-        ).catch(err => console.warn('Audit log failed:', err));
-        
+            [normalizedEmail, clientIp]
+          )
+          .catch((err) => console.warn('Audit log failed:', err));
       } catch (createError) {
         console.error('❌ Failed to create new user:', createError);
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: 'Failed to create account. Please try again.',
-          details: createError.message 
+          details: createError.message,
         });
       }
-      
     } else {
       // EXISTING USER
       user = userResult.rows[0];
-      console.log(`✅ Existing user found:`, {
+      console.log('✅ Existing user found:', {
         id: user.id,
         email: user.email,
-        status: user.subscription_status
+        status: user.subscription_status,
       });
     }
-    
+
     // ==================== CREATE MAGIC LINK TOKEN ====================
     let magicLinkRecord;
     try {
       magicLinkRecord = await createMagicLink(normalizedEmail, 'magic_link');
     } catch (error) {
-      console.error(`❌ Failed to create magic link token:`, error);
+      console.error('❌ Failed to create magic link token:', error);
       return res.status(500).json({ error: 'Failed to generate sign-in link. Please try again.' });
     }
-    
+
     // ==================== BUILD MAGIC LINK URL ====================
     const baseUrl = process.env.APP_URL || 'http://localhost:8080';
     if (!baseUrl || baseUrl === 'http://localhost:8080') {
       console.warn(`⚠️ Using default baseUrl: ${baseUrl}`);
     }
-    
+
     const magicLink = `${baseUrl}/verify-magic-link?token=${magicLinkRecord.token}`;
     console.log(`🔗 Magic link URL: ${magicLink}`);
-    
+
     // ==================== SEND EMAIL ====================
     try {
       const emailResult = await sendEmail({
@@ -2518,42 +2559,45 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
           </body>
           </html>
         `,
-        emailType: 'magic_link'
+        emailType: 'magic_link',
       });
-      
-      console.log(`✅ Magic link email queued for delivery:`, {
+
+      console.log('✅ Magic link email queued for delivery:', {
         to: normalizedEmail,
         emailLogId: emailResult.logId,
-        resendId: emailResult.id
+        resendId: emailResult.id,
       });
-      
+
       // Log success in audit
-      await db.query(
-        `INSERT INTO login_audit_log (email, token_id, action, ip_address, success)
-         VALUES ($1, $2, 'magic_link_email_sent', $3, true)`, [normalizedEmail, magicLinkRecord.id, clientIp]
-      ).catch(() => null);
-      
+      await db
+        .query(
+          `INSERT INTO login_audit_log (email, token_id, action, ip_address, success)
+         VALUES ($1, $2, 'magic_link_email_sent', $3, true)`,
+          [normalizedEmail, magicLinkRecord.id, clientIp]
+        )
+        .catch(() => null);
+
       return res.json({
         success: true,
         message: 'Check your email for the sign-in link. It expires in 15 minutes.',
-        logId: emailResult.logId
+        logId: emailResult.logId,
       });
-      
     } catch (emailError) {
       console.error(`❌ Email send failed for ${normalizedEmail}:`, emailError.message);
-      
-      await db.query(
-        `INSERT INTO login_audit_log (email, token_id, action, ip_address, success, error_message)
+
+      await db
+        .query(
+          `INSERT INTO login_audit_log (email, token_id, action, ip_address, success, error_message)
          VALUES ($1, $2, 'magic_link_email_failed', $3, false, $4)`,
-        [normalizedEmail, magicLinkRecord.id, clientIp, emailError.message.substring(0, 500)]
-      ).catch(() => null);
-      
+          [normalizedEmail, magicLinkRecord.id, clientIp, emailError.message.substring(0, 500)]
+        )
+        .catch(() => null);
+
       return res.status(500).json({
         error: 'Failed to send sign-in email. Please try again.',
-        debug: process.env.NODE_ENV === 'development' ? emailError.message : undefined
+        debug: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
       });
     }
-    
   } catch (error) {
     console.error('❌ Magic link endpoint error:', error);
     Sentry?.captureException(error, { tags: { endpoint: 'send-magic-link' } });
@@ -2565,55 +2609,54 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
 app.post('/api/auth/send-trial-magic-link', async (req, res) => {
   const { email } = req.body;
   const clientIp = req.ip || req.connection.remoteAddress;
-  
+
   // Validation
   if (!email) {
     console.warn('❌ Trial magic link request missing email');
     return res.status(400).json({ error: 'Email is required' });
   }
-  
+
   const normalizedEmail = email.trim().toLowerCase();
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(normalizedEmail)) {
     console.warn(`❌ Invalid email format: ${normalizedEmail}`);
     return res.status(400).json({ error: 'Please enter a valid email address' });
   }
-  
+
   try {
     console.log(`🆕 Trial signup for: ${normalizedEmail}`);
-    
+
     // ==================== CREATE OR UPDATE USER WITH 48-HOUR TRIAL ====================
     let user;
     const userResult = await db.query(
       'SELECT id, email, subscription_status FROM users WHERE LOWER(email) = $1',
       [normalizedEmail]
     );
-    
+
     if (userResult.rows.length === 0) {
       // NEW USER - Create with 48-hour trial
-      console.log(`📝 Creating new trial user...`);
-      
+      console.log('📝 Creating new trial user...');
+
       const trialEndsAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours from now
-      
+
       const newUserResult = await db.query(
         `INSERT INTO users (email, subscription_status, created_at, trial_starts_at, trial_ends_at)
          VALUES ($1, 'trial', NOW(), NOW(), $2)
          RETURNING id, email, subscription_status, created_at, trial_starts_at, trial_ends_at`,
         [normalizedEmail, trialEndsAt]
       );
-      
+
       user = newUserResult.rows[0];
-      console.log(`✅ Trial user created:`, {
+      console.log('✅ Trial user created:', {
         id: user.id,
         email: user.email,
-        trialEndsAt: user.trial_ends_at
+        trialEndsAt: user.trial_ends_at,
       });
-      
     } else {
       // Existing user - refresh trial if needed
       user = userResult.rows[0];
-      console.log(`👤 Existing user found, refreshing trial if needed...`);
-      
+      console.log('👤 Existing user found, refreshing trial if needed...');
+
       const trialEndsAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
       const updateResult = await db.query(
         `UPDATE users SET trial_starts_at = NOW(), trial_ends_at = $1, subscription_status = 'trial'
@@ -2622,22 +2665,22 @@ app.post('/api/auth/send-trial-magic-link', async (req, res) => {
         [trialEndsAt, user.id]
       );
       user = updateResult.rows[0];
-      console.log(`♻️  Trial refreshed for returning user`);
+      console.log('♻️  Trial refreshed for returning user');
     }
-    
+
     // ==================== CREATE MAGIC LINK TOKEN ====================
     let magicLinkRecord;
     try {
       magicLinkRecord = await createMagicLink(normalizedEmail, 'trial_magic_link');
     } catch (error) {
-      console.error(`❌ Failed to create magic link token:`, error);
+      console.error('❌ Failed to create magic link token:', error);
       return res.status(500).json({ error: 'Failed to generate sign-in link. Please try again.' });
     }
-    
+
     // ==================== BUILD MAGIC LINK ====================
     const baseUrl = process.env.APP_URL || 'http://localhost:8080';
     const magicLink = `${baseUrl}/verify-magic-link?token=${magicLinkRecord.token}&trial=true`;
-    
+
     // ==================== SEND EMAIL ====================
     try {
       const emailResult = await sendEmail({
@@ -2689,31 +2732,31 @@ app.post('/api/auth/send-trial-magic-link', async (req, res) => {
           </body>
           </html>
         `,
-        emailType: 'trial_magic_link'
+        emailType: 'trial_magic_link',
       });
-      
+
       console.log(`✅ Trial magic link email sent to ${normalizedEmail}`);
-      
+
       // Audit log
-      await db.query(
-        `INSERT INTO login_audit_log (email, token_id, action, ip_address, success)
+      await db
+        .query(
+          `INSERT INTO login_audit_log (email, token_id, action, ip_address, success)
          VALUES ($1, $2, 'trial_magic_link_sent', $3, true)`,
-        [normalizedEmail, magicLinkRecord.id, clientIp]
-      ).catch(() => null);
-      
+          [normalizedEmail, magicLinkRecord.id, clientIp]
+        )
+        .catch(() => null);
+
       return res.json({
         success: true,
-        message: 'Check your email for your 48-hour trial link. It expires in 15 minutes.'
+        message: 'Check your email for your 48-hour trial link. It expires in 15 minutes.',
       });
-      
     } catch (emailError) {
-      console.error(`❌ Email send failed:`, emailError.message);
+      console.error('❌ Email send failed:', emailError.message);
       return res.status(500).json({
         error: 'Failed to send trial link email. Please try again.',
-        debug: process.env.NODE_ENV === 'development' ? emailError.message : undefined
+        debug: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
       });
     }
-    
   } catch (error) {
     console.error('❌ Trial magic link endpoint error:', error);
     Sentry?.captureException(error, { tags: { endpoint: 'send-trial-magic-link' } });
@@ -2725,93 +2768,105 @@ app.get('/verify-magic-link', async (req, res) => {
   const { token } = req.query;
   const clientIp = req.ip || req.connection.remoteAddress;
   const userAgent = req.get('user-agent');
-  
+
   console.log(`🔍 Verifying magic link token: ${token?.substring(0, 10)}...`);
-  
+
   // ==================== VALIDATE TOKEN ====================
   if (!token) {
     console.error('❌ No token provided');
-    await db.query(
-      `INSERT INTO login_audit_log (email, action, ip_address, success, error_message)
-       VALUES ($1, 'token_missing', $2, false, 'No token provided')`,[null, clientIp]
-    ).catch(() => null);
+    await db
+      .query(
+        `INSERT INTO login_audit_log (email, action, ip_address, success, error_message)
+       VALUES ($1, 'token_missing', $2, false, 'No token provided')`,
+        [null, clientIp]
+      )
+      .catch(() => null);
     return res.redirect('/login.html?error=invalid_token&msg=No%20sign-in%20link%20provided');
   }
-  
+
   try {
     // ==================== LOOK UP TOKEN ====================
-    console.log(`🔑 Looking up token in database`);
-    
-    const tokenResult = await db.query(
-      `SELECT id, email, expires_at, used, used_at, created_at
+    console.log('🔑 Looking up token in database');
+
+    const tokenResult = await db
+      .query(
+        `SELECT id, email, expires_at, used, used_at, created_at
        FROM magic_links
        WHERE token = $1`,
-      [token]
-    ).catch(error => {
-      if (error.message.includes('does not exist')) {
-        console.warn('⚠️ magic_links table does not exist');
-        return null;
-      }
-      throw error;
-    });
-    
+        [token]
+      )
+      .catch((error) => {
+        if (error.message.includes('does not exist')) {
+          console.warn('⚠️ magic_links table does not exist');
+          return null;
+        }
+        throw error;
+      });
+
     if (!tokenResult?.rows || tokenResult.rows.length === 0) {
       console.error(`❌ Token not found: ${token.substring(0, 10)}...`);
-      return res.redirect('/login.html?error=invalid_token&msg=This%20sign-in%20link%20is%20invalid');
+      return res.redirect(
+        '/login.html?error=invalid_token&msg=This%20sign-in%20link%20is%20invalid'
+      );
     }
-    
+
     const magicLink = tokenResult.rows[0];
     console.log(`✅ Token found for ${magicLink.email}`);
-    
+
     // ==================== CHECK IF ALREADY USED ====================
     if (magicLink.used) {
       console.error(`❌ Token already used: ${token.substring(0, 10)}...`);
-      return res.redirect('/login.html?error=token_used&msg=This%20link%20has%20already%20been%20used');
+      return res.redirect(
+        '/login.html?error=token_used&msg=This%20link%20has%20already%20been%20used'
+      );
     }
-    
+
     // ==================== CHECK IF EXPIRED ====================
     const now = new Date();
     const expiresAt = new Date(magicLink.expires_at);
-    
+
     if (now > expiresAt) {
       console.error(`❌ Token expired: ${token.substring(0, 10)}...`);
-      return res.redirect('/login.html?error=expired_token&msg=This%20link%20has%20expired.%20Please%20request%20a%20new%20one');
+      return res.redirect(
+        '/login.html?error=expired_token&msg=This%20link%20has%20expired.%20Please%20request%20a%20new%20one'
+      );
     }
-    
-    console.log(`✅ Token is valid and not expired`);
-    
+
+    console.log('✅ Token is valid and not expired');
+
     // ==================== GET USER FROM DATABASE ====================
     console.log(`👤 Looking up user: ${magicLink.email}`);
-    
-    const userResult = await db.query(
-      'SELECT id, email FROM users WHERE LOWER(email) = $1',
-      [magicLink.email.toLowerCase()]
-    );
-    
+
+    const userResult = await db.query('SELECT id, email FROM users WHERE LOWER(email) = $1', [
+      magicLink.email.toLowerCase(),
+    ]);
+
     if (userResult.rows.length === 0) {
       console.error(`❌ User not found: ${magicLink.email}`);
       return res.redirect('/login.html?error=user_not_found&msg=User%20account%20not%20found');
     }
-    
+
     const user = userResult.rows[0];
     console.log(`✅ User found: ${user.email} (ID: ${user.id})`);
-    
+
     // ==================== MARK TOKEN AS USED ====================
-    console.log(`🔒 Marking token as used`);
-    
-    await db.query(
-      `UPDATE magic_links
+    console.log('🔒 Marking token as used');
+
+    await db
+      .query(
+        `UPDATE magic_links
        SET used = true, used_at = NOW(), used_by_ip = $1
        WHERE id = $2`,
-      [clientIp, magicLink.id]
-    ).catch(() => null);
-    
+        [clientIp, magicLink.id]
+      )
+      .catch(() => null);
+
     // ==================== CREATE SESSION ====================
     console.log(`📝 Creating user session for ${user.email}`);
-    
+
     req.session.userId = user.id;
     req.session.userEmail = user.email;
-    
+
     // Ensure session is saved before redirecting
     await new Promise((resolve, reject) => {
       req.session.save((err) => {
@@ -2819,24 +2874,27 @@ app.get('/verify-magic-link', async (req, res) => {
         else resolve();
       });
     });
-    
+
     console.log(`✅ Session created successfully for ${user.email}`);
-    
+
     // ==================== LOG SUCCESSFUL LOGIN ====================
-    await db.query(
-      `INSERT INTO login_audit_log (email, token_id, action, ip_address, user_agent, success)
+    await db
+      .query(
+        `INSERT INTO login_audit_log (email, token_id, action, ip_address, user_agent, success)
        VALUES ($1, $2, 'login_successful', $3, $4, true)`,
-      [user.email, magicLink.id, clientIp, userAgent]
-    ).catch(() => null);
-    
+        [user.email, magicLink.id, clientIp, userAgent]
+      )
+      .catch(() => null);
+
     // ==================== REDIRECT TO APP ====================
     console.log(`🚀 Redirecting ${user.email} to /chat.html`);
     return res.redirect('/chat.html');
-    
   } catch (error) {
     console.error('❌ Magic link verification error:', error);
     Sentry?.captureException(error, { tags: { endpoint: 'verify-magic-link' } });
-    return res.redirect('/login.html?error=verification_failed&msg=An%20error%20occurred%20during%20sign-in');
+    return res.redirect(
+      '/login.html?error=verification_failed&msg=An%20error%20occurred%20during%20sign-in'
+    );
   }
 });
 
@@ -2863,14 +2921,14 @@ app.post('/api/chat', async (req, res) => {
     attachments: attachments.length,
     conversationId: conversationId || 'current',
   });
-  
+
   // 🎯 DEBUG: Log what we received from frontend
   console.log('📥 [REQUEST BODY] guestMessageCount from frontend:', {
     received: guestMessageCount,
     type: typeof guestMessageCount,
     isNull: guestMessageCount === null,
     isUndefined: guestMessageCount === undefined,
-    message: message?.substring(0, 40)
+    message: message?.substring(0, 40),
   });
 
   if (!message) {
@@ -3003,10 +3061,10 @@ app.post('/api/chat', async (req, res) => {
             const trialEndDate = new Date(user.trial_ends_at);
             if (new Date() > trialEndDate) {
               // Trial expired - update status to free_tier
-              await db.query(
-                `UPDATE users SET subscription_status = $1 WHERE email = $2`,
-                ['free_tier', req.session.userEmail]
-              );
+              await db.query('UPDATE users SET subscription_status = $1 WHERE email = $2', [
+                'free_tier',
+                req.session.userEmail,
+              ]);
               userSubscriptionStatus = 'free_tier';
               trialDayCount = null; // No longer on trial
               console.log('⏰ Trial expired for user:', req.session.userEmail);
@@ -3025,18 +3083,18 @@ app.post('/api/chat', async (req, res) => {
                 subscriptionError = {
                   status: 429,
                   error: 'Daily message limit reached',
-                  message: 'You\'ve used your daily message on the free tier. Upgrade to VERA to continue unlimited conversations.',
-                  upgradeUrl: '/pricing'
+                  message:
+                    "You've used your daily message on the free tier. Upgrade to VERA to continue unlimited conversations.",
+                  upgradeUrl: '/pricing',
                 };
               }
             }
 
             // If allowed, update last_free_message_date
             if (!subscriptionError) {
-              await db.query(
-                `UPDATE users SET last_free_message_date = NOW() WHERE email = $1`,
-                [req.session.userEmail]
-              );
+              await db.query('UPDATE users SET last_free_message_date = NOW() WHERE email = $1', [
+                req.session.userEmail,
+              ]);
             }
           }
 
@@ -3044,7 +3102,7 @@ app.post('/api/chat', async (req, res) => {
             email: req.session.userEmail,
             status: userSubscriptionStatus,
             trialDay: trialDayCount,
-            hasError: !!subscriptionError
+            hasError: !!subscriptionError,
           });
         }
       } catch (subError) {
@@ -3059,7 +3117,7 @@ app.post('/api/chat', async (req, res) => {
         success: false,
         error: subscriptionError.error,
         message: subscriptionError.message,
-        upgradeUrl: subscriptionError.upgradeUrl
+        upgradeUrl: subscriptionError.upgradeUrl,
       });
     }
 
@@ -3080,9 +3138,9 @@ app.post('/api/chat', async (req, res) => {
     // 🎯 DEBUG: Log what we're passing to vera-ai and what we get back
     console.log('🔄 [VERA FLOW] Sending guestMessageCount:', {
       sent: guestMessageCount,
-      type: typeof guestMessageCount
+      type: typeof guestMessageCount,
     });
-    
+
     console.log('📊 VERA result:', {
       responseLength: veraResult.response?.length,
       state: veraResult.state,
@@ -3097,33 +3155,41 @@ app.post('/api/chat', async (req, res) => {
       guestMessageCount: guestMessageCount,
       veraResult_isGuestMessage4: veraResult.isGuestMessage4,
       willTriggerModal: veraResult.isGuestMessage4 === true,
-      typeOf: typeof veraResult.isGuestMessage4
+      typeOf: typeof veraResult.isGuestMessage4,
     });
 
- // ✅ FIXED: Now save both messages in order (user first, then assistant) with conversation_id
-console.log('💾 Attempting to save user message:', { userId, message: message.substring(0, 50), conversationId: currentConversationId });
+    // ✅ FIXED: Now save both messages in order (user first, then assistant) with conversation_id
+    console.log('💾 Attempting to save user message:', {
+      userId,
+      message: message.substring(0, 50),
+      conversationId: currentConversationId,
+    });
 
-try {
-  await db.query(
-    'INSERT INTO messages (user_id, role, content, conversation_id) VALUES ($1, $2, $3, $4)',
-    [userId, 'user', message, currentConversationId]
-  );
-  console.log('✅ User message saved');
-} catch (saveError) {
-  console.error('❌ Failed to save user message:', saveError.message);
-}
+    try {
+      await db.query(
+        'INSERT INTO messages (user_id, role, content, conversation_id) VALUES ($1, $2, $3, $4)',
+        [userId, 'user', message, currentConversationId]
+      );
+      console.log('✅ User message saved');
+    } catch (saveError) {
+      console.error('❌ Failed to save user message:', saveError.message);
+    }
 
-console.log('💾 Attempting to save assistant message:', { userId, response: veraResult.response.substring(0, 50), conversationId: currentConversationId });
+    console.log('💾 Attempting to save assistant message:', {
+      userId,
+      response: veraResult.response.substring(0, 50),
+      conversationId: currentConversationId,
+    });
 
-try {
-  await db.query(
-    'INSERT INTO messages (user_id, role, content, conversation_id) VALUES ($1, $2, $3, $4)',
-    [userId, 'assistant', veraResult.response, currentConversationId]
-  );
-  console.log('✅ Assistant message saved');
-} catch (saveError) {
-  console.error('❌ Failed to save assistant message:', saveError.message);
-}
+    try {
+      await db.query(
+        'INSERT INTO messages (user_id, role, content, conversation_id) VALUES ($1, $2, $3, $4)',
+        [userId, 'assistant', veraResult.response, currentConversationId]
+      );
+      console.log('✅ Assistant message saved');
+    } catch (saveError) {
+      console.error('❌ Failed to save assistant message:', saveError.message);
+    }
 
     // 🔍 DEBUG: Log the exact response object before sending
     const responseObject = {
@@ -3142,12 +3208,12 @@ try {
         status: userSubscriptionStatus,
         trialDay: trialDayCount,
         isOnTrial: userSubscriptionStatus === 'trial' && trialDayCount !== null,
-      }
+      },
     };
-    
+
     console.log('📤 [SENDING TO FRONTEND] isGuestMessage4:', responseObject.isGuestMessage4);
     console.log('📤 [FULL RESPONSE]', JSON.stringify(responseObject, null, 2).substring(0, 500));
-    
+
     res.json(responseObject);
   } catch (error) {
     console.error('❌ Chat error:', error);
@@ -3170,7 +3236,7 @@ app.post('/api/guest-email', async (req, res) => {
     if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid email format'
+        error: 'Invalid email format',
       });
     }
 
@@ -3178,21 +3244,18 @@ app.post('/api/guest-email', async (req, res) => {
     if (!anonId || !anonId.match(/^anon_[a-z0-9_]+$/i)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid session'
+        error: 'Invalid session',
       });
     }
 
     // Check if email already collected for this anonId
-    const checkResult = await db.query(
-      'SELECT id FROM guest_emails WHERE anon_id = $1',
-      [anonId]
-    );
+    const checkResult = await db.query('SELECT id FROM guest_emails WHERE anon_id = $1', [anonId]);
 
     if (checkResult.rows.length > 0) {
       // Email already collected for this guest
       return res.json({
         success: true,
-        message: 'Email already on file'
+        message: 'Email already on file',
       });
     }
 
@@ -3206,13 +3269,13 @@ app.post('/api/guest-email', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Email saved successfully'
+      message: 'Email saved successfully',
     });
   } catch (error) {
     console.error('❌ Guest email collection error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to save email'
+      error: 'Failed to save email',
     });
   }
 });
@@ -3226,7 +3289,7 @@ app.post('/api/request-magic-link', async (req, res) => {
     if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid email format'
+        error: 'Invalid email format',
       });
     }
 
@@ -3236,10 +3299,11 @@ app.post('/api/request-magic-link', async (req, res) => {
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     // Store magic link in database
-    await db.query(
-      'INSERT INTO magic_links (email, token, expires_at) VALUES ($1, $2, $3)',
-      [email, token, expiresAt]
-    );
+    await db.query('INSERT INTO magic_links (email, token, expires_at) VALUES ($1, $2, $3)', [
+      email,
+      token,
+      expiresAt,
+    ]);
 
     // Create magic link URL
     const baseUrl = process.env.APP_URL || 'http://localhost:8080';
@@ -3307,13 +3371,13 @@ app.post('/api/request-magic-link', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Check your email - VERA is waiting for you'
+      message: 'Check your email - VERA is waiting for you',
     });
   } catch (error) {
     console.error('❌ Magic link request error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to send magic link'
+      error: 'Failed to send magic link',
     });
   }
 });
@@ -3351,10 +3415,7 @@ app.get('/auth', async (req, res) => {
     }
 
     // Validate token - check if exists, not expired, and not used
-    const tokenResult = await db.query(
-      'SELECT * FROM magic_links WHERE token = $1',
-      [token]
-    );
+    const tokenResult = await db.query('SELECT * FROM magic_links WHERE token = $1', [token]);
 
     if (tokenResult.rows.length === 0) {
       return res.status(400).send(`
@@ -3443,12 +3504,9 @@ app.get('/auth', async (req, res) => {
 
     // Token is valid - create or update user
     const email = magicLink.email;
-    
+
     // Check if user exists
-    const existingUser = await db.query(
-      'SELECT id, name FROM users WHERE email = $1',
-      [email]
-    );
+    const existingUser = await db.query('SELECT id, name FROM users WHERE email = $1', [email]);
 
     let userId;
 
@@ -3473,10 +3531,7 @@ app.get('/auth', async (req, res) => {
     }
 
     // Mark token as used
-    await db.query(
-      'UPDATE magic_links SET used = true WHERE token = $1',
-      [token]
-    );
+    await db.query('UPDATE magic_links SET used = true WHERE token = $1', [token]);
 
     // Create session
     req.session.userId = userId;
@@ -3874,11 +3929,13 @@ app.get('/api/test', (req, res) => {
 // ==================== TEMPORARY - Create Eva's account ====================
 app.post('/admin/create-eva', async (req, res) => {
   try {
-    const existing = await db.query('SELECT * FROM users WHERE email = $1', ['support@veraneural.com']);
+    const existing = await db.query('SELECT * FROM users WHERE email = $1', [
+      'support@veraneural.com',
+    ]);
     if (existing.rows.length > 0) {
       return res.json({ message: 'Account already exists!' });
     }
-    
+
     await db.query(
       `INSERT INTO users (email, subscription_status, stripe_customer_id, stripe_subscription_id, created_at, updated_at)
        VALUES ($1, $2, $3, $4, NOW(), NOW())`,
@@ -3901,7 +3958,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('💳 CHECKOUT SESSION CREATION ATTEMPT');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  
+
   try {
     const { priceType } = req.body;
     const userEmail = req.session?.userEmail;
@@ -3938,7 +3995,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
     console.log('   Using price IDs:', {
       monthly: priceIds.monthly,
       annual: priceIds.annual,
-      selected: priceIds[priceType]
+      selected: priceIds[priceType],
     });
 
     const appUrl = process.env.APP_URL || 'http://localhost:8080';
@@ -3991,7 +4048,10 @@ app.post('/api/create-checkout-session', async (req, res) => {
       console.error('   Message:', stripeError.message);
       console.error('   Code:', stripeError.code);
       console.error('   Status:', stripeError.status);
-      console.error('   Full Error:', JSON.stringify(stripeError, Object.getOwnPropertyNames(stripeError), 2));
+      console.error(
+        '   Full Error:',
+        JSON.stringify(stripeError, Object.getOwnPropertyNames(stripeError), 2)
+      );
       throw stripeError;
     }
 
@@ -4036,7 +4096,10 @@ app.post('/api/create-checkout-session', async (req, res) => {
       console.error('   Code:', stripeError.code);
       console.error('   Status:', stripeError.status);
       console.error('   Param:', stripeError.param);
-      console.error('   Full Error:', JSON.stringify(stripeError, Object.getOwnPropertyNames(stripeError), 2));
+      console.error(
+        '   Full Error:',
+        JSON.stringify(stripeError, Object.getOwnPropertyNames(stripeError), 2)
+      );
       throw stripeError;
     }
   } catch (error) {
@@ -4046,15 +4109,18 @@ app.post('/api/create-checkout-session', async (req, res) => {
     console.error('Error Name:', error.name);
     console.error('Error Code:', error.code);
     console.error('Error Status:', error.statusCode || error.status);
-    
+
     if (error.response) {
       console.error('Response Status:', error.response.status);
       console.error('Response Data:', JSON.stringify(error.response.data, null, 2));
     }
-    
-    console.error('Full Error Object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+
+    console.error(
+      'Full Error Object:',
+      JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+    );
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
+
     // Log to Sentry if available
     if (Sentry) {
       Sentry.captureException(error, {
@@ -4063,11 +4129,11 @@ app.post('/api/create-checkout-session', async (req, res) => {
       });
     }
 
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: error.message,
       code: error.code,
-      details: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+      details: process.env.NODE_ENV === 'development' ? error.toString() : undefined,
     });
   }
 });
@@ -4081,10 +4147,10 @@ app.post('/api/create-portal-session', async (req, res) => {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('🔧 PORTAL SESSION CREATION ATTEMPT');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  
+
   try {
     const userEmail = req.session?.userEmail;
-    
+
     console.log('📋 Request Details:');
     console.log('   User Email:', userEmail);
     console.log('   Session ID:', req.sessionID);
@@ -4110,10 +4176,9 @@ app.post('/api/create-portal-session', async (req, res) => {
 
     // Get user's Stripe customer ID from database
     try {
-      const userResult = await db.query(
-        'SELECT stripe_customer_id FROM users WHERE email = $1',
-        [userEmail]
-      );
+      const userResult = await db.query('SELECT stripe_customer_id FROM users WHERE email = $1', [
+        userEmail,
+      ]);
 
       if (!userResult.rows[0]) {
         console.error('❌ ERROR: User not found:', userEmail);
@@ -4145,14 +4210,12 @@ app.post('/api/create-portal-session', async (req, res) => {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
       res.json({ url: portalSession.url });
-
     } catch (dbError) {
       console.error('❌ ERROR querying database:');
       console.error('   Message:', dbError.message);
       console.error('   Code:', dbError.code);
       throw dbError;
     }
-
   } catch (error) {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.error('❌ PORTAL SESSION CREATION FAILED');
@@ -4160,15 +4223,18 @@ app.post('/api/create-portal-session', async (req, res) => {
     console.error('Error Name:', error.name);
     console.error('Error Code:', error.code);
     console.error('Error Status:', error.statusCode || error.status);
-    
+
     if (error.response) {
       console.error('Response Status:', error.response.status);
       console.error('Response Data:', JSON.stringify(error.response.data, null, 2));
     }
-    
-    console.error('Full Error Object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+
+    console.error(
+      'Full Error Object:',
+      JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+    );
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
+
     // Log to Sentry if available
     if (Sentry) {
       Sentry.captureException(error, {
@@ -4177,9 +4243,9 @@ app.post('/api/create-portal-session', async (req, res) => {
       });
     }
 
-    res.status(500).json({ 
+    res.status(500).json({
       error: error.message,
-      details: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+      details: process.env.NODE_ENV === 'development' ? error.toString() : undefined,
     });
   }
 });
@@ -4199,7 +4265,7 @@ app.post('/api/update-name', async (req, res) => {
     }
 
     const { name } = req.body;
-    
+
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return res.status(400).json({ error: 'Invalid name provided' });
     }
@@ -4212,7 +4278,7 @@ app.post('/api/update-name', async (req, res) => {
     // Update user in database (if you add a name column)
     // For now, just log it
     // const result = await db.query('UPDATE users SET name = $1 WHERE email = $2', [name, req.session.userEmail]);
-    
+
     console.log('✅ Name updated successfully');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
@@ -4243,7 +4309,7 @@ app.post('/api/update-preferences', async (req, res) => {
     // Update preferences in database (if you add preferences table)
     // For now, just log it
     // const result = await db.query('UPDATE user_preferences SET email_notifications = $1 WHERE email = $2', [emailNotifications, req.session.userEmail]);
-    
+
     console.log('✅ Preferences updated successfully');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
@@ -4282,16 +4348,18 @@ app.get('/api/download-data', async (req, res) => {
       email: req.session.userEmail,
       exportedAt: new Date().toISOString(),
       conversationCount: conversations.length,
-      conversations: conversations
+      conversations: conversations,
     };
 
     console.log('✅ Data prepared for download');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="vera-data-${new Date().toISOString().split('T')[0]}.json"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="vera-data-${new Date().toISOString().split('T')[0]}.json"`
+    );
     res.send(JSON.stringify(userData, null, 2));
-
   } catch (error) {
     console.error('❌ Error downloading data:', error);
     res.status(500).json({ error: 'Failed to download data' });
@@ -4313,17 +4381,19 @@ app.post('/api/delete-history', async (req, res) => {
     console.log('   Email:', req.session.userEmail);
 
     // Delete all conversations for this user
-    const result = await db.query(
-      'DELETE FROM conversations WHERE user_email = $1',
-      [req.session.userEmail]
-    );
+    const result = await db.query('DELETE FROM conversations WHERE user_email = $1', [
+      req.session.userEmail,
+    ]);
 
     console.log('   Deleted conversations:', result.rowCount);
     console.log('✅ Conversation history deleted');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-    res.json({ success: true, message: 'Conversation history deleted', deletedCount: result.rowCount });
-
+    res.json({
+      success: true,
+      message: 'Conversation history deleted',
+      deletedCount: result.rowCount,
+    });
   } catch (error) {
     console.error('❌ Error deleting history:', error);
     res.status(500).json({ error: 'Failed to delete conversation history' });
@@ -4349,10 +4419,9 @@ app.post('/api/account/delete', async (req, res) => {
     console.log('   Action: Permanently deleting account');
 
     // Fetch user to get Stripe customer ID
-    const userResult = await db.query(
-      'SELECT stripe_customer_id FROM users WHERE email = $1',
-      [userEmail]
-    );
+    const userResult = await db.query('SELECT stripe_customer_id FROM users WHERE email = $1', [
+      userEmail,
+    ]);
 
     if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -4364,12 +4433,12 @@ app.post('/api/account/delete', async (req, res) => {
     // Cancel Stripe subscription if exists
     if (stripeCustomerId) {
       console.log('   Stripe Customer ID:', stripeCustomerId);
-      
+
       try {
         // Get customer subscriptions
         const subscriptions = await stripe.subscriptions.list({
           customer: stripeCustomerId,
-          limit: 100
+          limit: 100,
         });
 
         console.log('   Found subscriptions:', subscriptions.data.length);
@@ -4388,24 +4457,19 @@ app.post('/api/account/delete', async (req, res) => {
     }
 
     // Delete all conversations
-    const convResult = await db.query(
-      'DELETE FROM conversations WHERE user_email = $1',
-      [userEmail]
-    );
+    const convResult = await db.query('DELETE FROM conversations WHERE user_email = $1', [
+      userEmail,
+    ]);
     console.log('   Deleted conversations:', convResult.rowCount);
 
     // Delete all email logs
-    const emailResult = await db.query(
-      'DELETE FROM email_logs WHERE recipient_email = $1',
-      [userEmail]
-    );
+    const emailResult = await db.query('DELETE FROM email_logs WHERE recipient_email = $1', [
+      userEmail,
+    ]);
     console.log('   Deleted email logs:', emailResult.rowCount);
 
     // Delete user account
-    const deleteResult = await db.query(
-      'DELETE FROM users WHERE email = $1',
-      [userEmail]
-    );
+    const deleteResult = await db.query('DELETE FROM users WHERE email = $1', [userEmail]);
     console.log('   Deleted user:', deleteResult.rowCount);
 
     console.log('✅ Account permanently deleted');
@@ -4418,13 +4482,12 @@ app.post('/api/account/delete', async (req, res) => {
       }
       res.json({ success: true, message: 'Account permanently deleted' });
     });
-
   } catch (error) {
     console.error('❌ Error deleting account:', error);
     console.error('   Details:', error.message);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to delete account',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 });
@@ -4528,8 +4591,9 @@ app.get('/api/admin/email-stats', async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized - Admin access required' });
     }
 
-    const stats = await db.query(
-      `SELECT 
+    const stats = await db
+      .query(
+        `SELECT 
         COUNT(*) as total_emails,
         COUNT(CASE WHEN status = 'sent' THEN 1 END) as sent_count,
         COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_count,
@@ -4539,15 +4603,18 @@ app.get('/api/admin/email-stats', async (req, res) => {
         COUNT(DISTINCT email_address) as unique_recipients
       FROM email_logs
       WHERE created_at > NOW() - INTERVAL '24 hours'`
-    ).catch(() => ({ rows: [{ total_emails: 0, error: 'email_logs table not created yet' }] }));
+      )
+      .catch(() => ({ rows: [{ total_emails: 0, error: 'email_logs table not created yet' }] }));
 
-    const recentFailures = await db.query(
-      `SELECT id, email_address, subject, email_type, error_message, attempt_count, last_attempted, created_at
+    const recentFailures = await db
+      .query(
+        `SELECT id, email_address, subject, email_type, error_message, attempt_count, last_attempted, created_at
        FROM email_logs
        WHERE status = 'failed'
        ORDER BY last_attempted DESC
        LIMIT 20`
-    ).catch(() => ({ rows: [] }));
+      )
+      .catch(() => ({ rows: [] }));
 
     res.json({
       stats: stats.rows[0],
@@ -4569,17 +4636,19 @@ app.get('/api/admin/email-log/:email', async (req, res) => {
     }
 
     const userEmail = req.params.email;
-    const logs = await db.query(
-      `SELECT id, email_address, subject, email_type, status, error_message, attempt_count, sent_at, created_at
+    const logs = await db
+      .query(
+        `SELECT id, email_address, subject, email_type, status, error_message, attempt_count, sent_at, created_at
        FROM email_logs 
        WHERE email_address = $1 
        ORDER BY created_at DESC 
        LIMIT 50`,
-      [userEmail]
-    ).catch(() => ({ rows: [] }));
+        [userEmail]
+      )
+      .catch(() => ({ rows: [] }));
 
-    const successCount = logs.rows.filter(l => l.status === 'sent').length;
-    const failedCount = logs.rows.filter(l => l.status === 'failed').length;
+    const successCount = logs.rows.filter((l) => l.status === 'sent').length;
+    const failedCount = logs.rows.filter((l) => l.status === 'failed').length;
 
     res.json({
       email: userEmail,
@@ -4587,7 +4656,8 @@ app.get('/api/admin/email-log/:email', async (req, res) => {
       totalAttempts: logs.rows.length,
       successCount,
       failedCount,
-      successRate: logs.rows.length > 0 ? ((successCount / logs.rows.length) * 100).toFixed(1) + '%' : 'N/A',
+      successRate:
+        logs.rows.length > 0 ? ((successCount / logs.rows.length) * 100).toFixed(1) + '%' : 'N/A',
     });
   } catch (error) {
     console.error('❌ Email log error:', error);
@@ -4604,11 +4674,10 @@ app.post('/api/admin/email-retry/:logId', async (req, res) => {
     }
 
     const logId = req.params.logId;
-    
-    const emailLog = await db.query(
-      `SELECT id, email_address, subject FROM email_logs WHERE id = $1`,
-      [logId]
-    ).catch(() => ({ rows: [] }));
+
+    const emailLog = await db
+      .query('SELECT id, email_address, subject FROM email_logs WHERE id = $1', [logId])
+      .catch(() => ({ rows: [] }));
 
     if (emailLog.rows.length === 0) {
       return res.status(404).json({ error: 'Email log not found' });
@@ -4625,17 +4694,21 @@ app.post('/api/admin/email-retry/:logId', async (req, res) => {
         html: `<p>This is a retry of your previous email.</p><p>Original subject: ${email.subject}</p>`,
       });
 
-      await db.query(
-        `UPDATE email_logs SET status = $1, resend_id = $2, sent_at = NOW(), updated_at = NOW() WHERE id = $3`,
-        ['sent', result.id, logId]
-      ).catch(() => null);
+      await db
+        .query(
+          'UPDATE email_logs SET status = $1, resend_id = $2, sent_at = NOW(), updated_at = NOW() WHERE id = $3',
+          ['sent', result.id, logId]
+        )
+        .catch(() => null);
 
       res.json({ success: true, message: 'Email retry initiated', resendId: result.id });
     } catch (sendError) {
-      await db.query(
-        `UPDATE email_logs SET status = $1, error_message = $2, updated_at = NOW() WHERE id = $3`,
-        ['failed', sendError.message, logId]
-      ).catch(() => null);
+      await db
+        .query(
+          'UPDATE email_logs SET status = $1, error_message = $2, updated_at = NOW() WHERE id = $3',
+          ['failed', sendError.message, logId]
+        )
+        .catch(() => null);
 
       res.status(500).json({ error: sendError.message });
     }
@@ -4650,28 +4723,34 @@ app.get('/api/admin/email-status/:email', async (req, res) => {
     if (!process.env.ADMIN_EMAIL || req.session.userEmail !== process.env.ADMIN_EMAIL) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
-    
+
     const email = req.params.email.toLowerCase();
-    
-    const logs = await db.query(
-      `SELECT id, email_address, email_type, status, attempt_count, error_message, sent_at, created_at
+
+    const logs = await db
+      .query(
+        `SELECT id, email_address, email_type, status, attempt_count, error_message, sent_at, created_at
        FROM email_delivery_logs
        WHERE LOWER(email_address) = $1
        ORDER BY created_at DESC
        LIMIT 50`,
-      [email]
-    ).catch(() => ({ rows: [] }));
-    
+        [email]
+      )
+      .catch(() => ({ rows: [] }));
+
     const stats = {
       totalEmails: logs.rows.length,
-      sentCount: logs.rows.filter(l => l.status === 'sent').length,
-      failedCount: logs.rows.filter(l => l.status === 'failed').length,
-      pendingCount: logs.rows.filter(l => l.status === 'pending').length,
-      successRate: logs.rows.length > 0 
-        ? ((logs.rows.filter(l => l.status === 'sent').length / logs.rows.length) * 100).toFixed(1) + '%'
-        : 'N/A'
+      sentCount: logs.rows.filter((l) => l.status === 'sent').length,
+      failedCount: logs.rows.filter((l) => l.status === 'failed').length,
+      pendingCount: logs.rows.filter((l) => l.status === 'pending').length,
+      successRate:
+        logs.rows.length > 0
+          ? (
+              (logs.rows.filter((l) => l.status === 'sent').length / logs.rows.length) *
+              100
+            ).toFixed(1) + '%'
+          : 'N/A',
     };
-    
+
     res.json({ email, stats, logs: logs.rows });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -4684,18 +4763,20 @@ app.get('/api/admin/user-login-history/:email', async (req, res) => {
     if (!process.env.ADMIN_EMAIL || req.session.userEmail !== process.env.ADMIN_EMAIL) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
-    
+
     const email = req.params.email.toLowerCase();
-    
-    const logs = await db.query(
-      `SELECT id, email, token_id, action, ip_address, success, error_message, created_at
+
+    const logs = await db
+      .query(
+        `SELECT id, email, token_id, action, ip_address, success, error_message, created_at
        FROM login_audit_log
        WHERE LOWER(email) = $1
        ORDER BY created_at DESC
        LIMIT 100`,
-      [email]
-    ).catch(() => ({ rows: [] }));
-    
+        [email]
+      )
+      .catch(() => ({ rows: [] }));
+
     res.json({ email, logs: logs.rows });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -4708,44 +4789,43 @@ app.post('/api/admin/resend-magic-link', async (req, res) => {
     if (!process.env.ADMIN_EMAIL || req.session.userEmail !== process.env.ADMIN_EMAIL) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
-    
+
     const { email } = req.body;
     if (!email) {
       return res.status(400).json({ error: 'Email required' });
     }
-    
+
     const normalizedEmail = email.trim().toLowerCase();
-    
+
     // Check user exists
-    const userResult = await db.query(
-      'SELECT id, email FROM users WHERE LOWER(email) = $1',
-      [normalizedEmail]
-    );
-    
+    const userResult = await db.query('SELECT id, email FROM users WHERE LOWER(email) = $1', [
+      normalizedEmail,
+    ]);
+
     if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+
     // Create new magic link
     const magicLinkRecord = await createMagicLink(normalizedEmail, 'manual_resend');
-    
+
     const baseUrl = process.env.APP_URL || 'http://localhost:8080';
     const magicLink = `${baseUrl}/verify-magic-link?token=${magicLinkRecord.token}`;
-    
+
     // Send email
     const emailResult = await sendEmail({
       to: normalizedEmail,
       subject: '[MANUAL RESEND] Your VERA Sign-In Link',
       html: `<p>Admin-initiated sign-in link: <a href="${magicLink}">Click here to sign in</a></p><p>Link: ${magicLink}</p>`,
-      emailType: 'manual_resend'
+      emailType: 'manual_resend',
     });
-    
+
     console.log(`✅ Admin manually resent magic link to ${normalizedEmail}`);
-    
+
     res.json({
       success: true,
       message: `Magic link resent to ${normalizedEmail}`,
-      magicLink: process.env.NODE_ENV === 'development' ? magicLink : undefined
+      magicLink: process.env.NODE_ENV === 'development' ? magicLink : undefined,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -4755,18 +4835,18 @@ app.post('/api/admin/resend-magic-link', async (req, res) => {
 // ==================== TEST ENDPOINT - RESEND ====================
 app.get('/api/test-resend', async (req, res) => {
   console.log('🧪 Direct Resend API test initiated...');
-  
+
   try {
     console.log('📋 Test configuration:', {
       from: process.env.EMAIL_FROM,
       apiKeySet: !!process.env.RESEND_API_KEY,
       apiKeyPrefix: process.env.RESEND_API_KEY?.substring(0, 10) + '...',
       resendClientExists: !!resend,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     console.log('📤 Sending test email via Resend...');
-    
+
     const result = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'VERA <support@veraneural.com>',
       to: 'support@veraneural.com',
@@ -4776,21 +4856,20 @@ app.get('/api/test-resend', async (req, res) => {
         <p>This email confirms that Resend is working correctly.</p>
         <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
         <p><strong>From:</strong> ${process.env.EMAIL_FROM}</p>
-      `
+      `,
     });
-    
+
     console.log('✅ Test email sent successfully:', {
       id: result.id,
-      fullResponse: JSON.stringify(result, null, 2)
+      fullResponse: JSON.stringify(result, null, 2),
     });
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: 'Test email sent successfully!',
       resendId: result.id,
-      result: result 
+      result: result,
     });
-    
   } catch (error) {
     console.error('❌ Resend test failed - FULL ERROR:', {
       message: error.message,
@@ -4800,18 +4879,18 @@ app.get('/api/test-resend', async (req, res) => {
       cause: error.cause,
       response: error.response,
       stack: error.stack,
-      fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+      fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2),
     });
-    
-    res.status(500).json({ 
-      success: false, 
+
+    res.status(500).json({
+      success: false,
       error: error.message,
       errorType: error.name,
       details: {
         message: error.message,
         code: error.code,
-        statusCode: error.statusCode
-      }
+        statusCode: error.statusCode,
+      },
     });
   }
 });

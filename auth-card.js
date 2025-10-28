@@ -1,8 +1,8 @@
 // Auth Card Component
 function createAuthCard() {
-    const authCard = document.createElement('div');
-    authCard.className = 'auth-card';
-    authCard.innerHTML = `
+  const authCard = document.createElement('div');
+  authCard.className = 'auth-card';
+  authCard.innerHTML = `
         <div class="auth-card-content">
             <div class="auth-status"></div>
             <div class="auth-actions">
@@ -16,93 +16,93 @@ function createAuthCard() {
         </div>
     `;
 
-    return authCard;
+  return authCard;
 }
 
 // Auth State Management
 function updateAuthStatus() {
-    const authStatus = document.querySelector('.auth-status');
-    const token = localStorage.getItem('vera_token');
-    const userName = localStorage.getItem('veraUserName');
+  const authStatus = document.querySelector('.auth-status');
+  const token = localStorage.getItem('vera_token');
+  const userName = localStorage.getItem('veraUserName');
 
-    if (token && userName) {
-        authStatus.innerHTML = `
+  if (token && userName) {
+    authStatus.innerHTML = `
             <div class="auth-welcome">
                 Welcome back, ${userName}
                 <button class="auth-link" onclick="handleLogout()">Sign Out</button>
             </div>
         `;
-    } else {
-        authStatus.innerHTML = `
+  } else {
+    authStatus.innerHTML = `
             <div class="auth-welcome">
                 Guest User
             </div>
         `;
-    }
+  }
 }
 
 // Auto Login Check
 function checkAutoLogin() {
-    const token = localStorage.getItem('vera_token');
-    if (token) {
-        fetch('/api/auth/validate', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Invalid token');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.valid) {
-                updateAuthStatus();
-            } else {
-                handleLogout();
-            }
-        })
-        .catch(() => {
-            handleLogout();
-        });
-    }
+  const token = localStorage.getItem('vera_token');
+  if (token) {
+    fetch('/api/auth/validate', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Invalid token');
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (data.valid) {
+          updateAuthStatus();
+        } else {
+          handleLogout();
+        }
+      })
+      .catch(() => {
+        handleLogout();
+      });
+  }
 }
 
 // Event Handlers
 function handleLogin() {
-    window.location.href = '/login-password.html';
+  window.location.href = '/login-password.html';
 }
 
 function handleSignup() {
-    window.location.href = '/signup-password.html';
+  window.location.href = '/signup-password.html';
 }
 
 function handleLogout() {
-    localStorage.removeItem('vera_token');
-    localStorage.removeItem('veraUserName');
-    updateAuthStatus();
+  localStorage.removeItem('vera_token');
+  localStorage.removeItem('veraUserName');
+  updateAuthStatus();
 }
 
 // Initialize Auth Card
 function initializeAuthCard() {
-    document.addEventListener('DOMContentLoaded', () => {
-        const mainContent = document.querySelector('.hero-content');
-        if (mainContent) {
-            const authCard = createAuthCard();
-            mainContent.insertBefore(authCard, mainContent.firstChild);
-            
-            // Add event listeners
-            document.getElementById('signupButton').addEventListener('click', handleSignup);
-            document.getElementById('loginButton').addEventListener('click', handleLogin);
-            
-            // Check auto login
-            checkAutoLogin();
-            
-            // Update auth status
-            updateAuthStatus();
-        }
-    });
+  document.addEventListener('DOMContentLoaded', () => {
+    const mainContent = document.querySelector('.hero-content');
+    if (mainContent) {
+      const authCard = createAuthCard();
+      mainContent.insertBefore(authCard, mainContent.firstChild);
+
+      // Add event listeners
+      document.getElementById('signupButton').addEventListener('click', handleSignup);
+      document.getElementById('loginButton').addEventListener('click', handleLogin);
+
+      // Check auto login
+      checkAutoLogin();
+
+      // Update auth status
+      updateAuthStatus();
+    }
+  });
 }
 
 // Export for use

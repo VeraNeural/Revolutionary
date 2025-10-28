@@ -8,7 +8,7 @@ const REPORT_TYPES = {
   CRISIS_ALERTS: 'crisis_alerts',
   CONSCIOUSNESS_STATE: 'consciousness_state',
   ADAPTIVE_CODES: 'adaptive_codes',
-  SYSTEM_PERFORMANCE: 'system_performance'
+  SYSTEM_PERFORMANCE: 'system_performance',
 };
 
 class ReportsManager {
@@ -18,8 +18,8 @@ class ReportsManager {
 
   async generateReport(reportType, params = {}) {
     const { startDate, endDate, userId, limit } = params;
-    
-    switch(reportType) {
+
+    switch (reportType) {
       case REPORT_TYPES.PATTERN_FREQUENCY:
         return this.getPatternFrequencyReport(startDate, endDate);
       case REPORT_TYPES.USER_INTERACTIONS:
@@ -48,12 +48,12 @@ class ReportsManager {
       GROUP BY pattern_type, DATE_TRUNC('day', detected_at)
       ORDER BY date DESC, frequency DESC
     `;
-    
+
     const result = await this.pool.query(query, [startDate, endDate]);
     return {
       type: REPORT_TYPES.PATTERN_FREQUENCY,
       data: result.rows,
-      summary: this.summarizePatternFrequency(result.rows)
+      summary: this.summarizePatternFrequency(result.rows),
     };
   }
 
@@ -69,15 +69,15 @@ class ReportsManager {
         ${userId ? 'AND user_id = $3' : ''}
       GROUP BY user_id
     `;
-    
+
     const params = [startDate, endDate];
     if (userId) params.push(userId);
-    
+
     const result = await this.pool.query(query, params);
     return {
       type: REPORT_TYPES.USER_INTERACTIONS,
       data: result.rows,
-      summary: this.summarizeUserInteractions(result.rows)
+      summary: this.summarizeUserInteractions(result.rows),
     };
   }
 
@@ -93,12 +93,12 @@ class ReportsManager {
       WHERE detected_at BETWEEN $1 AND $2
       ORDER BY detected_at DESC
     `;
-    
+
     const result = await this.pool.query(query, [startDate, endDate]);
     return {
       type: REPORT_TYPES.CRISIS_ALERTS,
       data: result.rows,
-      summary: this.summarizeCrisisAlerts(result.rows)
+      summary: this.summarizeCrisisAlerts(result.rows),
     };
   }
 
@@ -114,15 +114,15 @@ class ReportsManager {
       GROUP BY state
       ORDER BY frequency DESC
     `;
-    
+
     const params = [startDate, endDate];
     if (userId) params.push(userId);
-    
+
     const result = await this.pool.query(query, params);
     return {
       type: REPORT_TYPES.CONSCIOUSNESS_STATE,
       data: result.rows,
-      summary: this.summarizeConsciousnessStates(result.rows)
+      summary: this.summarizeConsciousnessStates(result.rows),
     };
   }
 
@@ -137,12 +137,12 @@ class ReportsManager {
       GROUP BY adaptive_code
       ORDER BY frequency DESC
     `;
-    
+
     const result = await this.pool.query(query, [startDate, endDate]);
     return {
       type: REPORT_TYPES.ADAPTIVE_CODES,
       data: result.rows,
-      summary: this.summarizeAdaptiveCodes(result.rows)
+      summary: this.summarizeAdaptiveCodes(result.rows),
     };
   }
 
@@ -159,12 +159,12 @@ class ReportsManager {
       GROUP BY DATE_TRUNC('hour', created_at)
       ORDER BY time_bucket DESC
     `;
-    
+
     const result = await this.pool.query(query, [startDate, endDate]);
     return {
       type: REPORT_TYPES.SYSTEM_PERFORMANCE,
       data: result.rows,
-      summary: this.summarizeSystemPerformance(result.rows)
+      summary: this.summarizeSystemPerformance(result.rows),
     };
   }
 
@@ -175,9 +175,9 @@ class ReportsManager {
       totalPatterns: data.reduce((sum, row) => sum + Number(row.frequency), 0),
       topPatterns: data.slice(0, 5),
       dateRange: {
-        start: Math.min(...data.map(row => new Date(row.date))),
-        end: Math.max(...data.map(row => new Date(row.date)))
-      }
+        start: Math.min(...data.map((row) => new Date(row.date))),
+        end: Math.max(...data.map((row) => new Date(row.date))),
+      },
     };
   }
 
@@ -186,8 +186,9 @@ class ReportsManager {
     return {
       totalUsers: data.length,
       totalInteractions: data.reduce((sum, row) => sum + Number(row.total_interactions), 0),
-      avgProcessingTime: data.reduce((sum, row) => sum + Number(row.avg_processing_time), 0) / data.length,
-      avgActiveDays: data.reduce((sum, row) => sum + Number(row.active_days), 0) / data.length
+      avgProcessingTime:
+        data.reduce((sum, row) => sum + Number(row.avg_processing_time), 0) / data.length,
+      avgActiveDays: data.reduce((sum, row) => sum + Number(row.active_days), 0) / data.length,
     };
   }
 
@@ -195,9 +196,9 @@ class ReportsManager {
     // Implement summary logic
     return {
       totalAlerts: data.length,
-      resolvedAlerts: data.filter(row => row.resolution_status === 'resolved').length,
+      resolvedAlerts: data.filter((row) => row.resolution_status === 'resolved').length,
       avgResolutionTime: this.calculateAvgResolutionTime(data),
-      recentAlerts: data.slice(0, 5)
+      recentAlerts: data.slice(0, 5),
     };
   }
 
@@ -206,7 +207,8 @@ class ReportsManager {
     return {
       totalStates: data.reduce((sum, row) => sum + Number(row.frequency), 0),
       dominantState: data.sort((a, b) => b.frequency - a.frequency)[0],
-      avgProcessingTime: data.reduce((sum, row) => sum + Number(row.avg_processing_time), 0) / data.length
+      avgProcessingTime:
+        data.reduce((sum, row) => sum + Number(row.avg_processing_time), 0) / data.length,
     };
   }
 
@@ -215,7 +217,7 @@ class ReportsManager {
     return {
       totalDetections: data.reduce((sum, row) => sum + Number(row.frequency), 0),
       uniqueUsers: data.reduce((sum, row) => sum + Number(row.unique_users), 0),
-      topCodes: data.slice(0, 5)
+      topCodes: data.slice(0, 5),
     };
   }
 
@@ -223,22 +225,29 @@ class ReportsManager {
     // Implement summary logic
     return {
       totalRequests: data.reduce((sum, row) => sum + Number(row.total_requests), 0),
-      avgProcessingTime: data.reduce((sum, row) => sum + Number(row.avg_processing_time), 0) / data.length,
-      errorRate: data.reduce((sum, row) => sum + Number(row.error_count), 0) / 
-                data.reduce((sum, row) => sum + Number(row.total_requests), 0),
-      peakUsage: Math.max(...data.map(row => Number(row.total_requests)))
+      avgProcessingTime:
+        data.reduce((sum, row) => sum + Number(row.avg_processing_time), 0) / data.length,
+      errorRate:
+        data.reduce((sum, row) => sum + Number(row.error_count), 0) /
+        data.reduce((sum, row) => sum + Number(row.total_requests), 0),
+      peakUsage: Math.max(...data.map((row) => Number(row.total_requests))),
     };
   }
 
   calculateAvgResolutionTime(data) {
-    const resolvedAlerts = data.filter(row => row.resolution_status === 'resolved' && row.resolution_time);
+    const resolvedAlerts = data.filter(
+      (row) => row.resolution_status === 'resolved' && row.resolution_time
+    );
     if (resolvedAlerts.length === 0) return null;
-    
-    return resolvedAlerts.reduce((sum, row) => sum + Number(row.resolution_time), 0) / resolvedAlerts.length;
+
+    return (
+      resolvedAlerts.reduce((sum, row) => sum + Number(row.resolution_time), 0) /
+      resolvedAlerts.length
+    );
   }
 }
 
 module.exports = {
   ReportsManager,
-  REPORT_TYPES
+  REPORT_TYPES,
 };

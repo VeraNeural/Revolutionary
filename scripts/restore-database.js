@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 /**
  * Database Restore Script for VERA
- * 
+ *
  * CRITICAL: This will REPLACE your current database!
- * 
+ *
  * Usage:
  *   node scripts/restore-database.js ./backups/vera-backup-2024-10-27T14-30-00.sql
- * 
+ *
  * Steps:
  *   1. Downloads backup file
  *   2. Drops all tables (⚠️ DESTRUCTIVE)
  *   3. Restores from backup
  *   4. Verifies data
- * 
+ *
  * BEFORE RUNNING:
  *   - Save any recent changes
  *   - Test on staging first
@@ -60,7 +60,8 @@ async function restoreBackup(backupFile) {
 
     const psql = spawn('psql', [
       '--no-password',
-      '--set', 'ON_ERROR_STOP=on',  // Stop on first error
+      '--set',
+      'ON_ERROR_STOP=on', // Stop on first error
       DB_URL,
     ]);
 
@@ -106,7 +107,8 @@ async function verifyRestore() {
 
     const psql = spawn('psql', [
       '--no-password',
-      '--command', `SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema = 'public';`,
+      '--command',
+      "SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema = 'public';",
       DB_URL,
     ]);
 
@@ -142,11 +144,12 @@ async function main() {
       console.log();
       console.log('Available backups:');
       if (fs.existsSync(BACKUP_DIR)) {
-        const files = fs.readdirSync(BACKUP_DIR)
-          .filter(f => f.startsWith('vera-backup-'))
+        const files = fs
+          .readdirSync(BACKUP_DIR)
+          .filter((f) => f.startsWith('vera-backup-'))
           .sort()
           .reverse();
-        files.forEach(f => console.log('  ', f));
+        files.forEach((f) => console.log('  ', f));
       }
       process.exit(1);
     }
@@ -169,7 +172,9 @@ async function main() {
     console.log();
 
     // Get user confirmation
-    const confirmed = await askConfirmation('Are you ABSOLUTELY SURE you want to restore? This will DELETE all current data!');
+    const confirmed = await askConfirmation(
+      'Are you ABSOLUTELY SURE you want to restore? This will DELETE all current data!'
+    );
     if (!confirmed) {
       console.log('❌ Restore cancelled');
       process.exit(0);

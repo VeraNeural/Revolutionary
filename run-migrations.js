@@ -2,13 +2,13 @@
 
 /**
  * Database Migration Runner
- * 
+ *
  * Reads DATABASE_MIGRATIONS.sql and executes each statement sequentially.
- * 
+ *
  * Usage:
  *   node run-migrations.js              (uses DATABASE_URL env var)
  *   DATABASE_URL=... node run-migrations.js
- * 
+ *
  * Features:
  *   - Idempotent (safe to run multiple times)
  *   - Handles CREATE TABLE IF NOT EXISTS
@@ -72,16 +72,16 @@ async function validateEnvironment() {
     process.exit(1);
   }
 
-  logSuccess(`Environment variables validated`);
+  logSuccess('Environment variables validated');
 }
 
 // ==================== SQL PARSING ====================
 
 function parseSqlStatements(sqlContent) {
   // Split by semicolon, but be careful with comments
-  let statements = [];
+  const statements = [];
   let currentStatement = '';
-  let inComment = false;
+  const inComment = false;
 
   const lines = sqlContent.split('\n');
 
@@ -109,7 +109,7 @@ function parseSqlStatements(sqlContent) {
     statements.push(currentStatement.trim());
   }
 
-  return statements.filter(stmt => stmt.length > 0);
+  return statements.filter((stmt) => stmt.length > 0);
 }
 
 // ==================== MIGRATION EXECUTION ====================
@@ -176,7 +176,7 @@ async function runMigrations() {
           error.message.includes('already exists') ||
           error.message.includes('duplicate key') ||
           error.code === '42P07' || // relation already exists
-          error.code === '42P15'    // unique constraint already exists
+          error.code === '42P15' // unique constraint already exists
         ) {
           logWarning(`[${statementNumber}/${statements.length}] Already exists (skipped)`);
           skipCount++;

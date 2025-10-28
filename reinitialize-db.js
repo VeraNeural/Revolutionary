@@ -2,18 +2,18 @@ require('dotenv').config({ path: '.env.local' });
 const { Pool } = require('pg');
 
 const dbConfig = {
-    connectionString: process.env.DATABASE_PUBLIC_URL,
-    ssl: { rejectUnauthorized: false }
+  connectionString: process.env.DATABASE_PUBLIC_URL,
+  ssl: { rejectUnauthorized: false },
 };
 
 const pool = new Pool(dbConfig);
 
 async function initializeDatabase() {
-    try {
-        console.log('🔄 Starting database initialization...');
+  try {
+    console.log('🔄 Starting database initialization...');
 
-        // Create users table
-        await pool.query(`
+    // Create users table
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
                 email VARCHAR(255) UNIQUE NOT NULL,
@@ -30,10 +30,10 @@ async function initializeDatabase() {
                 phone VARCHAR(50)
             )
         `);
-        console.log('✅ Users table initialized');
+    console.log('✅ Users table initialized');
 
-        // Create conversations table
-        await pool.query(`
+    // Create conversations table
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS conversations (
                 id SERIAL PRIMARY KEY,
                 user_id VARCHAR(255) NOT NULL,
@@ -44,10 +44,10 @@ async function initializeDatabase() {
                 last_message_preview TEXT
             )
         `);
-        console.log('✅ Conversations table initialized');
+    console.log('✅ Conversations table initialized');
 
-        // Create messages table
-        await pool.query(`
+    // Create messages table
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS messages (
                 id SERIAL PRIMARY KEY,
                 user_id VARCHAR(255) NOT NULL,
@@ -57,10 +57,10 @@ async function initializeDatabase() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-        console.log('✅ Messages table initialized');
+    console.log('✅ Messages table initialized');
 
-        // Create session table
-        await pool.query(`
+    // Create session table
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS session (
                 sid VARCHAR NOT NULL COLLATE "default",
                 sess JSON NOT NULL,
@@ -68,10 +68,10 @@ async function initializeDatabase() {
                 PRIMARY KEY (sid)
             )
         `);
-        console.log('✅ Session table initialized');
+    console.log('✅ Session table initialized');
 
-        // Create crisis_alerts table
-        await pool.query(`
+    // Create crisis_alerts table
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS crisis_alerts (
                 id SERIAL PRIMARY KEY,
                 user_id VARCHAR(255) NOT NULL,
@@ -79,10 +79,10 @@ async function initializeDatabase() {
                 detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-        console.log('✅ Crisis alerts table initialized');
+    console.log('✅ Crisis alerts table initialized');
 
-        // Create leads table
-        await pool.query(`
+    // Create leads table
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS leads (
                 id SERIAL PRIMARY KEY,
                 email VARCHAR(255) UNIQUE NOT NULL,
@@ -103,10 +103,10 @@ async function initializeDatabase() {
                 status VARCHAR(50) DEFAULT 'new'
             )
         `);
-        console.log('✅ Leads table initialized');
+    console.log('✅ Leads table initialized');
 
-        // Now let's check what tables exist
-        const tables = await pool.query(`
+    // Now let's check what tables exist
+    const tables = await pool.query(`
             SELECT table_name, 
                    (SELECT count(*) FROM information_schema.columns WHERE table_name = t.table_name) as column_count
             FROM information_schema.tables t
@@ -114,17 +114,17 @@ async function initializeDatabase() {
             ORDER BY table_name;
         `);
 
-        console.log('\n📊 Current database tables:');
-        tables.rows.forEach(table => {
-            console.log(`➡️ ${table.table_name} (${table.column_count} columns)`);
-        });
+    console.log('\n📊 Current database tables:');
+    tables.rows.forEach((table) => {
+      console.log(`➡️ ${table.table_name} (${table.column_count} columns)`);
+    });
 
-        console.log('\n✅ Database initialization complete!');
-    } catch (error) {
-        console.error('❌ Database initialization error:', error);
-    } finally {
-        await pool.end();
-    }
+    console.log('\n✅ Database initialization complete!');
+  } catch (error) {
+    console.error('❌ Database initialization error:', error);
+  } finally {
+    await pool.end();
+  }
 }
 
 initializeDatabase();
