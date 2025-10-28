@@ -1068,8 +1068,8 @@ async function initializeDatabase() {
 initializeDatabase();
 
 // ==================== DOMAIN-BASED ROUTING ====================
-app.get('/', (req, res) => {
-  // Serve landing page at root
+// Serve promo/landing page
+app.get('/promo', (req, res) => {
   res.sendFile(path.join(__dirname, 'landing.html'));
 });
 
