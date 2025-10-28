@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to VERA - Processing Your Subscription</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        .container {
+            text-align: center;
+            color: white;
+            max-width: 500px;
+            width: 90%;
+            padding: 2rem;
+        }
+
+        .success-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 2rem;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            animation: scaleIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            animation: slideInDown 0.6s ease-out;
+        }
+
+        p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
+            animation: slideInUp 0.6s ease-out 0.2s backwards;
+        }
+
+        .status-text {
+            display: block;
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            animation: slideInUp 0.6s ease-out 0.4s backwards;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: white;
+            margin: 0 4px;
+            animation: blink 1.4s infinite;
+        }
+
+        .loader:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loader:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes blink {
+            0%, 80%, 100% { opacity: 0.3; }
+            40% { opacity: 1; }
+        }
+
+        @keyframes slideInDown {
+            from {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .error-container {
+            display: none;
+        }
+
+        .error-container.show {
+            display: block;
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .error-title {
+            color: #ffcccc;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .error-message {
+            opacity: 0.9;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            border: 2px solid white;
+            font-weight: 600;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 1.5rem;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            p {
+                font-size: 1rem;
+            }
+
+            .success-icon {
+                width: 100px;
+                height: 100px;
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-container" id="successContainer">
+            <div class="success-icon">✨</div>
+            <h1>Welcome to VERA</h1>
+            <p>Your subscription is active and we're setting everything up for you.</p>
+            
+            <div class="status-text">
+                <p>Redirecting you to chat
+                    <span class="loader"></span>
+                    <span class="loader"></span>
+                    <span class="loader"></span>
+                </p>
+            </div>
+        </div>
+
+        <div class="error-container" id="errorContainer">
+            <div class="error-icon">⚠️</div>
+            <h1 class="error-title">Something Went Wrong</h1>
+            <p class="error-message" id="errorMessage">
+                We encountered an issue processing your subscription. Please try again or contact support.
+            </p>
+            <button class="button" onclick="window.location.href='/subscribe.html'">Try Again</button>
+            <button class="button" onclick="window.location.href='/'">Go Home</button>
+        </div>
+    </div>
+
+    <script>
+        // Get session_id from URL
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = params.get('session_id');
+        const error = params.get('error');
+
+        if (error) {
+            // Show error state
+            showError(decodeURIComponent(error));
+        } else if (!sessionId) {
+            // No session ID provided
+            showError('No session ID provided. Please try again.');
+        } else {
+            // Session ID exists, redirect to chat after 2 seconds
+            console.log('✅ Payment successful! Session ID:', sessionId);
+            console.log('📍 Redirecting to chat in 2 seconds...');
+            
+            setTimeout(() => {
+                window.location.href = '/chat.html';
+            }, 2000);
+        }
+
+        function showError(errorMsg) {
+            const successContainer = document.getElementById('successContainer');
+            const errorContainer = document.getElementById('errorContainer');
+            const errorMessage = document.getElementById('errorMessage');
+
+            successContainer.style.display = 'none';
+            errorContainer.classList.add('show');
+            errorMessage.textContent = errorMsg || 'We encountered an issue processing your subscription.';
+        }
+    </script>
+</body>
+</html>

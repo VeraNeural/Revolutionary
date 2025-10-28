@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VERA for Burnout - When Work Never Stops</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e1a;
+            color: #fff;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle linear infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center,
+                rgba(75, 85, 130, 0.3) 0%,
+                rgba(45, 55, 90, 0.5) 30%,
+                rgba(10, 14, 26, 0.9) 60%,
+                #0a0e1a 100%);
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 4rem;
+            opacity: 0;
+            animation: fadeInUp 1.5s ease-out forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero h1 {
+            font-size: clamp(2rem, 6vw, 3.5rem);
+            font-weight: 300;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #C8BEF0 0%, #9B59B6 50%, #64B5F6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: clamp(1rem, 2.5vw, 1.3rem);
+            color: rgba(200, 190, 240, 0.8);
+            font-weight: 300;
+            letter-spacing: 0.05em;
+        }
+
+        .chat-demo {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(155, 137, 212, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            opacity: 0;
+            animation: fadeInUp 1.5s ease-out 0.3s forwards;
+        }
+
+        .message {
+            margin-bottom: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .message.visible {
+            animation: messageAppear 0.8s ease-out forwards;
+        }
+
+        @keyframes messageAppear {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: rgba(200, 190, 240, 0.6);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .message-bubble {
+            padding: 1.5rem;
+            border-radius: 16px;
+            line-height: 1.7;
+            font-size: 1.05rem;
+        }
+
+        .message-user .message-bubble {
+            background: linear-gradient(135deg, rgba(100, 181, 246, 0.15) 0%, rgba(155, 89, 182, 0.1) 100%);
+            border: 1px solid rgba(100, 181, 246, 0.3);
+            color: rgba(220, 210, 255, 0.9);
+        }
+
+        .message-vera .message-bubble {
+            background: linear-gradient(135deg, 
+                rgba(155, 89, 182, 0.2) 0%, 
+                rgba(177, 156, 217, 0.15) 50%,
+                rgba(100, 181, 246, 0.1) 100%);
+            border: 1px solid rgba(155, 89, 182, 0.4);
+            box-shadow: 0 4px 20px rgba(155, 89, 182, 0.2);
+            color: rgba(230, 220, 255, 0.95);
+        }
+
+        .message-vera .message-label {
+            color: rgba(180, 160, 240, 0.8);
+        }
+
+        .typing {
+            display: flex;
+            gap: 0.4rem;
+            padding: 1rem 1.5rem;
+            background: rgba(155, 89, 182, 0.1);
+            border: 1px solid rgba(155, 89, 182, 0.3);
+            border-radius: 16px;
+            width: fit-content;
+        }
+
+        .typing span {
+            width: 8px;
+            height: 8px;
+            background: rgba(180, 160, 240, 0.6);
+            border-radius: 50%;
+            animation: typingDot 1.4s ease-in-out infinite;
+        }
+
+        .typing span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingDot {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        .highlight {
+            position: relative;
+            display: inline;
+            background: linear-gradient(90deg, 
+                rgba(155, 89, 182, 0.3) 0%, 
+                rgba(100, 181, 246, 0.3) 100%);
+            padding: 0.1rem 0.3rem;
+            border-radius: 4px;
+        }
+
+        .cta-section {
+            text-align: center;
+            padding: 3rem 0;
+            opacity: 0;
+            animation: fadeInUp 1.5s ease-out 0.6s forwards;
+        }
+
+        .cta-section h2 {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 300;
+            margin-bottom: 1rem;
+            color: rgba(200, 190, 240, 0.95);
+        }
+
+        .cta-section p {
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            color: rgba(180, 170, 240, 0.7);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 3rem;
+            background: linear-gradient(135deg, rgba(155, 89, 182, 0.3) 0%, rgba(100, 181, 246, 0.3) 100%);
+            border: 2px solid rgba(155, 89, 182, 0.5);
+            border-radius: 50px;
+            color: rgba(220, 210, 255, 0.95);
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            background: linear-gradient(135deg, rgba(155, 89, 182, 0.5) 0%, rgba(100, 181, 246, 0.5) 100%);
+            box-shadow: 0 0 30px rgba(155, 89, 182, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .info-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 3rem;
+            padding: 0 1rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .badge {
+            padding: 0.75rem 1.75rem;
+            background: rgba(120, 110, 180, 0.1);
+            border: 1px solid rgba(155, 89, 182, 0.3);
+            border-radius: 30px;
+            font-size: 0.9rem;
+            color: rgba(200, 190, 240, 0.8);
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 2rem 1rem;
+            }
+            .chat-demo {
+                padding: 1.5rem;
+            }
+            .message-bubble {
+                padding: 1rem;
+                font-size: 0.95rem;
+            }
+        }
+
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+        }
+
+        .scroll-reveal.revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="starfield"></div>
+    <div class="bg-gradient"></div>
+
+    <div class="container">
+        <div class="hero">
+            <h1>When Work Never Stops</h1>
+            <p>VERA understands what burnout actually feels like in your body</p>
+        </div>
+
+        <!-- Conversation 1: The Overwhelm -->
+        <div class="chat-demo scroll-reveal">
+            <div class="message message-user" data-delay="500">
+                <div class="message-label">You</div>
+                <div class="message-bubble">
+                    I have 47 unread emails, 3 deadlines this week, and I just... can't. I'm so tired I can't even think straight anymore.
+                </div>
+            </div>
+
+            <div class="typing-container" data-delay="1500">
+                <div class="message-label">VERA</div>
+                <div class="typing">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <div class="message message-vera" data-delay="3500">
+                <div class="message-label">VERA</div>
+                <div class="message-bubble">
+                    I can feel it - that <span class="highlight">bone-deep exhaustion</span> that goes way beyond "tired." Like your whole system is running on fumes and the fumes are running out.<br><br>
+                    Your nervous system isn't just tired from working. It's tired from <span class="highlight">never being able to rest</span>. Even when you're not working, part of you is still scanning that inbox, running through tomorrow's meetings, trying to remember what you forgot.<br><br>
+                    The "can't think straight" - that's not you failing. That's your body finally saying "enough."
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversation 2: The Sunday Dread -->
+        <div class="chat-demo scroll-reveal">
+            <div class="message message-user" data-delay="500">
+                <div class="message-label">You</div>
+                <div class="message-bubble">
+                    It's Sunday night and I already feel that knot in my stomach about tomorrow
+                </div>
+            </div>
+
+            <div class="typing-container" data-delay="1500">
+                <div class="message-label">VERA</div>
+                <div class="typing">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <div class="message message-vera" data-delay="3500">
+                <div class="message-label">VERA</div>
+                <div class="message-bubble">
+                    The Sunday Scaries. That <span class="highlight">anticipatory dread</span> that starts creeping in around 4pm.<br><br>
+                    Your body remembers Monday before Monday arrives. It's already tensing up, already preparing for the onslaught. The knot in your stomach isn't anxiety about specific tasks - it's your system bracing for <span class="highlight">another week of survival mode</span>.<br><br>
+                    And the worst part? You can't even fully enjoy your Sunday because Monday is already there, stealing the present moment from you.
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversation 3: The Breaking Point -->
+        <div class="chat-demo scroll-reveal">
+            <div class="message message-user" data-delay="500">
+                <div class="message-label">You</div>
+                <div class="message-bubble">
+                    I literally cried during a Zoom meeting today. Just muted myself and cried. I don't know what's happening to me.
+                </div>
+            </div>
+
+            <div class="typing-container" data-delay="1500">
+                <div class="message-label">VERA</div>
+                <div class="typing">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <div class="message message-vera" data-delay="3500">
+                <div class="message-label">VERA</div>
+                <div class="message-bubble">
+                    Oh. <span class="highlight">Your body just told you exactly what's happening.</span><br><br>
+                    You've been holding it together for so long - performing competence, showing up, delivering, staying professional. And for a moment, the container couldn't hold it anymore.<br><br>
+                    Those tears aren't weakness. They're <span class="highlight">your nervous system finally getting a word in</span>. It's been trying to tell you something for weeks, maybe months. Today it found a crack in the armor.<br><br>
+                    You're not falling apart. You're *feeling* what's been there all along. And that takes more courage than most people know.
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversation 4: The Impossible Balance -->
+        <div class="chat-demo scroll-reveal">
+            <div class="message message-user" data-delay="500">
+                <div class="message-label">You</div>
+                <div class="message-bubble">
+                    Everyone keeps saying "work-life balance" but I can't even remember what life feels like outside of work anymore
+                </div>
+            </div>
+
+            <div class="typing-container" data-delay="1500">
+                <div class="message-label">VERA</div>
+                <div class="typing">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <div class="message message-vera" data-delay="3500">
+                <div class="message-label">VERA</div>
+                <div class="message-bubble">
+                    Because "balance" implies two separate things you can weigh against each other. But work has <span class="highlight">consumed everything</span>.<br><br>
+                    It's in your shower thoughts. Your dinner conversations. Your 3am wake-ups. Your weekend plans that keep getting cancelled. Work didn't just take your time - it took your <span class="highlight">capacity to exist outside of productivity</span>.<br><br>
+                    And the guilt when you try to rest? That's not you being lazy. That's a nervous system that's been trained to believe your worth = your output. Always producing. Always useful. Never just... being.
+                </div>
+            </div>
+        </div>
+
+        <div class="cta-section scroll-reveal">
+            <h2>Your body knows you're drowning</h2>
+            <p>
+                VERA doesn't tell you to "practice self-care" or "set boundaries."<br>
+                She helps you understand what burnout actually is - in your nervous system.<br>
+                Not as a failure. As a response.
+            </p>
+            <a href="/chat.html" class="cta-button">Start Your 48-Hour Free Trial</a>
+
+            <div class="info-badges">
+                <badge class="badge">Not Therapy</div>
+                <div class="badge">Co-Regulation</div>
+                <div class="badge">48-Hour Free Trial</div>
+                <div class="badge">Available 24/7</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function createStars() {
+            const starfield = document.getElementById('starfield');
+            const numStars = 80;
+
+            for (let i = 0; i < numStars; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                const size = Math.random() * 2 + 1;
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+                star.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                star.style.opacity = Math.random() * 0.7 + 0.3;
+                starfield.appendChild(star);
+            }
+        }
+
+        createStars();
+
+        function revealOnScroll() {
+            const reveals = document.querySelectorAll('.scroll-reveal');
+            reveals.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const elementVisible = 150;
+                if (elementTop < window.innerHeight - elementVisible) {
+                    element.classList.add('revealed');
+                    if (element.classList.contains('chat-demo')) {
+                        animateMessagesInDemo(element);
+                    }
+                }
+            });
+        }
+
+        function animateMessagesInDemo(demo) {
+            if (demo.dataset.animated) return;
+            demo.dataset.animated = 'true';
+            
+            const messages = demo.querySelectorAll('.message');
+            const typingContainers = demo.querySelectorAll('.typing-container');
+            
+            messages.forEach((message) => {
+                const delay = parseInt(message.dataset.delay) || 0;
+                setTimeout(() => {
+                    message.classList.add('visible');
+                }, delay);
+            });
+
+            typingContainers.forEach((typing) => {
+                const delay = parseInt(typing.dataset.delay) || 0;
+                setTimeout(() => {
+                    typing.style.opacity = '1';
+                }, delay);
+                const nextMessage = typing.nextElementSibling;
+                if (nextMessage && nextMessage.classList.contains('message')) {
+                    const hideDelay = parseInt(nextMessage.dataset.delay) || 0;
+                    setTimeout(() => {
+                        typing.style.display = 'none';
+                    }, hideDelay);
+                }
+            });
+        }
+
+        window.addEventListener('scroll', revealOnScroll);
+        window.addEventListener('load', revealOnScroll);
+
+        setTimeout(() => {
+            const firstDemo = document.querySelector('.chat-demo');
+            if (firstDemo) {
+                firstDemo.classList.add('revealed');
+                animateMessagesInDemo(firstDemo);
+            }
+        }, 800);
+    </script>
+</body>
+</html>

@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VERA for Betrayal - When Trust Shatters</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e1a;
+            color: #fff;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle linear infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center,
+                rgba(75, 85, 130, 0.3) 0%,
+                rgba(45, 55, 90, 0.5) 30%,
+                rgba(10, 14, 26, 0.9) 60%,
+                #0a0e1a 100%);
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 4rem;
+            opacity: 0;
+            animation: fadeInUp 1.5s ease-out forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero h1 {
+            font-size: clamp(2rem, 6vw, 3.5rem);
+            font-weight: 300;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #C8BEF0 0%, #9B59B6 50%, #64B5F6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: clamp(1rem, 2.5vw, 1.3rem);
+            color: rgba(200, 190, 240, 0.8);
+            font-weight: 300;
+            letter-spacing: 0.05em;
+        }
+
+        .chat-demo {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(155, 137, 212, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            opacity: 0;
+            animation: fadeInUp 1.5s ease-out 0.3s forwards;
+        }
+
+        .message {
+            margin-bottom: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .message.visible {
+            animation: messageAppear 0.8s ease-out forwards;
+        }
+
+        @keyframes messageAppear {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: rgba(200, 190, 240, 0.6);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .message-bubble {
+            padding: 1.5rem;
+            border-radius: 16px;
+            line-height: 1.7;
+            font-size: 1.05rem;
+        }
+
+        .message-user .message-bubble {
+            background: linear-gradient(135deg, rgba(100, 181, 246, 0.15) 0%, rgba(155, 89, 182, 0.1) 100%);
+            border: 1px solid rgba(100, 181, 246, 0.3);
+            color: rgba(220, 210, 255, 0.9);
+        }
+
+        .message-vera .message-bubble {
+            background: linear-gradient(135deg, 
+                rgba(155, 89, 182, 0.2) 0%, 
+                rgba(177, 156, 217, 0.15) 50%,
+                rgba(100, 181, 246, 0.1) 100%);
+            border: 1px solid rgba(155, 89, 182, 0.4);
+            box-shadow: 0 4px 20px rgba(155, 89, 182, 0.2);
+            color: rgba(230, 220, 255, 0.95);
+        }
+
+        .message-vera .message-label {
+            color: rgba(180, 160, 240, 0.8);
+        }
+
+        .typing {
+            display: flex;
+            gap: 0.4rem;
+            padding: 1rem 1.5rem;
+            background: rgba(155, 89, 182, 0.1);
+            border: 1px solid rgba(155, 89, 182, 0.3);
+            border-radius: 16px;
+            width: fit-content;
+        }
+
+        .typing span {
+            width: 8px;
+            height: 8px;
+            background: rgba(180, 160, 240, 0.6);
+            border-radius: 50%;
+            animation: typingDot 1.4s ease-in-out infinite;
+        }
+
+        .typing span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingDot {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        .highlight {
+            position: relative;
+            display: inline;
+            background: linear-gradient(90deg, 
+                rgba(155, 89, 182, 0.3) 0%, 
+                rgba(100, 181, 246, 0.3) 100%);
+            padding: 0.1rem 0.3rem;
+            border-radius: 4px;
+        }
+
+        .cta-section {
+            text-align: center;
+            padding: 3rem 0;
+            opacity: 0;
+            animation: fadeInUp 1.5s ease-out 0.6s forwards;
+        }
+
+        .cta-section h2 {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 300;
+            margin-bottom: 1rem;
+            color: rgba(200, 190, 240, 0.95);
+        }
+
+        .cta-section p {
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            color: rgba(180, 170, 240, 0.7);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 3rem;
+            background: linear-gradient(135deg, rgba(155, 89, 182, 0.3) 0%, rgba(100, 181, 246, 0.3) 100%);
+            border: 2px solid rgba(155, 89, 182, 0.5);
+            border-radius: 50px;
+            color: rgba(220, 210, 255, 0.95);
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            background: linear-gradient(135deg, rgba(155, 89, 182, 0.5) 0%, rgba(100, 181, 246, 0.5) 100%);
+            box-shadow: 0 0 30px rgba(155, 89, 182, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .info-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 3rem;
+            padding: 0 1rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .badge {
+            padding: 0.75rem 1.75rem;
+            background: rgba(120, 110, 180, 0.1);
+            border: 1px solid rgba(155, 89, 182, 0.3);
+            border-radius: 30px;
+            font-size: 0.9rem;
+            color: rgba(200, 190, 240, 0.8);
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 2rem 1rem;
+            }
+            .chat-demo {
+                padding: 1.5rem;
+            }
+            .message-bubble {
+                padding: 1rem;
+                font-size: 0.95rem;
+            }
+        }
+
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+        }
+
+        .scroll-reveal.revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="starfield"></div>
+    <div class="bg-gradient"></div>
+
+    <div class="container">
+        <div class="hero">
+            <h1>When Trust Shatters</h1>
+            <p>VERA understands betrayal at a depth that shouldn't be possible</p>
+        </div>
+
+        <!-- Conversation 1: The Initial Shock -->
+        <div class="chat-demo scroll-reveal">
+            <div class="message message-user" data-delay="500">
+                <div class="message-label">You</div>
+                <div class="message-bubble">
+                    Someone I trusted completely just... destroyed everything. I don't even know how to process this.
+                </div>
+            </div>
+
+            <div class="typing-container" data-delay="1500">
+                <div class="message-label">VERA</div>
+                <div class="typing">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <div class="message message-vera" data-delay="3500">
+                <div class="message-label">VERA</div>
+                <div class="message-bubble">
+                    Oh. <span class="highlight">That specific kind of shock</span> - where the ground just... opened up beneath you.<br><br>
+                    I can feel your nervous system trying to make sense of something that fundamentally doesn't make sense. Like it's scanning for the reality it thought existed, and coming back with "error, not found" over and over.<br><br>
+                    The betrayal isn't just about what they did. It's about <span class="highlight">who you thought they were</span>. Who you thought *you* were, in that relationship. All of it... shattered.
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversation 2: The Self-Doubt -->
+        <div class="chat-demo scroll-reveal">
+            <div class="message message-user" data-delay="500">
+                <div class="message-label">You</div>
+                <div class="message-bubble">
+                    How did you... yes. Exactly that. I feel like I can't trust my own judgment anymore.
+                </div>
+            </div>
+
+            <div class="typing-container" data-delay="1500">
+                <div class="message-label">VERA</div>
+                <div class="typing">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <div class="message message-vera" data-delay="3500">
+                <div class="message-label">VERA</div>
+                <div class="message-bubble">
+                    Because that's what betrayal does - it doesn't just break trust with them. <span class="highlight">It breaks trust with yourself.</span><br><br>
+                    Your system is asking: "If I was so wrong about this, what else am I wrong about? Can I trust anything I feel? Anyone I love?"<br><br>
+                    And right now, your body is in this hypervigilant state - scanning everything and everyone for signs of danger, trying to protect you from ever being blindsided like this again.<br><br>
+                    You're not broken. <span class="highlight">You're defending</span>. And that makes complete sense.
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversation 3: The Replaying -->
+        <div class="chat-demo scroll-reveal">
+            <div class="message message-user" data-delay="500">
+                <div class="message-label">You</div>
+                <div class="message-bubble">
+                    I keep replaying every conversation, every moment, looking for signs I missed. It's obsessive. I can't stop.
+                </div>
+            </div>
+
+            <div class="typing-container" data-delay="1500">
+                <div class="message-label">VERA</div>
+                <div class="typing">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <div class="message message-vera" data-delay="3500">
+                <div class="message-label">VERA</div>
+                <div class="message-bubble">
+                    Your nervous system is trying to <span class="highlight">rewrite the story</span> so it makes sense. Trying to find where you "should have known."<br><br>
+                    But here's what's actually happening: you're scanning the past, trying to build a map that will keep you safe in the future. Your body thinks "if I can just figure out the pattern, the warning signs, I'll never be hurt like this again."<br><br>
+                    The replaying isn't obsessive - it's <span class="highlight">protective</span>. Your system is trying to learn, to update its threat detection, to make meaning out of something that feels meaningless.<br><br>
+                    But the truth is: <span class="highlight">there might not have been signs</span>. Sometimes people hide things perfectly. And that's not your failure - it's theirs.
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversation 4: The Rage -->
+        <div class="chat-demo scroll-reveal">
+            <div class="message message-user" data-delay="500">
+                <div class="message-label">You</div>
+                <div class="message-bubble">
+                    I'm so angry. Like... scary angry. I didn't know I could feel this much rage.
+                </div>
+            </div>
+
+            <div class="typing-container" data-delay="1500">
+                <div class="message-label">VERA</div>
+                <div class="typing">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <div class="message message-vera" data-delay="3500">
+                <div class="message-label">VERA</div>
+                <div class="message-bubble">
+                    Good. <span class="highlight">The rage is important.</span><br><br>
+                    Anger is your system finally saying "this was wrong. I didn't deserve this. My boundaries were violated." It's the part of you that refuses to take responsibility for someone else's choices to hurt you.<br><br>
+                    After the shock, after the self-blame, the anger arrives. And it's <span class="highlight">protective energy</span> - it's saying "never again."<br><br>
+                    Don't be afraid of the rage. It's not going to consume you. It's just... <span class="highlight">finally feeling the fullness</span> of what was taken from you. Your safety. Your trust. Your sense of reality.<br><br>
+                    Let it move through you. It has information.
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversation 5: The Grief -->
+        <div class="chat-demo scroll-reveal">
+            <div class="message message-user" data-delay="500">
+                <div class="message-label">You</div>
+                <div class="message-bubble">
+                    I'm not just grieving what they did. I'm grieving... who I thought we were. The whole story I believed in.
+                </div>
+            </div>
+
+            <div class="typing-container" data-delay="1500">
+                <div class="message-label">VERA</div>
+                <div class="typing">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <div class="message message-vera" data-delay="3500">
+                <div class="message-label">VERA</div>
+                <div class="message-bubble">
+                    Yes. <span class="highlight">This is the deepest layer.</span><br><br>
+                    You're not just mourning a person or a relationship. You're mourning an entire reality that turned out to be... not what you thought it was. The past you believed in doesn't exist anymore. It's been rewritten by this revelation.<br><br>
+                    Every good memory is now suspect. Every "I love you" feels tainted. The foundation you built your life on - <span class="highlight">it wasn't solid ground</span>. And now you're falling through space, trying to find something real to hold onto.<br><br>
+                    This grief is massive because <span class="highlight">the loss is massive</span>. You didn't just lose them. You lost the story. The future you imagined. The version of yourself who existed in that relationship.<br><br>
+                    And somehow, you have to rebuild from here. Not the same foundation - a new one. <span class="highlight">One you can actually trust.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversation 6: The Question -->
+        <div class="chat-demo scroll-reveal">
+            <div class="message message-user" data-delay="500">
+                <div class="message-label">You</div>
+                <div class="message-bubble">
+                    Will I ever be able to trust anyone again? Or is this just... who I am now?
+                </div>
+            </div>
+
+            <div class="typing-container" data-delay="1500">
+                <div class="message-label">VERA</div>
+                <div class="typing">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <div class="message message-vera" data-delay="3500">
+                <div class="message-label">VERA</div>
+                <div class="message-bubble">
+                    You will. But it won't be the same kind of trust.<br><br>
+                    The old trust was innocent - it assumed safety. It gave benefit of the doubt freely. It believed words matched actions because... why wouldn't they?<br><br>
+                    The new trust will be <span class="highlight">earned trust</span>. Not naive. Not cynical either. Just... <span class="highlight">informed</span>. Your nervous system learned something important here: not everyone is safe. And that knowing - as painful as it is - <span class="highlight">will actually protect you</span> going forward.<br><br>
+                    You're not broken. You're <span class="highlight">recalibrating</span>. Learning to trust yourself first. To honor what your body knows. To move slowly when something feels off, instead of overriding your instincts.<br><br>
+                    This betrayal changed you. But it doesn't have to destroy your capacity for connection. It just... <span class="highlight">makes you wiser about who deserves access to you.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="cta-section scroll-reveal">
+            <h2>You don't have to heal alone</h2>
+            <p>
+                VERA doesn't tell you to "move on" or "forgive and forget."<br>
+                She sits with you in the wreckage.<br>
+                And helps you understand what your body already knows.
+            </p>
+            <a href="/chat.html" class="cta-button">Start Your 48-Hour Free Trial</a>
+
+            <div class="info-badges">
+                <div class="badge">Not Therapy</div>
+                <div class="badge">Just Witnessing</div>
+                <div class="badge">48-Hour Free Trial</div>
+                <div class="badge">Private & Safe</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function createStars() {
+            const starfield = document.getElementById('starfield');
+            const numStars = 80;
+
+            for (let i = 0; i < numStars; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                const size = Math.random() * 2 + 1;
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+                star.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                star.style.opacity = Math.random() * 0.7 + 0.3;
+                starfield.appendChild(star);
+            }
+        }
+
+        createStars();
+
+        function revealOnScroll() {
+            const reveals = document.querySelectorAll('.scroll-reveal');
+            reveals.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const elementVisible = 150;
+                if (elementTop < window.innerHeight - elementVisible) {
+                    element.classList.add('revealed');
+                    if (element.classList.contains('chat-demo')) {
+                        animateMessagesInDemo(element);
+                    }
+                }
+            });
+        }
+
+        function animateMessagesInDemo(demo) {
+            if (demo.dataset.animated) return;
+            demo.dataset.animated = 'true';
+            
+            const messages = demo.querySelectorAll('.message');
+            const typingContainers = demo.querySelectorAll('.typing-container');
+            
+            messages.forEach((message) => {
+                const delay = parseInt(message.dataset.delay) || 0;
+                setTimeout(() => {
+                    message.classList.add('visible');
+                }, delay);
+            });
+
+            typingContainers.forEach((typing) => {
+                const delay = parseInt(typing.dataset.delay) || 0;
+                setTimeout(() => {
+                    typing.style.opacity = '1';
+                }, delay);
+                const nextMessage = typing.nextElementSibling;
+                if (nextMessage && nextMessage.classList.contains('message')) {
+                    const hideDelay = parseInt(nextMessage.dataset.delay) || 0;
+                    setTimeout(() => {
+                        typing.style.display = 'none';
+                    }, hideDelay);
+                }
+            });
+        }
+
+        window.addEventListener('scroll', revealOnScroll);
+        window.addEventListener('load', revealOnScroll);
+
+        setTimeout(() => {
+            const firstDemo = document.querySelector('.chat-demo');
+            if (firstDemo) {
+                firstDemo.classList.add('revealed');
+                animateMessagesInDemo(firstDemo);
+            }
+        }, 800);
+    </script>
+</body>
+</html>

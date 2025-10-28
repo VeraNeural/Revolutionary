@@ -560,14 +560,6 @@ app.post('/api/create-checkout', async (req, res) => {
       cancel_url: returnUrl || `${baseUrl}/chat.html`,
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
-      subscription_data: {
-        trial_period_days: 7,
-        metadata: {
-          source: 'VERA',
-          user_email: email,
-          anon_id: anonId || '',
-        },
-      },
       metadata: {
         customer_email: email,
         first_name: firstName || '',
@@ -1158,6 +1150,24 @@ app.get('/chat', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'chat.html'));
 });
 
+// ==================== VERA DEMO ROUTES ====================
+// Serve VERA demo versions (all with same 48-hour trial + upgrade system)
+app.get('/vera', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'vera-demo.html'));
+});
+
+app.get('/vera1', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'vera-demo1.html'));
+});
+
+app.get('/vera2', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'vera-demo2.html'));
+});
+
+app.get('/vera-bet', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'vera-bet.html'));
+});
+
 // Serve subscription page
 app.get('/subscribe', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'subscribe.html'));
@@ -1228,7 +1238,7 @@ app.get('/create-account', async (req, res) => {
 
   if (!sessionId) {
     console.log('❌ No session_id provided');
-    return res.redirect('/?error=no_session');
+    return res.redirect('/create-account.html?error=no_session');
   }
 
   console.log('🔵 Create account initiated with session:', sessionId);
@@ -1244,7 +1254,7 @@ app.get('/create-account', async (req, res) => {
 
     if (!customerEmail) {
       console.log('❌ No email found in session');
-      return res.redirect('/?error=no_email');
+      return res.redirect('/create-account.html?error=no_email');
     }
 
     // Check if user already exists
@@ -1295,7 +1305,7 @@ app.get('/create-account', async (req, res) => {
 
       req.session.userEmail = customerEmail;
       await req.session.save();
-      return res.redirect('/chat.html');
+      return res.redirect(`/create-account.html?session_id=${sessionId}`);
     }
 
     // Create new user
@@ -1373,11 +1383,11 @@ app.get('/create-account', async (req, res) => {
       // Don't block account creation if email fails
     }
 
-    // Redirect to chat
-    res.redirect('/chat.html');
+    // Redirect to success page
+    res.redirect(`/create-account.html?session_id=${sessionId}`);
   } catch (error) {
     console.error('❌ Create account error:', error);
-    res.redirect('/?error=creation_failed');
+    res.redirect('/create-account.html?error=creation_failed');
   }
 });
 // ==================== CHECK IF USER EXISTS (FOR DUPLICATE PREVENTION) ====================
@@ -1554,9 +1564,6 @@ app.post('/api/create-checkout-session', async (req, res) => {
             mode: 'subscription',
             success_url: successUrl,
             cancel_url: cancelUrl,
-            subscription_data: {
-              trial_period_days: 7,
-            },
             automatic_tax: {
               enabled: true,
             },
@@ -1616,9 +1623,6 @@ app.post('/api/create-checkout-session', async (req, res) => {
           mode: 'subscription',
           success_url: successUrl,
           cancel_url: cancelUrl,
-          subscription_data: {
-            trial_period_days: 7,
-          },
           automatic_tax: {
             enabled: true,
           },
@@ -1650,9 +1654,6 @@ app.post('/api/create-checkout-session', async (req, res) => {
       mode: 'subscription',
       success_url: successUrl,
       cancel_url: cancelUrl,
-      subscription_data: {
-        trial_period_days: 7,
-      },
       automatic_tax: {
         enabled: true,
       },
@@ -2939,6 +2940,61 @@ app.post('/api/chat', async (req, res) => {
   const wantDebug = debug === true || debug === '1' || req.headers['x-vera-debug'] === '1';
 
   try {
+    // ==================== ACCESS CONTROL: Check trial/subscription status ====================
+    if (email) {
+      try {
+        const userCheck = await db.query(
+          `SELECT 
+            trial_ends_at, 
+            subscription_status, 
+            created_at,
+            stripe_subscription_id
+          FROM users 
+          WHERE email = $1`,
+          [email]
+        );
+
+        if (userCheck.rows.length > 0) {
+          const user = userCheck.rows[0];
+          const now = new Date();
+          const trialEndsAt = user.trial_ends_at ? new Date(user.trial_ends_at) : null;
+
+          // Check if trial is still valid
+          const isOnValidTrial = trialEndsAt && now < trialEndsAt;
+
+          // Check if subscription is active
+          const hasActiveSubscription = user.subscription_status === 'active';
+
+          // If no valid trial and no active subscription, deny access
+          if (!isOnValidTrial && !hasActiveSubscription) {
+            console.log(`⛔ [ACCESS DENIED] User ${email}:`, {
+              trial_expired: !isOnValidTrial,
+              trial_ends_at: trialEndsAt,
+              subscription_status: user.subscription_status,
+              now: now,
+            });
+
+            return res.status(403).json({
+              error: 'Trial expired and no active subscription',
+              code: 'TRIAL_EXPIRED',
+              action: 'upgrade_required',
+              trialEnded: !isOnValidTrial,
+              upgradeUrl: '/subscribe.html',
+            });
+          }
+
+          console.log(`✅ [ACCESS GRANTED] User ${email}:`, {
+            onTrial: isOnValidTrial,
+            hasSubscription: hasActiveSubscription,
+          });
+        }
+      } catch (accessCheckError) {
+        console.error('⚠️ [ACCESS CHECK ERROR]:', accessCheckError.message);
+        // If check fails, allow message (fallback to be safe)
+      }
+    }
+
+    // ==================== NORMAL CHAT FLOW ====================
     // Get or create conversation
     let currentConversationId = conversationId;
 
