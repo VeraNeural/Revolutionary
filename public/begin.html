@@ -405,6 +405,15 @@
             right: 12px;
             border-radius: 8px;
             z-index: 1200;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            pointer-events: auto;
+            touch-action: manipulation;
+        }
+
+        .menu-toggle:active {
+            transform: scale(0.95);
         }
 
         .menu-line { width: 22px; height: 2px; background: rgba(255,255,255,0.9); }
@@ -579,32 +588,97 @@
         window.addEventListener('DOMContentLoaded', createUniverse);
     </script>
     <script>
-        // Toggle hamburger dropdown
-        function toggleMenu() {
+        // Toggle hamburger dropdown - ROBUST VERSION FOR MOBILE
+        function toggleMenu(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
             const dd = document.getElementById('hamburgerDropdown');
             const btn = document.getElementById('menuToggle');
+            if (!dd || !btn) {
+                console.error('Menu elements not found');
+                return;
+            }
             const isActive = dd.classList.toggle('active');
             dd.setAttribute('aria-hidden', String(!isActive));
             btn.setAttribute('aria-expanded', String(isActive));
+            console.log('🍔 Menu toggled:', isActive ? 'OPEN' : 'CLOSED');
         }
 
-        document.addEventListener('click', (e) => {
+        // Close menu when clicking outside
+        function closeMenu() {
             const dd = document.getElementById('hamburgerDropdown');
             const btn = document.getElementById('menuToggle');
-            if (!dd || !btn) return;
-            if (btn.contains(e.target)) return; // clicking the button handled by toggle
-            if (!dd.contains(e.target)) {
+            if (dd && dd.classList.contains('active')) {
                 dd.classList.remove('active');
                 dd.setAttribute('aria-hidden', 'true');
-                btn.setAttribute('aria-expanded', 'false');
+                if (btn) btn.setAttribute('aria-expanded', 'false');
             }
-        });
+        }
 
-        // wire button
-        window.addEventListener('DOMContentLoaded', () => {
+        // Initialize menu handlers
+        function initMenuHandlers() {
             const btn = document.getElementById('menuToggle');
-            if (btn) btn.addEventListener('click', toggleMenu);
-        });
+            const dd = document.getElementById('hamburgerDropdown');
+            
+            if (!btn || !dd) {
+                console.error('Menu elements not found during init');
+                return;
+            }
+
+            console.log('🍔 Initializing menu handlers...');
+
+            // PRIMARY: Click handler
+            btn.addEventListener('click', (e) => {
+                console.log('🍔 Click detected on button');
+                toggleMenu(e);
+            });
+
+            // BACKUP: Touch handlers for mobile
+            btn.addEventListener('touchstart', (e) => {
+                console.log('🍔 Touch detected on button');
+                e.preventDefault();
+                e.stopPropagation();
+                toggleMenu(e);
+            }, { passive: false });
+
+            // Close menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (dd.classList.contains('active') && !dd.contains(e.target) && !btn.contains(e.target)) {
+                    console.log('🍔 Click outside - closing menu');
+                    closeMenu();
+                }
+            });
+
+            // Close menu when tapping outside on mobile
+            document.addEventListener('touchstart', (e) => {
+                if (dd.classList.contains('active') && !dd.contains(e.target) && !btn.contains(e.target)) {
+                    console.log('🍔 Touch outside - closing menu');
+                    closeMenu();
+                }
+            }, { passive: true });
+
+            // Close when clicking a menu item
+            dd.querySelectorAll('.dropdown-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    console.log('🍔 Menu item clicked - closing menu');
+                    closeMenu();
+                });
+            });
+
+            console.log('✅ Menu handlers initialized');
+        }
+
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMenuHandlers);
+        } else {
+            initMenuHandlers();
+        }
+
+        // Also initialize on load
+        window.addEventListener('load', initMenuHandlers);
     </script>
     <!-- Mobile viewport & keyboard helper -->
     <script>
