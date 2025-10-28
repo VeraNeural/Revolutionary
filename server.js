@@ -882,7 +882,7 @@ app.use((req, res, next) => {
 app.use(
   session({
     store: new pgSession({
-      pool: db.pool, // Use the pool from our database manager
+      pool: db.getPool(), // Use the pool from our database manager
       tableName: 'session',
     }),
     secret: process.env.SESSION_SECRET || 'vera-secret-key-change-in-production',
