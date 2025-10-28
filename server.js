@@ -1192,12 +1192,30 @@ app.get('/VR-vera.html', (req, res) => {
 const monitor = require('./lib/monitoring'); // ✅
 
 // Basic health endpoint for quick checks
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    vera: 'revolutionary',
-    timestamp: new Date().toISOString(),
-  });
+app.get('/health', async (req, res) => {
+  try {
+    // Quick database connectivity test
+    await db.query('SELECT 1');
+
+    res.json({
+      status: 'healthy',
+      vera: 'revolutionary',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    });
+  } catch (dbError) {
+    console.error('❌ Health check - DB error:', dbError.message);
+
+    res.status(503).json({
+      status: 'degraded',
+      vera: 'revolutionary',
+      database: 'disconnected',
+      error: dbError.message,
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    });
+  }
 });
 
 // Detailed monitoring endpoint with system stats
