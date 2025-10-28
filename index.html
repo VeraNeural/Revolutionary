@@ -1057,9 +1057,78 @@
                     <button type="submit" class="signup-button">Get Started</button>
                 </form>
                 <p class="signup-status" id="signupStatus"></p>
+                <style>
+                    .email-signup-container {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        gap: 1rem;
+                        margin: 2rem auto 0;
+                    }
+                    .signup-subtitle {
+                        font-size: 0.95rem;
+                        color: rgba(255, 255, 255, 0.8);
+                    }
+                    .email-form {
+                        display: flex;
+                        gap: 0.5rem;
+                        width: 100%;
+                        max-width: 500px;
+                    }
+                    .email-input {
+                        flex: 1;
+                        padding: 0.9rem 1.2rem;
+                        background: rgba(255, 255, 255, 0.1);
+                        border: 1px solid rgba(155, 137, 212, 0.3);
+                        border-radius: 50px;
+                        color: var(--text-primary);
+                        font-size: 1rem;
+                        outline: none;
+                        transition: all 0.3s;
+                    }
+                    .email-input::placeholder {
+                        color: var(--text-muted);
+                    }
+                    .email-input:focus {
+                        border-color: var(--vera-neural-blue);
+                        background: rgba(255, 255, 255, 0.15);
+                        box-shadow: 0 0 30px rgba(100, 181, 246, 0.3);
+                    }
+                    .signup-button {
+                        padding: 0.9rem 2rem;
+                        background: linear-gradient(135deg, var(--vera-lavender), var(--vera-neural-blue));
+                        border: none;
+                        border-radius: 50px;
+                        color: white;
+                        font-weight: 600;
+                        font-size: 1rem;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                        white-space: nowrap;
+                    }
+                    .signup-button:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 10px 40px rgba(155, 89, 182, 0.4);
+                    }
+                    .signup-button:disabled {
+                        opacity: 0.6;
+                        cursor: not-allowed;
+                    }
+                    .signup-status {
+                        font-size: 0.9rem;
+                        color: var(--vera-neural-blue);
+                        min-height: 1.2rem;
+                    }
+                    .signup-status.error {
+                        color: #ff6b6b;
+                    }
+                    .signup-status.loading {
+                        animation: pulse 1s infinite;
+                    }
+                </style>
             </div>
 
-            <div class="enter-hint">No credit card required</div>
+            <div class="enter-hint">Magic link will be sent to your email</div>
         </div>
     </div>
 </main>
@@ -1276,6 +1345,62 @@
             
         }, 15000);
     });
+
+    // Email signup handler
+    async function handleEmailSignup(event) {
+        event.preventDefault();
+        
+        const email = document.getElementById('emailInput').value.trim();
+        const statusEl = document.getElementById('signupStatus');
+        const button = event.target.querySelector('button');
+        
+        if (!email) {
+            statusEl.textContent = 'Please enter your email';
+            statusEl.classList.add('error');
+            return;
+        }
+        
+        // Show loading state
+        statusEl.textContent = 'Sending magic link...';
+        statusEl.classList.remove('error');
+        statusEl.classList.add('loading');
+        button.disabled = true;
+        
+        try {
+            const response = await fetch('/api/auth/send-magic-link', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to send magic link');
+            }
+            
+            // Success - show confirmation
+            statusEl.textContent = '✓ Check your email for the magic link!';
+            statusEl.classList.remove('loading', 'error');
+            statusEl.classList.add('success');
+            document.getElementById('emailInput').value = '';
+            button.disabled = false;
+            
+            // Clear status message after 5 seconds
+            setTimeout(() => {
+                statusEl.textContent = '';
+            }, 5000);
+            
+        } catch (error) {
+            console.error('Email signup error:', error);
+            statusEl.textContent = error.message || 'Error sending magic link. Please try again.';
+            statusEl.classList.add('error');
+            statusEl.classList.remove('loading');
+            button.disabled = false;
+        }
+    }
 
     // Background Music Control
     document.addEventListener('DOMContentLoaded', () => {
