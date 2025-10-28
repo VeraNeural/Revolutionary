@@ -921,6 +921,15 @@ async function initializeDatabase() {
       )
     `);
 
+    // Add missing trial columns to users table if they don't exist
+    try {
+      await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_starts_at TIMESTAMP');
+      await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMP');
+      console.log('✅ Trial columns ensured on users table');
+    } catch (e) {
+      console.warn('⚠️ Could not ensure trial columns on users table:', e.message);
+    }
+
     // Create conversations table (ensure this exists before messages use it)
     await db.query(`
       CREATE TABLE IF NOT EXISTS conversations (
@@ -1092,7 +1101,10 @@ async function initializeDatabase() {
   }
 }
 
-initializeDatabase();
+// Initialize database on startup (don't block, but errors are logged)
+initializeDatabase().catch(error => {
+  console.error('❌ Fatal: Database initialization failed:', error);
+});
 
 // ==================== DOMAIN-BASED ROUTING ====================
 // Serve promo/landing page
