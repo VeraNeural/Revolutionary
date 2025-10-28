@@ -56,6 +56,7 @@
             flex-direction: column;
             align-items: center;
             text-align: center;
+            pointer-events: auto;
         }
 
         /* Breathing Orb */
@@ -309,36 +310,45 @@
                 font-size: 1.1rem;
             }
 
-            /* Make the page use the mobile-safe viewport height and disable body scroll */
+            /* Make the page use the mobile-safe viewport height */
             html, body {
-                height: calc(var(--vh, 1vh) * 100);
-                overflow: hidden; /* prevent the whole page from scrolling */
-                overscroll-behavior: none; /* prevent rubber-band/bounce */
+                height: 100vh;
+                height: 100dvh;
+                overflow: hidden;
+                overscroll-behavior: none;
                 -webkit-overflow-scrolling: auto;
             }
 
-            /* Container should expand vertically and allow an inner area to scroll if needed */
+            /* Container should center content and allow scrolling only if needed */
             .container {
+                position: relative;
+                z-index: 1;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                justify-content: flex-start;
-                padding: 1rem 1.25rem;
+                justify-content: center;
+                padding: 4rem 1.25rem 1rem 1.25rem;
                 width: 100%;
-                max-width: 720px;
+                max-width: 100%;
                 box-sizing: border-box;
-                /* Use remaining height so we can position form at bottom */
-                min-height: calc(var(--vh, 1vh) * 100);
+                min-height: calc(100dvh - 4rem);
+                pointer-events: auto;
             }
 
-            /* If a header element exists, pin it to the top */
+            /* Header stays fixed above everything */
             header, .header, .chat-header {
                 position: fixed;
-                top: env(safe-area-inset-top, 0);
+                top: 0;
                 left: 0;
                 right: 0;
-                z-index: 20;
+                z-index: 9999;
                 backdrop-filter: blur(6px);
+                pointer-events: none;
+            }
+
+            .header-controls {
+                pointer-events: auto;
+                z-index: 9999;
             }
 
             /* Pin the signup form / input area to bottom so keyboard pushes it up instead of the whole page */
@@ -353,9 +363,11 @@
                 padding: 0.75rem 1rem;
                 max-width: none;
                 margin: 0 auto;
-                width: min(720px, 100%);
+                width: 100%;
+                max-width: 100%;
                 background: transparent;
-                z-index: 25;
+                z-index: 50;
+                pointer-events: auto;
             }
 
             /* Make the email input and CTA fill nicely when pinned */
@@ -373,7 +385,7 @@
             .messages, .chat-messages, .content-scroll {
                 overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
-                max-height: calc(var(--vh, 1vh) * 100 - 220px); /* leave space for header + input */
+                max-height: calc(100dvh - 220px);
                 width: 100%;
             }
         }
@@ -385,6 +397,26 @@
                 animation-iteration-count: 1 !important;
                 transition-duration: 0.01ms !important;
             }
+        }
+
+        /* Header must be above all content */
+        .chat-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: env(safe-area-inset-top, 12px) 12px 0 12px;
+            pointer-events: none;
+        }
+
+        .header-controls {
+            pointer-events: auto;
+            z-index: 9999;
         }
 
         /* Minimal hamburger/menu styles to match chat aesthetic */
@@ -400,42 +432,56 @@
             border: none;
             cursor: pointer;
             padding: 8px;
-            position: fixed;
-            top: calc(env(safe-area-inset-top, 12px) + 8px);
-            right: 12px;
+            position: relative;
+            z-index: 9999;
             border-radius: 8px;
-            z-index: 1200;
             user-select: none;
             -webkit-user-select: none;
             -webkit-touch-callout: none;
             pointer-events: auto;
             touch-action: manipulation;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
         }
 
         .menu-toggle:active {
             transform: scale(0.95);
+            background: rgba(155, 89, 182, 0.1);
+        }
+
+        .menu-toggle:focus {
+            outline: 2px solid rgba(155, 89, 182, 0.5);
+            outline-offset: 2px;
         }
 
         .menu-line { width: 22px; height: 2px; background: rgba(255,255,255,0.9); }
 
         .hamburger-dropdown {
             position: fixed;
-            top: calc(env(safe-area-inset-top, 12px) + 56px);
+            top: calc(env(safe-area-inset-top, 12px) + 50px);
             right: 12px;
-            background: rgba(10,12,28,0.95);
-            border: 1px solid rgba(255,255,255,0.04);
+            background: rgba(10,12,28,0.98);
+            border: 1px solid rgba(255,255,255,0.08);
             border-radius: 12px;
             min-width: 220px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
             opacity: 0;
             visibility: hidden;
             transform: translateY(-8px);
-            transition: all 0.22s ease;
-            z-index: 1199;
+            transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 9998;
             overflow: hidden;
+            backdrop-filter: blur(10px);
+            pointer-events: none;
         }
 
-        .hamburger-dropdown.active { opacity: 1; visibility: visible; transform: translateY(0); }
+        .hamburger-dropdown.active { 
+            opacity: 1; 
+            visibility: visible; 
+            transform: translateY(0);
+            pointer-events: auto;
+        }
 
         .dropdown-item {
             padding: 0.85rem 1rem;
@@ -588,22 +634,23 @@
         window.addEventListener('DOMContentLoaded', createUniverse);
     </script>
     <script>
-        // Toggle hamburger dropdown - ROBUST VERSION FOR MOBILE
+        // Toggle hamburger dropdown - ROBUST VERSION FOR MOBILE & DESKTOP
         function toggleMenu(e) {
             if (e) {
                 e.preventDefault();
                 e.stopPropagation();
+                e.stopImmediatePropagation();
             }
             const dd = document.getElementById('hamburgerDropdown');
             const btn = document.getElementById('menuToggle');
             if (!dd || !btn) {
-                console.error('Menu elements not found');
+                console.error('❌ Menu elements not found');
                 return;
             }
             const isActive = dd.classList.toggle('active');
             dd.setAttribute('aria-hidden', String(!isActive));
             btn.setAttribute('aria-expanded', String(isActive));
-            console.log('🍔 Menu toggled:', isActive ? 'OPEN' : 'CLOSED');
+            console.log('🍔 Menu toggled:', isActive ? 'OPEN ✓' : 'CLOSED ✓');
         }
 
         // Close menu when clicking outside
@@ -614,30 +661,55 @@
                 dd.classList.remove('active');
                 dd.setAttribute('aria-hidden', 'true');
                 if (btn) btn.setAttribute('aria-expanded', 'false');
+                console.log('🍔 Menu closed (outside click)');
             }
         }
 
-        // Initialize menu handlers
+        // Initialize menu handlers - ROBUST FOR ALL DEVICES
         function initMenuHandlers() {
             const btn = document.getElementById('menuToggle');
             const dd = document.getElementById('hamburgerDropdown');
             
             if (!btn || !dd) {
-                console.error('Menu elements not found during init');
+                console.error('❌ Menu elements not found during init');
                 return;
             }
 
             console.log('🍔 Initializing menu handlers...');
 
-            // PRIMARY: Click handler
+            // PRIMARY: Click handler (Desktop & Mobile)
             btn.addEventListener('click', (e) => {
-                console.log('🍔 Click detected on button');
+                console.log('🍔 Click detected');
                 toggleMenu(e);
-            });
+            }, { passive: false });
 
-            // BACKUP: Touch handlers for mobile
+            // TOUCH START: Begin touch interaction (Mobile)
             btn.addEventListener('touchstart', (e) => {
-                console.log('🍔 Touch detected on button');
+                console.log('🍔 Touchstart detected');
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            }, { passive: false });
+
+            // TOUCH END: Complete touch interaction (Mobile) - CRITICAL FOR iOS
+            btn.addEventListener('touchend', (e) => {
+                console.log('🍔 Touchend detected - toggling menu');
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                toggleMenu(e);
+            }, { passive: false });
+
+            // POINTER DOWN: For modern browsers with pointer events
+            btn.addEventListener('pointerdown', (e) => {
+                console.log('🍔 Pointer event detected');
+                e.preventDefault();
+                e.stopPropagation();
+            }, { passive: false });
+
+            // POINTER UP: Complete pointer interaction
+            btn.addEventListener('pointerup', (e) => {
+                console.log('🍔 Pointer up - toggling menu');
                 e.preventDefault();
                 e.stopPropagation();
                 toggleMenu(e);
@@ -646,7 +718,7 @@
             // Close menu when clicking outside
             document.addEventListener('click', (e) => {
                 if (dd.classList.contains('active') && !dd.contains(e.target) && !btn.contains(e.target)) {
-                    console.log('🍔 Click outside - closing menu');
+                    console.log('🍔 Outside click detected - closing');
                     closeMenu();
                 }
             });
@@ -654,20 +726,37 @@
             // Close menu when tapping outside on mobile
             document.addEventListener('touchstart', (e) => {
                 if (dd.classList.contains('active') && !dd.contains(e.target) && !btn.contains(e.target)) {
-                    console.log('🍔 Touch outside - closing menu');
+                    console.log('🍔 Outside touch detected - closing');
                     closeMenu();
                 }
             }, { passive: true });
 
             // Close when clicking a menu item
             dd.querySelectorAll('.dropdown-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    console.log('🍔 Menu item clicked - closing menu');
+                item.addEventListener('click', (e) => {
+                    console.log('🍔 Menu item clicked:', e.target.textContent);
                     closeMenu();
                 });
+                
+                item.addEventListener('touchend', (e) => {
+                    console.log('🍔 Menu item touched:', e.target.textContent);
+                    e.preventDefault();
+                    closeMenu();
+                    // Navigate after short delay to ensure menu closes
+                    const href = item.getAttribute('href');
+                    if (href) {
+                        setTimeout(() => {
+                            if (href.startsWith('mailto:')) {
+                                window.location.href = href;
+                            } else {
+                                window.location.href = href;
+                            }
+                        }, 100);
+                    }
+                }, { passive: false });
             });
 
-            console.log('✅ Menu handlers initialized');
+            console.log('✅ Menu handlers initialized successfully');
         }
 
         // Initialize when DOM is ready
@@ -677,7 +766,7 @@
             initMenuHandlers();
         }
 
-        // Also initialize on load
+        // Also initialize on load to be extra safe
         window.addEventListener('load', initMenuHandlers);
     </script>
     <!-- Mobile viewport & keyboard helper -->
