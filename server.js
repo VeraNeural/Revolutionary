@@ -49,6 +49,7 @@ const cors = require('cors');
 const session = require('express-session');
 const pgSession = require('connect-pg-simple')(session);
 const path = require('path');
+const bcrypt = require('bcrypt');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db = require('./lib/database-manager');
 const { getVERAResponse, setVERADebug } = require('./lib/vera-ai');
@@ -2242,6 +2243,81 @@ app.get('/verify-recovery', async (req, res) => {
   } catch (error) {
     console.error('❌ Recovery verification error:', error);
     res.redirect('/account-recovery.html?error=verification_failed');
+  }
+});
+
+// ==================== EMAIL + PASSWORD SIGNUP ====================
+app.post('/api/auth/signup', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password required' });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+
+  try {
+    // Check if user already exists
+    const existing = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Create user
+    await db.query(
+      'INSERT INTO users (email, password, name, subscription_status) VALUES ($1, $2, $3, $4)',
+      [email, passwordHash, email.split('@')[0], 'inactive']
+    );
+
+    // Set session
+    req.session.userEmail = email;
+    await req.session.save();
+
+    console.log('✅ User signed up:', email);
+    res.json({ success: true, redirect: '/chat.html' });
+  } catch (error) {
+    console.error('❌ Signup error:', error);
+    res.status(500).json({ error: 'Signup failed' });
+  }
+});
+
+// ==================== EMAIL + PASSWORD LOGIN ====================
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password required' });
+  }
+
+  try {
+    // Find user
+    const result = await db.query('SELECT id, password FROM users WHERE email = $1', [email]);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const user = result.rows[0];
+
+    // Check password
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    // Set session
+    req.session.userEmail = email;
+    await req.session.save();
+
+    console.log('✅ User logged in:', email);
+    res.json({ success: true, redirect: '/chat.html' });
+  } catch (error) {
+    console.error('❌ Login error:', error);
+    res.status(500).json({ error: 'Login failed' });
   }
 });
 
