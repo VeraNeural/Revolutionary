@@ -6,6 +6,9 @@ function createAuthCard() {
         <div class="auth-card-content">
             <div class="auth-status"></div>
             <div class="auth-actions">
+                <button class="auth-button" id="signupButton">
+                    Sign Up
+                </button>
                 <button class="auth-button" id="loginButton">
                     Sign In
                 </button>
@@ -68,7 +71,11 @@ function checkAutoLogin() {
 
 // Event Handlers
 function handleLogin() {
-    window.location.href = '/login.html';
+    window.location.href = '/login-password.html';
+}
+
+function handleSignup() {
+    window.location.href = '/signup-password.html';
 }
 
 function handleLogout() {
@@ -86,6 +93,7 @@ function initializeAuthCard() {
             mainContent.insertBefore(authCard, mainContent.firstChild);
             
             // Add event listeners
+            document.getElementById('signupButton').addEventListener('click', handleSignup);
             document.getElementById('loginButton').addEventListener('click', handleLogin);
             
             // Check auto login

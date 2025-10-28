@@ -2207,26 +2207,17 @@
                     cursor: pointer;
                 ">×</button>
                 
-                <h2 style="color: white; font-size: 24px; margin-bottom: 16px; text-align: center;">
-                    Sign in to continue
+                <h2 style="color: white; font-size: 24px; margin-bottom: 24px; text-align: center;">
+                    Ready to stay?
                 </h2>
                 
-                <p style="color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 24px;">
-                    To keep our conversations safe and private, I need your email.
+                <p style="color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 24px; font-size: 14px;">
+                    Choose how you'd like to continue our conversation.
                 </p>
                 
-                <input type="email" id="auth-email-input" placeholder="Your email address..." style="
-                    width: 100%;
-                    padding: 16px;
-                    border-radius: 12px;
-                    border: 1px solid rgba(255,255,255,0.2);
-                    background: rgba(255,255,255,0.1);
-                    color: white;
-                    font-size: 16px;
-                    margin-bottom: 16px;
-                "/>
-                
-                <button onclick="sendAuthLink()" style="
+                <!-- Sign Up Button -->
+                <a href="/signup-password.html" style="
+                    display: block;
                     width: 100%;
                     padding: 16px;
                     border-radius: 12px;
@@ -2236,12 +2227,79 @@
                     font-size: 16px;
                     font-weight: 600;
                     cursor: pointer;
+                    text-align: center;
+                    text-decoration: none;
+                    margin-bottom: 12px;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                    Create Account
+                </a>
+                
+                <!-- Sign In Button -->
+                <a href="/login-password.html" style="
+                    display: block;
+                    width: 100%;
+                    padding: 16px;
+                    border-radius: 12px;
+                    border: 1px solid rgba(138, 97, 177, 0.5);
+                    background: transparent;
+                    color: white;
+                    font-size: 16px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    text-align: center;
+                    text-decoration: none;
+                    margin-bottom: 16px;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.background='rgba(138, 97, 177, 0.1)'" onmouseout="this.style.background='transparent'">
+                    Sign In
+                </a>
+                
+                <!-- Magic Link Fallback -->
+                <button onclick="showMagicLinkForm()" style="
+                    width: 100%;
+                    padding: 12px;
+                    border-radius: 12px;
+                    border: none;
+                    background: transparent;
+                    color: rgba(138, 97, 177, 0.8);
+                    font-size: 14px;
+                    cursor: pointer;
+                    text-decoration: underline;
                 ">
-                    Send me a secure link
+                    Or use a magic link instead
                 </button>
                 
-                <p style="color: rgba(255,255,255,0.6); text-align: center; margin-top: 16px; font-size: 14px;">
-                    Takes 30 seconds
+                <!-- Magic Link Form (Hidden by default) -->
+                <div id="magic-link-form" style="display: none; margin-top: 16px;">
+                    <input type="email" id="auth-email-input" placeholder="Your email address..." style="
+                        width: 100%;
+                        padding: 12px;
+                        border-radius: 8px;
+                        border: 1px solid rgba(255,255,255,0.2);
+                        background: rgba(255,255,255,0.1);
+                        color: white;
+                        font-size: 14px;
+                        margin-bottom: 12px;
+                    " placeholder="Enter your email"/>
+                    
+                    <button onclick="sendAuthLink()" style="
+                        width: 100%;
+                        padding: 12px;
+                        border-radius: 8px;
+                        border: none;
+                        background: rgba(138, 97, 177, 0.3);
+                        color: white;
+                        font-size: 14px;
+                        font-weight: 600;
+                        cursor: pointer;
+                    ">
+                        Send magic link
+                    </button>
+                </div>
+                
+                <p style="color: rgba(255,255,255,0.5); text-align: center; margin-top: 16px; font-size: 12px;">
+                    We'll never share your email. Ever.
                 </p>
             </div>
         </div>
