@@ -2798,18 +2798,11 @@ if (typingIndicator && chatContainer.contains(typingIndicator)) {
             
             if (!message || isSending) return;
 
-            // Check guest message count
+            // Track guest message count (don't block here - let message 5 go through, block will happen after backend response)
             if (localStorage.getItem('veraIsGuest') === 'true') {
                 guestMessageCount++;
                 localStorage.setItem('veraGuestMessageCount', guestMessageCount);
-                
-                console.log(`📊 [GUEST COUNT] Incremented to: ${guestMessageCount}`);
-                
-                if (guestMessageCount >= 5) {
-                    console.log(`⚠️ [GUEST LIMIT] Reached 5 messages, showing signup modal`);
-                    showSignupModal();
-                    return;
-                }
+                console.log(`📊 [GUEST COUNT] Message #${guestMessageCount} being sent`);
             }
 
             isSending = true;
