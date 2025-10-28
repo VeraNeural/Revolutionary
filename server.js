@@ -913,6 +913,7 @@ async function initializeDatabase() {
         subscription_status VARCHAR(50) DEFAULT 'inactive',
         stripe_customer_id VARCHAR(255),
         stripe_subscription_id VARCHAR(255),
+        trial_starts_at TIMESTAMP,
         trial_ends_at TIMESTAMP,
         onboarding_completed BOOLEAN DEFAULT false,
         reset_token VARCHAR(255),
@@ -1068,8 +1069,8 @@ initializeDatabase();
 
 // ==================== DOMAIN-BASED ROUTING ====================
 app.get('/', (req, res) => {
-  // Always serve landing page at root
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  // Serve landing page at root
+  res.sendFile(path.join(__dirname, 'landing.html'));
 });
 
 // Serve promo experience
@@ -2517,6 +2518,166 @@ app.post('/api/auth/send-magic-link', async (req, res) => {
   } catch (error) {
     console.error('❌ Magic link endpoint error:', error);
     Sentry?.captureException(error, { tags: { endpoint: 'send-magic-link' } });
+    return res.status(500).json({ error: 'An unexpected error occurred. Please try again.' });
+  }
+});
+
+// ==================== 48-HOUR TRIAL MAGIC LINK ====================
+app.post('/api/auth/send-trial-magic-link', async (req, res) => {
+  const { email } = req.body;
+  const clientIp = req.ip || req.connection.remoteAddress;
+  
+  // Validation
+  if (!email) {
+    console.warn('❌ Trial magic link request missing email');
+    return res.status(400).json({ error: 'Email is required' });
+  }
+  
+  const normalizedEmail = email.trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(normalizedEmail)) {
+    console.warn(`❌ Invalid email format: ${normalizedEmail}`);
+    return res.status(400).json({ error: 'Please enter a valid email address' });
+  }
+  
+  try {
+    console.log(`🆕 Trial signup for: ${normalizedEmail}`);
+    
+    // ==================== CREATE OR UPDATE USER WITH 48-HOUR TRIAL ====================
+    let user;
+    const userResult = await db.query(
+      'SELECT id, email, subscription_status FROM users WHERE LOWER(email) = $1',
+      [normalizedEmail]
+    );
+    
+    if (userResult.rows.length === 0) {
+      // NEW USER - Create with 48-hour trial
+      console.log(`📝 Creating new trial user...`);
+      
+      const trialEndsAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours from now
+      
+      const newUserResult = await db.query(
+        `INSERT INTO users (email, subscription_status, created_at, trial_starts_at, trial_ends_at)
+         VALUES ($1, 'trial', NOW(), NOW(), $2)
+         RETURNING id, email, subscription_status, created_at, trial_starts_at, trial_ends_at`,
+        [normalizedEmail, trialEndsAt]
+      );
+      
+      user = newUserResult.rows[0];
+      console.log(`✅ Trial user created:`, {
+        id: user.id,
+        email: user.email,
+        trialEndsAt: user.trial_ends_at
+      });
+      
+    } else {
+      // Existing user - refresh trial if needed
+      user = userResult.rows[0];
+      console.log(`👤 Existing user found, refreshing trial if needed...`);
+      
+      const trialEndsAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+      const updateResult = await db.query(
+        `UPDATE users SET trial_starts_at = NOW(), trial_ends_at = $1, subscription_status = 'trial'
+         WHERE id = $2
+         RETURNING id, email, subscription_status, trial_starts_at, trial_ends_at`,
+        [trialEndsAt, user.id]
+      );
+      user = updateResult.rows[0];
+      console.log(`♻️  Trial refreshed for returning user`);
+    }
+    
+    // ==================== CREATE MAGIC LINK TOKEN ====================
+    let magicLinkRecord;
+    try {
+      magicLinkRecord = await createMagicLink(normalizedEmail, 'trial_magic_link');
+    } catch (error) {
+      console.error(`❌ Failed to create magic link token:`, error);
+      return res.status(500).json({ error: 'Failed to generate sign-in link. Please try again.' });
+    }
+    
+    // ==================== BUILD MAGIC LINK ====================
+    const baseUrl = process.env.APP_URL || 'http://localhost:8080';
+    const magicLink = `${baseUrl}/verify-magic-link?token=${magicLinkRecord.token}&trial=true`;
+    
+    // ==================== SEND EMAIL ====================
+    try {
+      const emailResult = await sendEmail({
+        to: normalizedEmail,
+        subject: '✨ Your 48-Hour VERA Trial is Ready',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #9B59B6, #64B5F6); color: white; padding: 40px 20px; text-align: center; border-radius: 10px 10px 0 0; }
+              .content { background: white; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+              .button { display: inline-block; background: linear-gradient(135deg, #9B59B6, #64B5F6); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 25px 0; font-size: 16px; }
+              .code { background: #f5f5f5; padding: 12px; border-radius: 5px; font-family: monospace; word-break: break-all; margin: 15px 0; color: #555; }
+              .footer { font-size: 12px; color: #999; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; }
+              .trial-info { background: #f0f4ff; padding: 20px; border-left: 4px solid #9B59B6; margin: 20px 0; border-radius: 4px; }
+              .trial-info strong { color: #9B59B6; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>✨ Welcome to VERA</h1>
+                <p>Your 48-Hour Free Trial Begins Now</p>
+              </div>
+              <div class="content">
+                <p>Hi there!</p>
+                <p>Click the button below to begin your 48-hour free trial with VERA, your AI Co-Regulator:</p>
+                <center>
+                  <a href="${magicLink}" class="button">Begin Your Trial →</a>
+                </center>
+                <p style="text-align: center; font-size: 14px; color: #999;">Or copy and paste this link:</p>
+                <div class="code">${magicLink}</div>
+                
+                <div class="trial-info">
+                  <p><strong>⏱️ 48-Hour Trial</strong><br/>Your trial starts immediately after you click the link above. Enjoy full access to VERA for 48 hours, completely free. No credit card required to start.</p>
+                  <p style="margin-top: 15px;"><strong>💳 After Your Trial</strong><br/>After 48 hours, you can upgrade to continue enjoying VERA for just $12/month. Cancel anytime.</p>
+                </div>
+                
+                <div class="footer">
+                  <p>This link expires in 15 minutes and can only be used once.</p>
+                  <p>If you didn't request this email, please ignore it.</p>
+                  <p>— The VERA Team</p>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+        emailType: 'trial_magic_link'
+      });
+      
+      console.log(`✅ Trial magic link email sent to ${normalizedEmail}`);
+      
+      // Audit log
+      await db.query(
+        `INSERT INTO login_audit_log (email, token_id, action, ip_address, success)
+         VALUES ($1, $2, 'trial_magic_link_sent', $3, true)`,
+        [normalizedEmail, magicLinkRecord.id, clientIp]
+      ).catch(() => null);
+      
+      return res.json({
+        success: true,
+        message: 'Check your email for your 48-hour trial link. It expires in 15 minutes.'
+      });
+      
+    } catch (emailError) {
+      console.error(`❌ Email send failed:`, emailError.message);
+      return res.status(500).json({
+        error: 'Failed to send trial link email. Please try again.',
+        debug: process.env.NODE_ENV === 'development' ? emailError.message : undefined
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Trial magic link endpoint error:', error);
+    Sentry?.captureException(error, { tags: { endpoint: 'send-trial-magic-link' } });
     return res.status(500).json({ error: 'An unexpected error occurred. Please try again.' });
   }
 });

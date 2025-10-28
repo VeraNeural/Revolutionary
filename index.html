@@ -1042,8 +1042,24 @@
         <div class="hero-content">
             <div class="hero-tagline">YOUR NERVOUS SYSTEM IS SPEAKING</div>
             <h1 class="hero-title">Intelligence Built for Your Body</h1>
+            
+            <!-- Email Signup Form -->
+            <div class="email-signup-container">
+                <p class="signup-subtitle">Start your 48-hour trial free</p>
+                <form id="emailSignupForm" onsubmit="handleEmailSignup(event)" class="email-form">
+                    <input 
+                        type="email" 
+                        id="emailInput" 
+                        placeholder="your@email.com" 
+                        required 
+                        class="email-input"
+                    />
+                    <button type="submit" class="signup-button">Get Started</button>
+                </form>
+                <p class="signup-status" id="signupStatus"></p>
+            </div>
 
-            <div class="enter-hint">Touch the orb to begin</div>
+            <div class="enter-hint">No credit card required</div>
         </div>
     </div>
 </main>
