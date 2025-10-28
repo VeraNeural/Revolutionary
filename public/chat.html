@@ -138,10 +138,13 @@
             background: var(--bg-gradient);
             color: var(--text-primary);
             height: 100vh;
+            width: 100vw;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            position: relative;
+            position: fixed;
+            top: 0;
+            left: 0;
             transition: all 0.3s ease;
         }
 
@@ -180,7 +183,13 @@
             backdrop-filter: blur(20px);
             z-index: 100;
             border-bottom: 1px solid var(--border-color);
-            position: relative;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            flex-shrink: 0;
+            min-height: 60px;
         }
 
         /* Trial Banner */
@@ -194,6 +203,12 @@
             z-index: 99;
             gap: 1rem;
             flex-wrap: wrap;
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            width: 100%;
+            flex-shrink: 0;
         }
 
         .trial-banner.hidden {
@@ -755,12 +770,26 @@
             display: none;
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
             padding: 2rem;
             z-index: 10;
+            position: absolute;
+            top: 60px;
+            left: 0;
+            right: 0;
+            bottom: 80px;
+            width: 100%;
+            -webkit-overflow-scrolling: touch;
         }
 
         .chat-container.active {
-            display: block;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Adjust for trial banner */
+        .trial-banner:not(.hidden) ~ .chat-container {
+            top: 115px;
         }
 
         /* Messages */
@@ -957,8 +986,17 @@
             backdrop-filter: blur(20px);
             z-index: 100;
             border-top: 1px solid var(--border-color);
-            position: relative;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            flex-shrink: 0;
             transition: all 0.3s;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         /* Subtle glow when input is focused */
