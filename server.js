@@ -1418,7 +1418,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
   const { email, priceId, source } = req.body;
   
   // Set Sentry context for payment tracking
-  Sentry.captureScope(scope => {
+  Sentry.withScope(scope => {
     scope.setContext('payment', { email, priceId, source });
     scope.setTag('endpoint', 'create-checkout-session');
   });
