@@ -2964,7 +2964,10 @@ app.post('/api/chat', async (req, res) => {
 
   try {
     // ==================== ACCESS CONTROL: Check trial/subscription status ====================
-    if (email) {
+    // Allow bypassing trial check for development via SKIP_TRIAL_CHECK env var
+    const skipTrialCheck = process.env.SKIP_TRIAL_CHECK === 'true';
+
+    if (email && !skipTrialCheck) {
       try {
         const userCheck = await db.query(
           `SELECT 
